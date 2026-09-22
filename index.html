@@ -40,7 +40,15 @@ button:hover{border-color:rgba(205,184,125,.55)} button:focus-visible{outline:2p
 .static-star{pointer-events:none}.static-star .spark{fill:#d9c995;opacity:.72}.static-star .ray{stroke:rgba(221,205,153,.55);stroke-width:.7}.static-star.dim{opacity:.48}.static-star.bright .spark{fill:#efe0ad;opacity:.92}
 .landmark{cursor:pointer;outline:none}.landmark text{fill:rgba(225,214,184,.82);font-size:11px;letter-spacing:1.7px;paint-order:stroke;stroke:#091014;stroke-width:3px;stroke-linejoin:round}.landmark:hover text,.landmark.selected text,.landmark:focus text{fill:#f2e5c2}
 .landmark .wash{opacity:.42;filter:url(#watercolor);transform-box:fill-box;transform-origin:center;transition:opacity .35s ease,transform .4s ease}.landmark:hover .wash,.landmark.selected .wash,.landmark:focus .wash{opacity:.7;transform:scale(1.08) rotate(-2deg)}
-.landmark .city-line{fill:none;stroke:rgba(226,204,141,.8);stroke-width:1;vector-effect:non-scaling-stroke;transition:stroke .25s ease,opacity .25s ease}.landmark .city-fill{fill:rgba(201,178,113,.11);stroke:rgba(226,204,141,.72);stroke-width:1}.landmark:hover .city-line,.landmark.selected .city-line,.landmark:focus .city-line{stroke:#f0d99d}.landmark.selected .city-fill{fill:rgba(216,184,102,.17)}
+.landmark .city-line{fill:none;stroke:rgba(240,216,153,.86);stroke-width:1;vector-effect:non-scaling-stroke;transition:stroke .25s ease,opacity .25s ease}.landmark .city-fill{fill:rgba(227,193,117,.16);stroke:rgba(240,216,153,.78);stroke-width:1}.landmark:hover .city-line,.landmark.selected .city-line,.landmark:focus .city-line{stroke:#f6dfa4}.landmark.selected .city-fill{fill:rgba(232,191,104,.22)}
+.landmark .planet-body{filter:url(#glow);transform-box:fill-box;transform-origin:center;transition:transform .35s ease,filter .35s ease}
+.landmark .planet-shadow,.landmark .planet-highlight,.landmark .planet-ring,.landmark .planet-band,.landmark .planet-speck{transform-box:fill-box;transform-origin:center;transition:opacity .3s ease,transform .35s ease}
+.landmark .planet-ring{fill:none;stroke:rgba(242,201,127,.78);stroke-width:1.2}.landmark .ring-soft{stroke:rgba(242,201,127,.3);stroke-width:.8}
+.landmark .planet-band{fill:none;stroke:rgba(248,223,173,.5);stroke-width:1.05;stroke-linecap:round}.landmark .faint-band{stroke:rgba(246,212,159,.34)}.landmark .dark-band{stroke:rgba(102,62,58,.36)}
+.landmark .planet-speck{fill:rgba(238,204,138,.85)}
+.landmark:hover .planet-body,.landmark.selected .planet-body,.landmark:focus .planet-body{transform:scale(1.06)}
+.landmark:hover .planet-ring,.landmark.selected .planet-ring,.landmark:focus .planet-ring{stroke:rgba(255,220,146,.95)}
+.landmark:hover .wash,.landmark.selected .wash,.landmark:focus .wash{opacity:.78;transform:scale(1.1) rotate(-2deg)}
 .motion .landmark:hover .city-orbit,.motion .landmark.selected .city-orbit{animation:landmarkTurn 16s linear infinite;transform-box:fill-box;transform-origin:center}@keyframes landmarkTurn{to{transform:rotate(360deg)}}
 .dossier{position:fixed;z-index:10;left:0;top:0;bottom:0;width:min(390px,90vw);min-width:0;overflow:auto;border-right:1px solid rgba(205,184,125,.32);background:linear-gradient(rgba(14,20,23,.975),rgba(14,20,23,.975)),radial-gradient(circle at 80% 8%,rgba(151,75,52,.28),transparent 30%);padding:68px 24px 28px;transform:translateX(-104%);opacity:0;transition:transform .46s cubic-bezier(.22,.8,.2,1),opacity .28s ease;box-shadow:12px 0 38px rgba(0,0,0,.28);pointer-events:none}
 .dossier.open{transform:translateX(0);opacity:1;pointer-events:auto}
@@ -87,18 +95,35 @@ button:hover{border-color:rgba(205,184,125,.55)} button:focus-visible{outline:2p
 <path class="route" d="M205 372 C310 322 380 286 514 238"/><path class="route" d="M205 372 C330 382 510 404 676 350"/><path class="route" d="M205 372 C274 445 405 494 560 474"/><path id="activeRoute" class="activeRoute" d="M205 372 C310 322 380 286 514 238"/>
 <g class="system" data-key="home" tabindex="0" role="button" aria-label="Jumuah" transform="translate(205 372)">
 <circle class="bloom" r="20" fill="#5f8297"/><circle class="line faint spinA" r="20"/><circle class="line" r="11"/><path class="line" d="M-29 0H29 M0-29V29"/><path class="line faint" d="M-19-19L19 19 M19-19L-19 19"/><circle class="core" r="4"/><path class="starburst" d="M0-12L3-3L12 0L3 3L0 12L-3 3L-12 0L-3-3Z"/><text x="-8" y="-35">JUMUAH</text></g>
-<path class="const" d="M205 372 L245 345" style="opacity:.45"/>
-<g class="landmark" data-key="shipcity" tabindex="0" role="button" aria-label="Ship City landmark" transform="translate(249 341)">
-  <ellipse class="wash" cx="-3" cy="3" rx="31" ry="21" fill="#a76546" transform="rotate(-13)"/>
-  <ellipse class="wash" cx="5" cy="-2" rx="22" ry="28" fill="#536f80" opacity=".34" transform="rotate(19)"/>
-  <circle class="city-line city-orbit" r="29" stroke-dasharray="2 5" opacity=".52"/>
-  <path class="city-fill" d="M-22 7 C-20-8 -12-16 0-17 C12-16 20-8 22 7 C14 3 7 2 0 2 C-8 2-15 4-22 7Z"/>
-  <path class="city-line" d="M-22 7 C-11 12 11 12 22 7 M-17 3 C-7 7 7 7 17 3"/>
-  <path class="city-line" d="M0-30V12 M-5-20L0-30L5-20 M-8-11H8"/>
-  <path class="city-line" d="M-14 10L-20 18 M14 10L20 18 M-8 12L-10 22 M8 12L10 22"/>
-  <circle class="node" cx="0" cy="-30" r="1.8"/>
-  <text x="32" y="-3">SHIP CITY</text>
-  <text x="32" y="11" style="font-size:8px;letter-spacing:1.1px;opacity:.62">LANDMARK · JUMUAH</text>
+<path class="const" d="M205 372 L300 300" style="opacity:.38"/>
+<g class="landmark" data-key="shipcity" tabindex="0" role="button" aria-label="Ship City landmark" transform="translate(308 294)">
+  <ellipse class="wash" cx="-5" cy="4" rx="45" ry="31" fill="#a9563c" transform="rotate(-16)"/>
+  <ellipse class="wash" cx="8" cy="-6" rx="31" ry="40" fill="#426f84" opacity=".48" transform="rotate(20)"/>
+  <ellipse class="wash" cx="-1" cy="-4" rx="27" ry="23" fill="#d8a34f" opacity=".36" transform="rotate(-5)"/>
+
+  <circle class="city-line city-orbit" r="44" stroke-dasharray="2 6" opacity=".5"/>
+  <circle class="planet-body" r="27" fill="#c97f56"/>
+  <ellipse class="planet-shadow" cx="8" cy="3" rx="19" ry="24" fill="rgba(79,53,53,.30)"/>
+  <ellipse class="planet-highlight" cx="-8" cy="-10" rx="11" ry="8.5" fill="rgba(247,219,161,.34)"/>
+
+  <path class="planet-band" d="M-22 -7 C-12 -11 2 -10 14 -6 C19 -4 23 -1 25 2"/>
+  <path class="planet-band faint-band" d="M-23 4 C-10 1 5 2 17 7 C21 9 24 11 25 14"/>
+  <path class="planet-band faint-band" d="M-12 -17 C-2 -13 8 -13 16 -16"/>
+  <path class="planet-band dark-band" d="M-18 12 C-7 9 4 10 14 13"/>
+
+  <ellipse class="planet-ring" rx="39" ry="12.5" transform="rotate(-18)"/>
+  <ellipse class="planet-ring ring-soft" rx="42" ry="14" transform="rotate(-18)"/>
+
+  <circle class="planet-speck floatA" cx="-36" cy="-10" r="1.8"/>
+  <circle class="planet-speck floatB" cx="38" cy="8" r="1.5"/>
+  <circle class="planet-speck floatA" cx="13" cy="-36" r="1.35"/>
+  <circle class="planet-speck floatB" cx="-9" cy="38" r="1.5"/>
+
+  <path class="city-fill" d="M-11 11 L-8 1 L-5 6 L0 -15 L5 6 L8 0 L11 11 Z"/>
+  <path class="city-line" d="M0-15V12 M-11 11H11 M-8 1V11 M8 0V11 M-5 6V11 M5 6V11"/>
+
+  <text x="50" y="-3">SHIP CITY</text>
+  <text x="50" y="12" style="font-size:8px;letter-spacing:1.1px;opacity:.62">LANDMARK · JUMUAH</text>
 </g>
 <g class="system" data-key="choir" tabindex="0" role="button" aria-label="The Choir Below" transform="translate(514 238)">
 <ellipse class="bloom" rx="35" ry="24" fill="#bd724b" transform="rotate(-16)"/><ellipse class="bloom" rx="25" ry="18" fill="#d2a34e" transform="rotate(20)"/><circle class="line faint spinA" r="29"/><circle class="line spinB" r="20"/><path class="line bold" d="M-42 0H42"/><path class="line" d="M0-39V39"/><path class="line faint" d="M-29-29L29 29"/><path class="line faint" d="M-33 12C-12 1 12 1 33-12"/><path class="line faint" d="M-33-12C-12-1 12-1 33 12"/><circle class="node floatA" cx="0" cy="-29" r="2.3"/><circle class="node floatB" cx="20" cy="0" r="2"/><circle class="node floatA" cx="0" cy="29" r="2.3"/><circle class="node floatB" cx="-20" cy="0" r="2"/><circle class="core" r="4.7"/><path class="starburst" d="M0-14L3.2-3.2L14 0L3.2 3.2L0 14L-3.2 3.2L-14 0L-3.2-3.2Z"/><text x="19" y="-41">THE CHOIR BELOW</text></g>
@@ -127,7 +152,7 @@ feathers:{chapter:"Expedition prospect · 02",name:"Vault of Seven Feathers",chi
 reliquary:{chapter:"Expedition prospect · 03",name:"Red Glass Reliquary",chips:["Rumored","Blight suspected","Restricted"],lede:"A fragmentary chart recovered from a wreck marks a chamber beneath a red-glass plateau. No expedition has yet verified that the site exists.",system:"Uncatalogued body",sponsor:"None",signal:"No direct contact",risk:"Severe · Blight indicators",ret:"Unknown",rumor:"“Do not follow the red reflection. The real entrance casts no light.”",route:"M205 372 C274 445 405 494 560 474",view:[350,285,430,330]}
 };
 const landmarks={
-shipcity:{chapter:"Landmark · Jumuah System",name:"Ship City",chips:["Asteroid-metropolis","Home of the Diaspora","Explorers' base"],lede:"Built through and around an asteroid, Ship City is the only true city of the Lost Horizon: a tangled metropolis of hulls, stone, gardens, guild palaces, workshops and docks, and the base from which expeditions push into the Great Dark.",location:"Jumuah system",nature:"Asteroid-metropolis",importance:"Heart of Diaspora civilization and primary expedition base",notable:"The Chasm · Astrolaab Tower · Hull Town · Aluminum Bay",note:"Known as the Dying City, Ship City remains a beacon in the dark.",view:[112,235,360,275]}
+shipcity:{chapter:"Landmark · Jumuah System",name:"Ship City",chips:["Asteroid-metropolis","Home of the Diaspora","Explorers' base"],lede:"Built through and around an asteroid, Ship City is the only true city of the Lost Horizon: a tangled metropolis of hulls, stone, gardens, guild palaces, workshops and docks, and the base from which expeditions push into the Great Dark.",location:"Jumuah system",nature:"Asteroid-metropolis",importance:"Heart of Diaspora civilization and primary expedition base",notable:"The Chasm · Astrolaab Tower · Hull Town · Aluminum Bay",note:"Known as the Dying City, Ship City remains a beacon in the dark.",view:[135,155,430,325]}
 };
 const $=id=>document.getElementById(id);
 const defaultView=[0,0,900,600], minW=250, maxW=1800;
