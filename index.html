@@ -37,6 +37,11 @@ button:hover{border-color:rgba(205,184,125,.55)} button:focus-visible{outline:2p
 .node{fill:#d6bf82;opacity:.9}.core{fill:#f0dd99;filter:url(#glow);transform-box:fill-box;transform-origin:center;transition:.25s}.starburst{fill:none;stroke:#eddba1;stroke-width:1;transform-box:fill-box;transform-origin:center;transition:.3s}.system:hover .core,.system.selected .core,.system:focus .core{transform:scale(1.2)}.system:hover .starburst,.system.selected .starburst,.system:focus .starburst{transform:scale(1.08)}
 .motion .system:hover .spinA,.motion .system.selected .spinA,.motion .system:focus .spinA{animation:spin 14s linear infinite}.motion .system:hover .spinB,.motion .system.selected .spinB,.motion .system:focus .spinB{animation:spinBack 18s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@keyframes spinBack{to{transform:rotate(-360deg)}}
 .motion .system:hover .floatA,.motion .system.selected .floatA{animation:floatA 3.7s ease-in-out infinite}.motion .system:hover .floatB,.motion .system.selected .floatB{animation:floatB 4.1s ease-in-out infinite}@keyframes floatA{50%{transform:translate(1px,-2px)}}@keyframes floatB{50%{transform:translate(-1px,2px)}}
+.static-star{pointer-events:none}.static-star .spark{fill:#d9c995;opacity:.72}.static-star .ray{stroke:rgba(221,205,153,.55);stroke-width:.7}.static-star.dim{opacity:.48}.static-star.bright .spark{fill:#efe0ad;opacity:.92}
+.landmark{cursor:pointer;outline:none}.landmark text{fill:rgba(225,214,184,.82);font-size:11px;letter-spacing:1.7px;paint-order:stroke;stroke:#091014;stroke-width:3px;stroke-linejoin:round}.landmark:hover text,.landmark.selected text,.landmark:focus text{fill:#f2e5c2}
+.landmark .wash{opacity:.42;filter:url(#watercolor);transform-box:fill-box;transform-origin:center;transition:opacity .35s ease,transform .4s ease}.landmark:hover .wash,.landmark.selected .wash,.landmark:focus .wash{opacity:.7;transform:scale(1.08) rotate(-2deg)}
+.landmark .city-line{fill:none;stroke:rgba(226,204,141,.8);stroke-width:1;vector-effect:non-scaling-stroke;transition:stroke .25s ease,opacity .25s ease}.landmark .city-fill{fill:rgba(201,178,113,.11);stroke:rgba(226,204,141,.72);stroke-width:1}.landmark:hover .city-line,.landmark.selected .city-line,.landmark:focus .city-line{stroke:#f0d99d}.landmark.selected .city-fill{fill:rgba(216,184,102,.17)}
+.motion .landmark:hover .city-orbit,.motion .landmark.selected .city-orbit{animation:landmarkTurn 16s linear infinite;transform-box:fill-box;transform-origin:center}@keyframes landmarkTurn{to{transform:rotate(360deg)}}
 .dossier{position:fixed;z-index:10;left:0;top:0;bottom:0;width:min(390px,90vw);min-width:0;overflow:auto;border-right:1px solid rgba(205,184,125,.32);background:linear-gradient(rgba(14,20,23,.975),rgba(14,20,23,.975)),radial-gradient(circle at 80% 8%,rgba(151,75,52,.28),transparent 30%);padding:68px 24px 28px;transform:translateX(-104%);opacity:0;transition:transform .46s cubic-bezier(.22,.8,.2,1),opacity .28s ease;box-shadow:12px 0 38px rgba(0,0,0,.28);pointer-events:none}
 .dossier.open{transform:translateX(0);opacity:1;pointer-events:auto}
 .dossier:before{content:"";position:absolute;left:24px;right:24px;top:54px;height:1px;background:linear-gradient(90deg,transparent,var(--gold2),transparent)}
@@ -53,15 +58,48 @@ button:hover{border-color:rgba(205,184,125,.55)} button:focus-visible{outline:2p
 <section class="chart" aria-label="Interactive Chart of the Great Dark prototype">
 <canvas id="dust" aria-hidden="true"></canvas>
 <div class="hud"><div><div class="eyebrow">Explorers Guild · Cartographic Instrument 07</div><div class="title">CHART OF THE GREAT DARK</div></div><div class="controls"><button id="reset" type="button">Reset chart</button></div></div>
-<svg class="map" id="map" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Star chart with three selectable expedition prospects">
-<defs><filter id="glow" x="-200%" y="-200%" width="400%" height="400%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<svg class="map" id="map" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Star chart with selectable delves and landmarks">
+<defs>
+<filter id="glow" x="-200%" y="-200%" width="400%" height="400%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="watercolor" x="-60%" y="-60%" width="220%" height="220%"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="7" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="B"/><feGaussianBlur stdDeviation=".65"/></filter>
+</defs>
 <g>
 <circle class="grid" cx="450" cy="320" r="245"/><circle class="grid" cx="450" cy="320" r="178"/><circle class="grid" cx="450" cy="320" r="112"/>
-<path class="const" d="M72 487 Q240 148 450 320 T840 175"/><path class="const" d="M94 210 Q340 420 806 410"/><path class="const" d="M120 535 L756 122"/><path class="const" d="M161 96 L767 509"/>
-<ellipse class="orbit" cx="450" cy="320" rx="330" ry="106" transform="rotate(-18 450 320)"/><ellipse class="orbit" cx="450" cy="320" rx="278" ry="72" transform="rotate(36 450 320)"/>
+<path class="const" d="M70 486 L842 174"/><path class="const" d="M92 208 L808 410"/><path class="const" d="M120 535 L756 122"/><path class="const" d="M161 96 L767 509"/><path class="const" d="M450 68 L450 563"/><path class="const" d="M105 320 L825 320"/>
+<circle class="orbit" cx="450" cy="320" r="305"/><circle class="orbit" cx="330" cy="320" r="205"/><circle class="orbit" cx="575" cy="320" r="158"/>
+<g aria-hidden="true">
+  <g class="static-star bright" transform="translate(450 15)"><circle class="spark" r="2.4"/><path class="ray" d="M-7 0H7M0-7V7"/></g>
+  <g class="static-star" transform="translate(625 70)"><circle class="spark" r="1.8"/><path class="ray" d="M-5 0H5M0-5V5"/></g>
+  <g class="static-star dim" transform="translate(743 178)"><circle class="spark" r="1.5"/><path class="ray" d="M-4 0H4M0-4V4"/></g>
+  <g class="static-star" transform="translate(755 320)"><circle class="spark" r="2.1"/><path class="ray" d="M-6 0H6M0-6V6"/></g>
+  <g class="static-star dim" transform="translate(666 488)"><circle class="spark" r="1.4"/><path class="ray" d="M-4 0H4M0-4V4"/></g>
+  <g class="static-star bright" transform="translate(450 625)"><circle class="spark" r="2.2"/><path class="ray" d="M-6 0H6M0-6V6"/></g>
+  <g class="static-star" transform="translate(250 550)"><circle class="spark" r="1.7"/><path class="ray" d="M-5 0H5M0-5V5"/></g>
+  <g class="static-star dim" transform="translate(151 426)"><circle class="spark" r="1.5"/><path class="ray" d="M-4 0H4M0-4V4"/></g>
+  <g class="static-star" transform="translate(145 320)"><circle class="spark" r="2"/><path class="ray" d="M-6 0H6M0-6V6"/></g>
+  <g class="static-star" transform="translate(225 147)"><circle class="spark" r="1.7"/><path class="ray" d="M-5 0H5M0-5V5"/></g>
+  <g class="static-star dim" transform="translate(318 115)"><circle class="spark" r="1.4"/><path class="ray" d="M-4 0H4M0-4V4"/></g>
+  <g class="static-star bright" transform="translate(330 525)"><circle class="spark" r="2.2"/><path class="ray" d="M-6 0H6M0-6V6"/></g>
+  <g class="static-star" transform="translate(575 162)"><circle class="spark" r="1.8"/><path class="ray" d="M-5 0H5M0-5V5"/></g>
+  <g class="static-star dim" transform="translate(575 478)"><circle class="spark" r="1.4"/><path class="ray" d="M-4 0H4M0-4V4"/></g>
+  <g class="static-star" transform="translate(366 296)"><circle class="spark" r="1.8"/><path class="ray" d="M-5 0H5M0-5V5"/></g>
+</g>
 <path class="route" d="M205 372 C310 322 380 286 514 238"/><path class="route" d="M205 372 C330 382 510 404 676 350"/><path class="route" d="M205 372 C274 445 405 494 560 474"/><path id="activeRoute" class="activeRoute" d="M205 372 C310 322 380 286 514 238"/>
 <g class="system" data-key="home" tabindex="0" role="button" aria-label="Jumuah" transform="translate(205 372)">
 <circle class="bloom" r="20" fill="#5f8297"/><circle class="line faint spinA" r="20"/><circle class="line" r="11"/><path class="line" d="M-29 0H29 M0-29V29"/><path class="line faint" d="M-19-19L19 19 M19-19L-19 19"/><circle class="core" r="4"/><path class="starburst" d="M0-12L3-3L12 0L3 3L0 12L-3 3L-12 0L-3-3Z"/><text x="-8" y="-35">JUMUAH</text></g>
+<path class="const" d="M205 372 L245 345" style="opacity:.45"/>
+<g class="landmark" data-key="shipcity" tabindex="0" role="button" aria-label="Ship City landmark" transform="translate(249 341)">
+  <ellipse class="wash" cx="-3" cy="3" rx="31" ry="21" fill="#a76546" transform="rotate(-13)"/>
+  <ellipse class="wash" cx="5" cy="-2" rx="22" ry="28" fill="#536f80" opacity=".34" transform="rotate(19)"/>
+  <circle class="city-line city-orbit" r="29" stroke-dasharray="2 5" opacity=".52"/>
+  <path class="city-fill" d="M-22 7 C-20-8 -12-16 0-17 C12-16 20-8 22 7 C14 3 7 2 0 2 C-8 2-15 4-22 7Z"/>
+  <path class="city-line" d="M-22 7 C-11 12 11 12 22 7 M-17 3 C-7 7 7 7 17 3"/>
+  <path class="city-line" d="M0-30V12 M-5-20L0-30L5-20 M-8-11H8"/>
+  <path class="city-line" d="M-14 10L-20 18 M14 10L20 18 M-8 12L-10 22 M8 12L10 22"/>
+  <circle class="node" cx="0" cy="-30" r="1.8"/>
+  <text x="32" y="-3">SHIP CITY</text>
+  <text x="32" y="11" style="font-size:8px;letter-spacing:1.1px;opacity:.62">LANDMARK · JUMUAH</text>
+</g>
 <g class="system" data-key="choir" tabindex="0" role="button" aria-label="The Choir Below" transform="translate(514 238)">
 <ellipse class="bloom" rx="35" ry="24" fill="#bd724b" transform="rotate(-16)"/><ellipse class="bloom" rx="25" ry="18" fill="#d2a34e" transform="rotate(20)"/><circle class="line faint spinA" r="29"/><circle class="line spinB" r="20"/><path class="line bold" d="M-42 0H42"/><path class="line" d="M0-39V39"/><path class="line faint" d="M-29-29L29 29"/><path class="line faint" d="M-33 12C-12 1 12 1 33-12"/><path class="line faint" d="M-33-12C-12-1 12-1 33 12"/><circle class="node floatA" cx="0" cy="-29" r="2.3"/><circle class="node floatB" cx="20" cy="0" r="2"/><circle class="node floatA" cx="0" cy="29" r="2.3"/><circle class="node floatB" cx="-20" cy="0" r="2"/><circle class="core" r="4.7"/><path class="starburst" d="M0-14L3.2-3.2L14 0L3.2 3.2L0 14L-3.2 3.2L-14 0L-3.2-3.2Z"/><text x="19" y="-41">THE CHOIR BELOW</text></g>
 <g class="system" data-key="feathers" tabindex="0" role="button" aria-label="Vault of Seven Feathers" transform="translate(676 350)">
@@ -69,13 +107,15 @@ button:hover{border-color:rgba(205,184,125,.55)} button:focus-visible{outline:2p
 <g class="system" data-key="reliquary" tabindex="0" role="button" aria-label="Red Glass Reliquary" transform="translate(560 474)">
 <ellipse class="bloom" rx="36" ry="22" fill="#8f332b" transform="rotate(-22)"/><ellipse class="bloom" rx="19" ry="33" fill="#ba5c4d" transform="rotate(18)"/><path class="line faint spinA" d="M-28-7A29 29 0 1 1 26-10"/><path class="line spinB" d="M-17-24A29 29 0 0 1 28 8"/><path class="line bold" d="M-39 0H39"/><path class="line" d="M0-36V36"/><path class="line faint" d="M-25-25L-8-8 M10 10L28 28 M-24 24L-8 8 M8-8L25-25"/><circle class="node floatB" cx="-25" cy="0" r="2" fill="#bd7159"/><circle class="node floatA" cx="26" cy="-10" r="2" fill="#bd7159"/><circle class="node floatB" cx="0" cy="25" r="2" fill="#bd7159"/><circle class="core" r="4.4" fill="#e79b80"/><path class="starburst" stroke="#efad94" d="M0-13L3-3L13 0L3 3L0 13L-3 3L-13 0L-3-3Z"/><text x="18" y="40">RED GLASS RELIQUARY</text></g>
 </g></svg>
-<div class="hint">Drag to pan · scroll to zoom · select a delve to align the chart</div>
+<div class="hint">Drag to pan · scroll to zoom · select a delve or landmark to inspect</div>
 </section>
 <aside class="dossier" id="dossier" aria-live="polite" aria-hidden="true"><button class="close-dossier" id="closeDossier" type="button" aria-label="Close delve details">×</button>
 <svg class="bird" viewBox="0 0 90 90" aria-hidden="true"><path d="M15 52C29 46 37 28 54 25C64 23 69 28 76 25C71 33 66 37 60 39C67 41 72 46 74 54C65 50 57 49 51 52C42 57 38 67 29 71C31 62 28 57 15 52Z" fill="none" stroke="#b9a36e" stroke-width="2"/><circle cx="60" cy="32" r="2" fill="#cfbc84"/><path d="M27 70L21 80M33 68L31 81" stroke="#8d7a4e" stroke-width="1.5"/></svg>
-<div class="chapter" id="chapter"></div><h2 id="name"></h2><div class="chips" id="chips"></div><p class="lede" id="lede"></p><div class="rule">Known particulars</div><dl><dt>System</dt><dd id="system"></dd><dt>Sponsor</dt><dd id="sponsor"></dd><dt>Signal</dt><dd id="signal"></dd><dt>Risk</dt><dd id="risk"></dd><dt>Return</dt><dd id="return"></dd></dl><div class="rumor" id="rumor"></div>
+<div class="chapter" id="chapter"></div><h2 id="name"></h2><div class="chips" id="chips"></div><p class="lede" id="lede"></p>
+<div id="delveDetails"><div class="rule">Known particulars</div><dl><dt>System</dt><dd id="system"></dd><dt>Sponsor</dt><dd id="sponsor"></dd><dt>Signal</dt><dd id="signal"></dd><dt>Risk</dt><dd id="risk"></dd><dt>Return</dt><dd id="return"></dd></dl><div class="rumor" id="rumor"></div></div>
+<div id="landmarkDetails" hidden><div class="rule">Landmark record</div><dl><dt>Location</dt><dd id="landmarkLocation"></dd><dt>Nature</dt><dd id="landmarkNature"></dd><dt>Importance</dt><dd id="landmarkImportance"></dd><dt>Notable</dt><dd id="landmarkNotable"></dd></dl><div class="rumor" id="landmarkNote"></div></div>
 </aside></div>
-<div class="legend"><span><i class="dot blue"></i>Home / known space</span><span><i class="dot"></i>Confirmed delve</span><span><i class="dot red"></i>Rumored / unstable site</span></div>
+<div class="legend"><span><i class="dot blue"></i>Known system</span><span><i class="dot" style="border-radius:2px;background:#aa6c4c"></i>Landmark</span><span><i class="dot"></i>Confirmed delve</span><span><i class="dot red"></i>Rumored / unstable site</span></div>
 </main>
 <script>
 (()=>{
@@ -86,27 +126,43 @@ choir:{chapter:"Expedition prospect · 01",name:"The Choir Below",chips:["Confir
 feathers:{chapter:"Expedition prospect · 02",name:"Vault of Seven Feathers",chips:["Confirmed ruin","Bird resonance","Unclaimed"],lede:"Seven black spires surround a narrow fissure in the moon’s crust. Garuda activity increases sharply whenever a vessel crosses the inner ring.",system:"Ninhulam outer moon",sponsor:"Open claim",signal:"Intermittent Garuda resonance",risk:"High · unknown fauna",ret:"Glyphs · probable intact archive",rumor:"“Every crew sees a different seventh tower. The Bird always sees the same one.”",route:"M205 372 C330 382 510 404 676 350",view:[465,175,430,330]},
 reliquary:{chapter:"Expedition prospect · 03",name:"Red Glass Reliquary",chips:["Rumored","Blight suspected","Restricted"],lede:"A fragmentary chart recovered from a wreck marks a chamber beneath a red-glass plateau. No expedition has yet verified that the site exists.",system:"Uncatalogued body",sponsor:"None",signal:"No direct contact",risk:"Severe · Blight indicators",ret:"Unknown",rumor:"“Do not follow the red reflection. The real entrance casts no light.”",route:"M205 372 C274 445 405 494 560 474",view:[350,285,430,330]}
 };
+const landmarks={
+shipcity:{chapter:"Landmark · Jumuah System",name:"Ship City",chips:["Asteroid-metropolis","Home of the Diaspora","Explorers' base"],lede:"Built through and around an asteroid, Ship City is the only true city of the Lost Horizon: a tangled metropolis of hulls, stone, gardens, guild palaces, workshops and docks, and the base from which expeditions push into the Great Dark.",location:"Jumuah system",nature:"Asteroid-metropolis",importance:"Heart of Diaspora civilization and primary expedition base",notable:"The Chasm · Astrolaab Tower · Hull Town · Aluminum Bay",note:"Known as the Dying City, Ship City remains a beacon in the dark.",view:[112,235,360,275]}
+};
 const $=id=>document.getElementById(id);
 const defaultView=[0,0,900,600], minW=250, maxW=1800;
 let view=defaultView.slice(), target=view.slice(), raf=0, dragging=false, pointerId=null, lastX=0,lastY=0,moved=false;
 
 function setView(v){view=v;svg.setAttribute("viewBox",view.join(" "))}
 function animateTo(v){target=v.slice();cancelAnimationFrame(raf);if(!motion){setView(target.slice());return}const step=()=>{let done=true;const next=view.slice();for(let i=0;i<4;i++){const d=target[i]-view[i];if(Math.abs(d)>.12){next[i]=view[i]+d*.1;done=false}else next[i]=target[i]}setView(next);if(!done)raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step)}
+function fillChips(items){$("chips").replaceChildren(...items.map(x=>{const s=document.createElement("span");s.className="chip";s.textContent=x;return s}))}
+function clearSelections(){document.querySelectorAll(".system,.landmark").forEach(n=>n.classList.remove("selected"))}
 function openDossier(key){
  const d=info[key]; if(!d)return;
- $("chapter").textContent=d.chapter;$("name").textContent=d.name;$("lede").textContent=d.lede;$("system").textContent=d.system;$("sponsor").textContent=d.sponsor;$("signal").textContent=d.signal;$("risk").textContent=d.risk;$("return").textContent=d.ret;$("rumor").textContent=d.rumor;
- $("chips").replaceChildren(...d.chips.map(x=>{const s=document.createElement("span");s.className="chip";s.textContent=x;return s}));
- route.setAttribute("d",d.route);route.style.opacity="1";
- document.querySelectorAll(".system").forEach(n=>n.classList.toggle("selected",n.dataset.key===key));
- dossier.classList.add("open");dossier.setAttribute("aria-hidden","false");
- animateTo(d.view);
+ $("chapter").textContent=d.chapter;$("name").textContent=d.name;$("lede").textContent=d.lede;fillChips(d.chips);
+ $("delveDetails").hidden=false;$("landmarkDetails").hidden=true;
+ $("system").textContent=d.system;$("sponsor").textContent=d.sponsor;$("signal").textContent=d.signal;$("risk").textContent=d.risk;$("return").textContent=d.ret;$("rumor").textContent=d.rumor;
+ route.setAttribute("d",d.route);route.style.opacity="1";clearSelections();document.querySelector('.system[data-key="'+key+'"]').classList.add("selected");
+ dossier.classList.add("open");dossier.setAttribute("aria-hidden","false");animateTo(d.view);
+}
+function openLandmark(key){
+ const d=landmarks[key];if(!d)return;
+ $("chapter").textContent=d.chapter;$("name").textContent=d.name;$("lede").textContent=d.lede;fillChips(d.chips);
+ $("delveDetails").hidden=true;$("landmarkDetails").hidden=false;
+ $("landmarkLocation").textContent=d.location;$("landmarkNature").textContent=d.nature;$("landmarkImportance").textContent=d.importance;$("landmarkNotable").textContent=d.notable;$("landmarkNote").textContent=d.note;
+ route.style.opacity="0";clearSelections();document.querySelector('.landmark[data-key="'+key+'"]').classList.add("selected");
+ dossier.classList.add("open");dossier.setAttribute("aria-hidden","false");animateTo(d.view);
 }
 function closeDossier(){
- dossier.classList.remove("open");dossier.setAttribute("aria-hidden","true");route.style.opacity="0";
- document.querySelectorAll(".system").forEach(n=>n.classList.remove("selected"));
+ dossier.classList.remove("open");dossier.setAttribute("aria-hidden","true");route.style.opacity="0";clearSelections();animateTo(defaultView);
 }
 document.querySelectorAll(".system").forEach(n=>{
- const go=()=>{if(n.dataset.key==="home"){closeDossier();animateTo(defaultView)}else openDossier(n.dataset.key)};
+ const go=()=>{if(n.dataset.key==="home"){closeDossier()}else openDossier(n.dataset.key)};
+ n.addEventListener("click",e=>{if(!moved)go()});
+ n.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
+});
+document.querySelectorAll(".landmark").forEach(n=>{
+ const go=()=>openLandmark(n.dataset.key);
  n.addEventListener("click",e=>{if(!moved)go()});
  n.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
 });
@@ -115,7 +171,7 @@ $("reset").addEventListener("click",()=>{closeDossier();animateTo(defaultView)})
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDossier()});
 
 svg.addEventListener("pointerdown",e=>{
- if(e.button!==0||e.target.closest(".system"))return;
+ if(e.button!==0||e.target.closest(".system,.landmark"))return;
  cancelAnimationFrame(raf);dragging=true;moved=false;pointerId=e.pointerId;lastX=e.clientX;lastY=e.clientY;chart.classList.add("dragging");svg.setPointerCapture(pointerId);
 });
 svg.addEventListener("pointermove",e=>{
