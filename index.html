@@ -13,22 +13,18 @@ body{min-height:100vh}
 #app{position:relative;width:100vw;height:100vh;overflow:hidden}
 .stage{position:absolute;inset:0}
 .chart{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;background:
-radial-gradient(circle at 78% 23%,rgba(171,57,50,.38),transparent 25%),
-radial-gradient(circle at 24% 77%,rgba(54,101,145,.38),transparent 30%),
-radial-gradient(circle at 50% 48%,rgba(84,47,96,.17),transparent 23%),
-radial-gradient(circle at 66% 82%,rgba(35,78,113,.16),transparent 25%),
-linear-gradient(180deg,#060b11,#0a131b 47%,#071019 100%);isolation:isolate;cursor:grab;touch-action:none}
+linear-gradient(rgba(4,8,12,.18),rgba(4,8,12,.28)),
+url("assets/star-bg.jpg") center center / cover no-repeat,
+#060b11;isolation:isolate;cursor:grab;touch-action:none}
 .chart.dragging{cursor:grabbing}
-.chart:before{content:"";position:absolute;inset:-16%;z-index:0;pointer-events:none;background:
-radial-gradient(ellipse at 24% 32%,rgba(210,94,66,.25),transparent 16%),
-radial-gradient(ellipse at 68% 60%,rgba(70,119,157,.26),transparent 20%),
-radial-gradient(ellipse at 52% 19%,rgba(222,178,91,.13),transparent 11%),
-radial-gradient(ellipse at 83% 29%,rgba(141,52,65,.17),transparent 13%),
-radial-gradient(ellipse at 17% 82%,rgba(49,91,127,.17),transparent 15%);filter:blur(19px);transform:rotate(-8deg);opacity:.96}
-.chart:after{content:"";position:absolute;inset:-20%;z-index:0;pointer-events:none;background:
-radial-gradient(ellipse at 31% 68%,rgba(179,62,55,.12),transparent 17%),
-radial-gradient(ellipse at 72% 35%,rgba(66,111,151,.14),transparent 19%),
-radial-gradient(ellipse at 48% 47%,rgba(219,171,88,.07),transparent 13%);filter:blur(38px);mix-blend-mode:screen;opacity:.78}
+.chart:before{content:"";position:absolute;inset:-12%;z-index:0;pointer-events:none;background:
+radial-gradient(ellipse at 24% 32%,rgba(200,92,66,.12),transparent 17%),
+radial-gradient(ellipse at 68% 60%,rgba(71,118,155,.14),transparent 21%),
+radial-gradient(ellipse at 51% 18%,rgba(220,178,96,.07),transparent 12%),
+radial-gradient(ellipse at 82% 30%,rgba(126,50,66,.08),transparent 14%);filter:blur(22px);transform:rotate(-7deg);opacity:.72;mix-blend-mode:screen}
+.chart:after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:
+linear-gradient(180deg,rgba(4,8,12,.10),rgba(3,7,11,.18) 55%,rgba(2,6,10,.24)),
+radial-gradient(circle at 50% 45%,transparent 0 43%,rgba(2,6,10,.18) 78%,rgba(2,6,10,.34) 100%);}
 canvas{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
 svg.map{position:absolute;inset:0;width:100%;height:100%;z-index:2}
 .hud{position:absolute;z-index:3;left:20px;right:20px;top:18px;display:flex;justify-content:space-between;gap:12px;pointer-events:none}
