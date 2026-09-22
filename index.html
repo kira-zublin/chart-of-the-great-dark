@@ -12,22 +12,22 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080d12;col
 body{min-height:100vh}
 #app{position:relative;width:100vw;height:100vh;overflow:hidden}
 .stage{position:absolute;inset:0}
-.chart{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;background:
-linear-gradient(rgba(4,8,12,.18),rgba(4,8,12,.28)),
-url("assets/star-bg.jpg") center center / cover no-repeat,
-#060b11;isolation:isolate;cursor:grab;touch-action:none}
+.chart{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;background:#03070b;isolation:isolate;cursor:grab;touch-action:none}
 .chart.dragging{cursor:grabbing}
-.chart:before{content:"";position:absolute;inset:-12%;z-index:0;pointer-events:none;background:
-radial-gradient(ellipse at 24% 32%,rgba(200,92,66,.12),transparent 17%),
-radial-gradient(ellipse at 68% 60%,rgba(71,118,155,.14),transparent 21%),
-radial-gradient(ellipse at 51% 18%,rgba(220,178,96,.07),transparent 12%),
-radial-gradient(ellipse at 82% 30%,rgba(126,50,66,.08),transparent 14%);filter:blur(22px);transform:rotate(-7deg);opacity:.72;mix-blend-mode:screen}
-.chart:after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:
-linear-gradient(180deg,rgba(4,8,12,.10),rgba(3,7,11,.18) 55%,rgba(2,6,10,.24)),
-radial-gradient(circle at 50% 45%,transparent 0 43%,rgba(2,6,10,.18) 78%,rgba(2,6,10,.34) 100%);}
-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
-svg.map{position:absolute;inset:0;width:100%;height:100%;z-index:2}
-.hud{position:absolute;z-index:3;left:20px;right:20px;top:18px;display:flex;justify-content:space-between;gap:12px;pointer-events:none}
+.bg-layer{position:absolute;z-index:0;pointer-events:none;background:
+linear-gradient(rgba(4,8,12,.08),rgba(4,8,12,.18)),
+url("assets/star-bg.jpg") center center / cover no-repeat;
+transform-origin:0 0;will-change:left,top,width,height;
+-webkit-mask-image:radial-gradient(ellipse at center,#000 0 58%,rgba(0,0,0,.98) 66%,rgba(0,0,0,.72) 80%,rgba(0,0,0,.30) 91%,transparent 100%);
+mask-image:radial-gradient(ellipse at center,#000 0 58%,rgba(0,0,0,.98) 66%,rgba(0,0,0,.72) 80%,rgba(0,0,0,.30) 91%,transparent 100%)}
+.bg-fog{position:absolute;inset:-8%;z-index:1;pointer-events:none;background:
+radial-gradient(ellipse at 24% 31%,rgba(191,85,62,.08),transparent 18%),
+radial-gradient(ellipse at 69% 61%,rgba(68,112,149,.09),transparent 22%),
+radial-gradient(ellipse at 50% 48%,transparent 0 49%,rgba(2,6,10,.08) 72%,rgba(2,5,9,.26) 100%);
+filter:blur(20px);opacity:.8}
+canvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+svg.map{position:absolute;inset:0;width:100%;height:100%;z-index:3}
+.hud{position:absolute;z-index:4;left:20px;right:20px;top:18px;display:flex;justify-content:space-between;gap:12px;pointer-events:none}
 .eyebrow{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(222,210,174,.62)}
 .title{margin-top:3px;font-size:clamp(24px,3vw,42px);letter-spacing:.08em;color:#e4d8b8;text-shadow:0 1px #000}
 .controls{display:flex;gap:8px;flex-wrap:wrap;pointer-events:auto}
@@ -80,6 +80,8 @@ button:hover{border-color:rgba(205,184,125,.55)} button:focus-visible{outline:2p
 <main id="app">
 <div class="stage">
 <section class="chart" aria-label="Interactive Chart of the Great Dark prototype">
+<div class="bg-layer" id="bgLayer" aria-hidden="true"></div>
+<div class="bg-fog" aria-hidden="true"></div>
 <canvas id="dust" aria-hidden="true"></canvas>
 <div class="hud"><div><div class="eyebrow">Explorers Guild · Cartographic Instrument 07</div><div class="title">CHART OF THE GREAT DARK</div></div><div class="controls"><button id="reset" type="button">Reset chart</button></div></div>
 <svg class="map" id="map" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Star chart with selectable delves and landmarks">
@@ -149,7 +151,7 @@ button:hover{border-color:rgba(205,184,125,.55)} button:focus-visible{outline:2p
 </main>
 <script>
 (()=>{
-const root=document.getElementById("app"), chart=document.querySelector(".chart"), svg=document.getElementById("map"), route=document.getElementById("activeRoute"), dossier=document.getElementById("dossier");
+const root=document.getElementById("app"), chart=document.querySelector(".chart"), bgLayer=document.getElementById("bgLayer"), svg=document.getElementById("map"), route=document.getElementById("activeRoute"), dossier=document.getElementById("dossier");
 const motion=!matchMedia("(prefers-reduced-motion: reduce)").matches;root.classList.toggle("motion",motion);
 const info={
 choir:{chapter:"Expedition prospect · 01",name:"The Choir Below",chips:["Confirmed ruin","Builder origin","Guild interest"],lede:"A buried complex answers long-range scans with a repeating harmonic pulse. The pattern is too precise to be geological and too old to belong to the Diaspora.",system:"Hesentau drift",sponsor:"Explorers Guild",signal:"Seven-note repeating carrier",risk:"Moderate · structural unknowns",ret:"Artifacts · cartographic priority",rumor:"“The first survey team said the stone was singing back to their Bird.”",route:"M205 372 C310 322 380 286 514 238",view:[320,78,430,330]},
@@ -161,9 +163,19 @@ shipcity:{chapter:"Landmark · Jumuah System",name:"Ship City",chips:["Asteroid-
 };
 const $=id=>document.getElementById(id);
 const defaultView=[0,0,900,600], minW=250, maxW=1800;
+const bgBounds={x:-450,y:-206.25,w:1800,h:1012.5};
 let view=defaultView.slice(), target=view.slice(), raf=0, dragging=false, pointerId=null, lastX=0,lastY=0,moved=false;
 
-function setView(v){view=v;svg.setAttribute("viewBox",view.join(" "))}
+function syncBackground(){
+ const r=chart.getBoundingClientRect();if(!r.width||!r.height)return;
+ const scale=Math.max(r.width/view[2],r.height/view[3]);
+ const offsetX=(r.width-view[2]*scale)/2,offsetY=(r.height-view[3]*scale)/2;
+ bgLayer.style.left=((bgBounds.x-view[0])*scale+offsetX)+"px";
+ bgLayer.style.top=((bgBounds.y-view[1])*scale+offsetY)+"px";
+ bgLayer.style.width=(bgBounds.w*scale)+"px";
+ bgLayer.style.height=(bgBounds.h*scale)+"px";
+}
+function setView(v){view=v;svg.setAttribute("viewBox",view.join(" "));syncBackground()}
 function animateTo(v){target=v.slice();cancelAnimationFrame(raf);if(!motion){setView(target.slice());return}const step=()=>{let done=true;const next=view.slice();for(let i=0;i<4;i++){const d=target[i]-view[i];if(Math.abs(d)>.12){next[i]=view[i]+d*.1;done=false}else next[i]=target[i]}setView(next);if(!done)raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step)}
 function fillChips(items){$("chips").replaceChildren(...items.map(x=>{const s=document.createElement("span");s.className="chip";s.textContent=x;return s}))}
 function clearSelections(){document.querySelectorAll(".system,.landmark").forEach(n=>n.classList.remove("selected"))}
@@ -230,7 +242,7 @@ route.style.opacity="0";
 setView(defaultView);
 
 const canvas=$("dust"),ctx=canvas.getContext("2d");let particles=[];
-function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));ctx.setTransform(dpr,0,0,dpr,0,0);particles=Array.from({length:110},()=>({x:Math.random()*r.width,y:Math.random()*r.height,r:.3+Math.random()*1.1,vx:(Math.random()-.5)*.045,vy:.025+Math.random()*.075,a:.12+Math.random()*.32}))}
+function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));ctx.setTransform(dpr,0,0,dpr,0,0);particles=Array.from({length:110},()=>({x:Math.random()*r.width,y:Math.random()*r.height,r:.3+Math.random()*1.1,vx:(Math.random()-.5)*.045,vy:.025+Math.random()*.075,a:.12+Math.random()*.32}));syncBackground()}
 function dust(){const r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);particles.forEach(q=>{if(motion){q.x+=q.vx;q.y+=q.vy;if(q.y>r.height+3)q.y=-3;if(q.x<-3)q.x=r.width+3;if(q.x>r.width+3)q.x=-3}ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,Math.PI*2);ctx.fillStyle=`rgba(214,204,171,${q.a})`;ctx.fill()});requestAnimationFrame(dust)}
 resize();dust();new ResizeObserver(resize).observe(chart);
 })();
