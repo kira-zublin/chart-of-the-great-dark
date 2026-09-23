@@ -242,8 +242,51 @@ route.style.opacity="0";
 setView(defaultView);
 
 const canvas=$("dust"),ctx=canvas.getContext("2d");let particles=[];
-function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));ctx.setTransform(dpr,0,0,dpr,0,0);particles=Array.from({length:110},()=>({x:Math.random()*r.width,y:Math.random()*r.height,r:.3+Math.random()*1.1,vx:(Math.random()-.5)*.045,vy:.025+Math.random()*.075,a:.12+Math.random()*.32}));syncBackground()}
-function dust(){const r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);particles.forEach(q=>{if(motion){q.x+=q.vx;q.y+=q.vy;if(q.y>r.height+3)q.y=-3;if(q.x<-3)q.x=r.width+3;if(q.x>r.width+3)q.x=-3}ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,Math.PI*2);ctx.fillStyle=`rgba(214,204,171,${q.a})`;ctx.fill()});requestAnimationFrame(dust)}
+function viewProjection(){
+ const r=chart.getBoundingClientRect();
+ const scale=Math.max(r.width/view[2],r.height/view[3]);
+ const offsetX=(r.width-view[2]*scale)/2,offsetY=(r.height-view[3]*scale)/2;
+ return {r,scale,offsetX,offsetY};
+}
+function seedParticles(){
+ particles=Array.from({length:110},()=>({
+  wx:bgBounds.x+Math.random()*bgBounds.w,
+  wy:bgBounds.y+Math.random()*bgBounds.h,
+  r:.3+Math.random()*1.1,
+  vx:(Math.random()-.5)*.035,
+  vy:(Math.random()-.5)*.035,
+  a:.10+Math.random()*.26
+ }));
+}
+function resize(){
+ const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
+ canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ if(!particles.length)seedParticles();
+ syncBackground();
+}
+function dust(){
+ const {r,scale,offsetX,offsetY}=viewProjection();
+ ctx.clearRect(0,0,r.width,r.height);
+ particles.forEach(q=>{
+  if(motion){
+   q.wx+=q.vx;q.wy+=q.vy;
+   if(q.wx<bgBounds.x)q.wx=bgBounds.x+bgBounds.w;
+   if(q.wx>bgBounds.x+bgBounds.w)q.wx=bgBounds.x;
+   if(q.wy<bgBounds.y)q.wy=bgBounds.y+bgBounds.h;
+   if(q.wy>bgBounds.y+bgBounds.h)q.wy=bgBounds.y;
+  }
+  const sx=(q.wx-view[0])*scale+offsetX,sy=(q.wy-view[1])*scale+offsetY;
+  if(sx<-8||sx>r.width+8||sy<-8||sy>r.height+8)return;
+  const nx=(q.wx-bgBounds.x)/bgBounds.w,ny=(q.wy-bgBounds.y)/bgBounds.h;
+  const edge=Math.min(nx,1-nx,ny,1-ny);
+  const edgeFade=Math.max(0,Math.min(1,edge/.12));
+  if(edgeFade<=0)return;
+  ctx.beginPath();ctx.arc(sx,sy,q.r,0,Math.PI*2);
+  ctx.fillStyle=`rgba(190,211,226,${q.a*edgeFade})`;ctx.fill();
+ });
+ requestAnimationFrame(dust);
+}
 resize();dust();new ResizeObserver(resize).observe(chart);
 })();
 </script>
