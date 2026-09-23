@@ -8,14 +8,14 @@
 <style>
 :root{--paper:#ded2ae;--gold:#cdb87d;--gold2:#8c794d;--rust:#a35f46;--ink:#080d12;--ink2:#0d151a;--muted:#978c72}
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080d12;color:var(--paper);font-family:Georgia,"Times New Roman",serif}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#03070b;color:var(--paper);font-family:Georgia,"Times New Roman",serif}
 body{min-height:100vh}
 #app{position:relative;width:100vw;height:100vh;overflow:hidden}
 .stage{position:absolute;inset:0}
 .chart{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;background:#03070b;isolation:isolate;cursor:grab;touch-action:none}
 .chart.dragging{cursor:grabbing}
 .bg-layer{position:absolute;z-index:0;pointer-events:none;background:
-linear-gradient(rgba(4,8,12,.08),rgba(4,8,12,.18)),
+linear-gradient(rgba(3,7,11,.08),rgba(3,7,11,.18)),
 url("assets/star-bg.jpg") center center / cover no-repeat;
 transform-origin:0 0;will-change:left,top,width,height;
 -webkit-mask-image:radial-gradient(ellipse at center,#000 0 58%,rgba(0,0,0,.98) 66%,rgba(0,0,0,.72) 80%,rgba(0,0,0,.30) 91%,transparent 100%);
