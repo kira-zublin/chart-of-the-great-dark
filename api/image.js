@@ -18,9 +18,9 @@ export async function GET(req) {
     const p = params(req); if (!p) return error('Invalid image');
     const sql = db(); const profile = await currentProfile(req, sql);
     if (!profile || !await canSee(sql, profile, p.id)) return error('Image unavailable', 404);
-    const rows = await sql`SELECT mime_type, encode(bytes, 'base64') AS data FROM character_images WHERE character_id = ${p.id} AND slot = ${p.slot} LIMIT 1`;
+    const rows = await sql`SELECT mime_type, bytes FROM character_images WHERE character_id = ${p.id} AND slot = ${p.slot} LIMIT 1`;
     if (!rows.length) return error('Image not found', 404);
-    return new Response(Buffer.from(rows[0].data, 'base64'), { headers: { 'Content-Type': rows[0].mime_type, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
+    return new Response(Buffer.from(rows[0].bytes), { headers: { 'Content-Type': rows[0].mime_type, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
   });
 }
 
@@ -36,7 +36,7 @@ export async function PUT(req) {
     if (!bytes.length || bytes.length > maxBytes) return error('Image must be under 2 MB', 413);
     const valid = mime === 'image/png' ? bytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')) : mime === 'image/jpeg' ? bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff : bytes.subarray(0, 12).toString('ascii').startsWith('RIFF') && bytes.subarray(8, 12).toString('ascii') === 'WEBP';
     if (!valid) return error('Image content does not match its file type');
-    await sql`INSERT INTO character_images (character_id, slot, mime_type, bytes) VALUES (${p.id}, ${p.slot}, ${mime}, decode(${bytes.toString('base64')}, 'base64')) ON CONFLICT (character_id, slot) DO UPDATE SET mime_type = EXCLUDED.mime_type, bytes = EXCLUDED.bytes`;
+    await sql`INSERT INTO character_images (character_id, slot, mime_type, bytes) VALUES (${p.id}, ${p.slot}, ${mime}, ${bytes}) ON CONFLICT (character_id, slot) DO UPDATE SET mime_type = EXCLUDED.mime_type, bytes = EXCLUDED.bytes`;
     return json({ ok: true });
   });
 }

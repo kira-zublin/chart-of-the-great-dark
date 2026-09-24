@@ -22,16 +22,16 @@ export async function POST(req) {
       const found = await sql`SELECT id FROM profiles WHERE lower(name) = lower(${name}) LIMIT 1`;
       if (found.length) return error('That name is already in use', 409);
       try { await sql`INSERT INTO profiles (id, name, password_salt, password_hash, role) VALUES (${id}, ${name}, ${salt}, ${hash}, ${data.role})`; }
-      catch (cause) { if (cause.code === '23505') return error('That name is already in use', 409); throw cause; }
+      catch (cause) { if (String(cause.code).startsWith('SQLITE_CONSTRAINT')) return error('That name is already in use', 409); throw cause; }
       return createSession(req, { id, name, role: data.role }, sql);
     }
     if (data.action === 'login') {
       const rows = await sql`SELECT id, name, role, password_salt, password_hash, locked_until FROM profiles WHERE lower(name) = lower(${name}) LIMIT 1`;
       if (!rows.length) return error('Invalid name or password', 401);
       const row = rows[0];
-      if (row.locked_until && new Date(row.locked_until) > new Date()) return error('Too many attempts. Try again in 15 minutes.', 429);
+      if (row.locked_until && Number(row.locked_until) > Math.floor(Date.now() / 1000)) return error('Too many attempts. Try again in 15 minutes.', 429);
       if (!equalSecrets(await passwordHash(data.password, row.password_salt), row.password_hash)) {
-        await sql`UPDATE profiles SET failed_logins = CASE WHEN locked_until < now() THEN 1 ELSE failed_logins + 1 END, locked_until = CASE WHEN locked_until < now() THEN NULL WHEN failed_logins >= 9 THEN now() + interval '15 minutes' ELSE NULL END WHERE id = ${row.id}`;
+        await sql`UPDATE profiles SET failed_logins = CASE WHEN locked_until < unixepoch() THEN 1 ELSE failed_logins + 1 END, locked_until = CASE WHEN locked_until < unixepoch() THEN NULL WHEN failed_logins >= 9 THEN unixepoch() + 900 ELSE NULL END WHERE id = ${row.id}`;
         return error('Invalid name or password', 401);
       }
       await sql`UPDATE profiles SET failed_logins = 0, locked_until = NULL WHERE id = ${row.id}`;

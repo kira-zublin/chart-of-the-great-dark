@@ -3,6 +3,7 @@ import { body, currentProfile, db, error, guarded, json, randomUUID } from '../l
 const fields = ['name', 'profession', 'origin', 'faction', 'appearance', 'motivation', 'description'];
 const statNames = ['strength', 'agility', 'logic', 'insight', 'perception', 'empathy'];
 const select = `SELECT c.id, c.owner_id, c.kind, c.name, c.profession, c.origin, c.faction, c.appearance, c.motivation, c.description, c.attributes, c.created_at, c.updated_at, p.name AS owner_name, EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'portrait') AS has_portrait, EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'standup') AS has_standup FROM characters c JOIN profiles p ON p.id = c.owner_id`;
+function present(row) { return { ...row, attributes: JSON.parse(row.attributes), has_portrait: Boolean(row.has_portrait), has_standup: Boolean(row.has_standup) }; }
 
 export function clean(input) {
   if (!input || typeof input !== 'object') return null;
@@ -43,11 +44,11 @@ export async function GET(req) {
     if (kind && !['pc', 'npc'].includes(kind)) return error('Invalid character filter');
     let rows;
     if (profile.role === 'gm') {
-      rows = kind ? await sql.query(`${select} WHERE c.kind = $1 ORDER BY c.updated_at DESC`, [kind]) : await sql.query(`${select} ORDER BY c.updated_at DESC`);
+      rows = kind ? await sql.query(`${select} WHERE c.kind = ? ORDER BY c.updated_at DESC`, [kind]) : await sql.query(`${select} ORDER BY c.updated_at DESC`);
     } else {
-      rows = await sql.query(`${select} WHERE c.owner_id = $1 ORDER BY c.updated_at DESC`, [profile.id]);
+      rows = await sql.query(`${select} WHERE c.owner_id = ? ORDER BY c.updated_at DESC`, [profile.id]);
     }
-    return json({ characters: rows });
+    return json({ characters: rows.map(present) });
   });
 }
 
@@ -59,7 +60,7 @@ export async function POST(req) {
     if (!input) return error('Check the character fields');
     if (!canCreate(profile, input.kind)) return error('Only a GM can create NPCs', 403);
     const id = randomUUID();
-    await sql`INSERT INTO characters (id, owner_id, kind, name, profession, origin, faction, appearance, motivation, description, attributes) VALUES (${id}, ${profile.id}, ${input.kind}, ${input.name}, ${input.profession}, ${input.origin}, ${input.faction}, ${input.appearance}, ${input.motivation}, ${input.description}, ${JSON.stringify(input.attributes)}::jsonb)`;
+    await sql`INSERT INTO characters (id, owner_id, kind, name, profession, origin, faction, appearance, motivation, description, attributes) VALUES (${id}, ${profile.id}, ${input.kind}, ${input.name}, ${input.profession}, ${input.origin}, ${input.faction}, ${input.appearance}, ${input.motivation}, ${input.description}, ${JSON.stringify(input.attributes)})`;
     return json({ id }, 201);
   });
 }
@@ -75,7 +76,7 @@ export async function PUT(req) {
     const found = await sql`SELECT owner_id, kind FROM characters WHERE id = ${id} LIMIT 1`;
     if (!found.length) return error('Character not found', 404);
     if (!canEdit(profile, found[0], input.kind)) return error('You cannot edit this character', 403);
-    await sql`UPDATE characters SET kind = ${input.kind}, name = ${input.name}, profession = ${input.profession}, origin = ${input.origin}, faction = ${input.faction}, appearance = ${input.appearance}, motivation = ${input.motivation}, description = ${input.description}, attributes = ${JSON.stringify(input.attributes)}::jsonb, updated_at = now() WHERE id = ${id}`;
+    await sql`UPDATE characters SET kind = ${input.kind}, name = ${input.name}, profession = ${input.profession}, origin = ${input.origin}, faction = ${input.faction}, appearance = ${input.appearance}, motivation = ${input.motivation}, description = ${input.description}, attributes = ${JSON.stringify(input.attributes)}, updated_at = unixepoch() WHERE id = ${id}`;
     return json({ ok: true });
   });
 }
