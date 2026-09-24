@@ -1,0 +1,12 @@
+{
+  "name": "chart-of-the-great-dark",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check api/auth.js && node --check api/characters.js && node --check api/image.js && node --check lib/server.js && node --check app.js && node --check scripts/migrate.js"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.18.0"
+  }
+}
