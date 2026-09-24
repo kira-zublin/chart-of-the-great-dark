@@ -57,4 +57,9 @@ test('extended sheet and crew fields reject malformed persistent data', () => {
   assert.equal(cleanCrewField('bird', { description: 'b'.repeat(2001) }), null);
   assert.equal(cleanCrewField('rover', { cargo: 'c'.repeat(2000) }).cargo.length, 2000);
   assert.equal(cleanCrewField('shuttle', { cargo: 'c'.repeat(2001) }), null);
+  assert.equal(cleanCrewField('bird', { powers: 'p'.repeat(2000) }).powers.length, 2000);
+  assert.equal(cleanCrewField('bird', { powers: 'p'.repeat(2001) }), null);
+  assert.deepEqual(cleanCrewField('maneuvers', [{ name: ' Scout ', description: ' Look ahead ' }]), [{ name: 'Scout', description: 'Look ahead' }]);
+  assert.equal(cleanCrewField('maneuvers', [{ name: 'Scout', description: 'x'.repeat(2001) }]), null);
+  assert.equal(cleanCrewField('maneuvers', ['Legacy string']), null);
 });

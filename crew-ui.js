@@ -1,7 +1,7 @@
 const $ = id => document.getElementById(id);
 const roles = ['delver', 'burrower', 'scout', 'guard', 'archaeologist'];
 const sections = {
-  bird: [['name', 'Name'], ['type', 'Type'], ['appearance', 'Appearance', 'long'], ['description', 'Description', 'long'], ['health', 'Health', 'number'], ['energy', 'Energy', 'number'], ['powers', 'Powers']],
+  bird: [['name', 'Name'], ['type', 'Type'], ['appearance', 'Appearance', 'long'], ['description', 'Description', 'long'], ['health', 'Health', 'number'], ['energy', 'Energy', 'number'], ['powers', 'Powers', 'powers']],
   rover: [['name', 'Name'], ['model', 'Model'], ['hull', 'Hull', 'number'], ['armor', 'Armor', 'number'], ['blight', 'Blight protection', 'number'], ['speed', 'Speed'], ['range', 'Range'], ['upgrades', 'Upgrades'], ['cargo', 'Cargo', 'long']],
   shuttle: [['name', 'Name'], ['model', 'Model'], ['hull', 'Hull', 'number'], ['armor', 'Armor', 'number'], ['blight', 'Blight protection', 'number'], ['speed', 'Travel speed'], ['range', 'Range'], ['upgrades', 'Upgrades'], ['cargo', 'Cargo', 'long']]
 };
@@ -35,14 +35,19 @@ export function initCrewUI(request, profile, canLeaveCharacter) {
     if (!preview.hidden) preview.src = `/api/crew-image?slot=${slot}&v=${Date.now()}`;
     else preview.removeAttribute('src');
   }
-  function maneuverValues() { return [...$('crewManeuverRows').querySelectorAll('input')].map(input => input.value.trim()).filter(Boolean); }
-  function addManeuver(value = '') {
+  function maneuverValues() { return [...$('crewManeuverRows').children].map(row => ({ name: row.querySelector('input').value.trim(), description: row.querySelector('textarea').value.trim() })).filter(item => item.name || item.description); }
+  function addManeuver(value = { name: '', description: '' }) {
     const row = document.createElement('div'); row.className = 'entry-row';
-    const input = document.createElement('input'); input.maxLength = 120; input.value = value; input.setAttribute('aria-label', 'Crew maneuver');
-    input.addEventListener('change', () => saveField('maneuvers', maneuverValues()));
+    const nameLabel = document.createElement('label'); nameLabel.textContent = 'Name';
+    const input = document.createElement('input'); input.maxLength = 120; input.value = value.name;
+    nameLabel.append(input);
+    const descriptionLabel = document.createElement('label'); descriptionLabel.textContent = 'Description';
+    const description = document.createElement('textarea'); description.maxLength = 2000; description.rows = 3; description.value = value.description;
+    descriptionLabel.append(description);
+    for (const field of [input, description]) field.addEventListener('change', () => saveField('maneuvers', maneuverValues()));
     const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove';
     remove.addEventListener('click', () => { row.remove(); saveField('maneuvers', maneuverValues()); });
-    row.append(input, remove); $('crewManeuverRows').append(row);
+    row.append(nameLabel, descriptionLabel, remove); $('crewManeuverRows').append(row);
     return input;
   }
   function render() {
@@ -79,10 +84,11 @@ export function initCrewUI(request, profile, canLeaveCharacter) {
       const box = $('crew' + section[0].toUpperCase() + section.slice(1)); box.replaceChildren();
       for (const [key, title, type] of fields) {
         const label = document.createElement('label'); label.textContent = title;
-        const input = document.createElement(type === 'long' ? 'textarea' : 'input'); input.dataset.crewSection = section; input.dataset.crewKey = key;
+        const input = document.createElement(type === 'long' || type === 'powers' ? 'textarea' : 'input'); input.dataset.crewSection = section; input.dataset.crewKey = key;
         if (type === 'number') { input.type = 'number'; input.min = '0'; input.max = '999'; }
-        else input.maxLength = type === 'long' ? 2000 : 500;
-        if (type === 'long') label.classList.add('wide-field');
+        else input.maxLength = type === 'long' || type === 'powers' ? 2000 : 500;
+        if (type === 'long' || type === 'powers') label.classList.add('wide-field');
+        if (type === 'powers') input.rows = 5;
         input.value = crew[section]?.[key] ?? (type === 'number' ? 0 : ''); label.append(input); box.append(label);
       }
     }
@@ -102,7 +108,9 @@ export function initCrewUI(request, profile, canLeaveCharacter) {
     if (!crew || JSON.stringify(value) === JSON.stringify(crew[field])) return;
     try {
       const data = await request('/api/crew', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value, revision: crew.revision }) });
-      crew = data.crew; message('Crew change saved.'); render();
+      crew = data.crew; message('Crew change saved.');
+      // Keep a focused maneuver field mounted while its sibling is being edited.
+      if (field !== 'maneuvers' || !$('crewManeuverRows').contains(document.activeElement)) render();
     } catch (cause) { message(cause.message + ' Your entry has not been saved.'); }
   }
   for (const [id, field, numeric] of [['crewName', 'name', false], ['crewPoints', 'crew_points', true]]) {

@@ -67,6 +67,12 @@ test('registration, sessions, role boundaries, characters, and image persistence
     assert.equal((await result(await charactersGet(req('/api/characters', 'GET', undefined, playerCookie)))).body.characters[0].sheet.specialty, 'Cartographer');
 
     const crewBefore = (await result(await crewGet(req('/api/crew', 'GET', undefined, playerCookie)))).body.crew;
+    await sql`UPDATE crew SET maneuvers = '["Old maneuver"]' WHERE id = 1`;
+    const legacyCrew = (await result(await crewGet(req('/api/crew', 'GET', undefined, playerCookie)))).body.crew;
+    assert.deepEqual(legacyCrew.maneuvers, [{ name: 'Old maneuver', description: '' }]);
+    const savedManeuvers = [{ name: 'Old maneuver', description: 'Scout ahead and signal the crew.' }, { name: 'Hold fast', description: 'Protect the Bird during the crossing.' }];
+    assert.equal((await crewPatch(req('/api/crew', 'PATCH', { field: 'maneuvers', value: savedManeuvers, revision: legacyCrew.revision }, playerCookie))).status, 200);
+    assert.deepEqual((await result(await crewGet(req('/api/crew', 'GET', undefined, gmCookie)))).body.crew.maneuvers, savedManeuvers);
     assert.deepEqual(crewBefore.images, {});
     const crewImageBytes = Buffer.from('89504e470d0a1a0a00000000', 'hex');
     const imageRequest = (slot, method, cookie, bytes = crewImageBytes) => new Request(base + `/api/crew-image?slot=${slot}`, { method, headers: { ...(cookie ? { cookie } : {}), ...(method === 'PUT' ? { 'Content-Type': 'image/png' } : {}) }, body: method === 'PUT' ? bytes : undefined });

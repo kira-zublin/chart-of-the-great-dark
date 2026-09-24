@@ -19,7 +19,7 @@ This repository is intentionally independent from the existing Alien / Astrolabe
 
 Profiles can be created with a shared invitation code and signed into with a name and password. Players can create and manage their own PCs; GMs can see all characters, filter PCs and NPCs, and create NPCs. Character records and two optional images are saved in Turso. Detailed rules automation and GM map tools remain future work.
 
-The character editor has Profile, Abilities, Condition, and Gear tabs. The shared Crew Sheet has Crew Info, Maneuvers, Bird, Rover, and Shuttle tabs. Crew Info holds five character roles and a shared portrait; Bird has its own portrait, appearance, and description. Maneuvers are individually addable and removable. Signed-in players can edit the crew record; a player may assign only their own PC to a role, while the GM may assign any PC. The Crew Sheet refreshes every four seconds while open and rejects stale writes.
+The character editor has Profile, Abilities, Condition, and Gear tabs. The shared Crew Sheet has Crew Info, Maneuvers, Bird, Rover, and Shuttle tabs. Crew Info holds five character roles and a shared portrait; Bird has its own portrait, appearance, description, and a larger Powers field. Maneuvers are individually addable and removable, each with a name and multi-line description. Existing single-line maneuvers appear as names with empty descriptions. Signed-in players can edit the crew record; a player may assign only their own PC to a role, while the GM may assign any PC. The Crew Sheet refreshes every four seconds while open and rejects stale writes.
 
 ## Run locally
 

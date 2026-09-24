@@ -15,16 +15,19 @@ function objectFields(value, keys) {
 export function cleanCrewField(field, value) {
   if (field === 'name') return typeof value === 'string' && value.length <= 100 ? value.trim() : null;
   if (field === 'crew_points') return Number.isInteger(value) && value >= 0 && value <= 999 ? value : null;
-  if (field === 'bird') return objectFields(value, { name: 'text', type: 'text', appearance: 'long', description: 'long', health: 'number', energy: 'number', powers: 'text' });
+  if (field === 'bird') return objectFields(value, { name: 'text', type: 'text', appearance: 'long', description: 'long', health: 'number', energy: 'number', powers: 'long' });
   if (field === 'rover' || field === 'shuttle') return objectFields(value, { name: 'text', model: 'text', hull: 'number', armor: 'number', blight: 'number', speed: 'text', range: 'text', upgrades: 'text', cargo: 'long' });
-  if (field === 'maneuvers' && Array.isArray(value) && value.length <= 30 && value.every(item => typeof item === 'string' && item.length <= 120)) return value.map(item => item.trim()).filter(Boolean);
+  if (field === 'maneuvers' && Array.isArray(value) && value.length <= 30 && value.every(item => item && typeof item === 'object' && !Array.isArray(item) && typeof item.name === 'string' && item.name.length <= 120 && typeof item.description === 'string' && item.description.length <= 2000)) {
+    return value.map(item => ({ name: item.name.trim(), description: item.description.trim() })).filter(item => item.name || item.description);
+  }
   return null;
 }
 async function readCrew(sql) {
   const crew = (await sql`SELECT * FROM crew WHERE id = 1`)[0];
   const members = await sql.query('SELECT r.role, r.character_id, c.name AS character_name, c.owner_id FROM crew_roles r LEFT JOIN characters c ON c.id = r.character_id ORDER BY r.rowid');
   const images = await sql`SELECT slot FROM crew_images`;
-  return { ...crew, bird: JSON.parse(crew.bird), rover: JSON.parse(crew.rover), shuttle: JSON.parse(crew.shuttle), maneuvers: JSON.parse(crew.maneuvers), roles: members, images: Object.fromEntries(images.map(item => [item.slot, true])) };
+  const maneuvers = JSON.parse(crew.maneuvers).map(item => typeof item === 'string' ? { name: item, description: '' } : item);
+  return { ...crew, bird: JSON.parse(crew.bird), rover: JSON.parse(crew.rover), shuttle: JSON.parse(crew.shuttle), maneuvers, roles: members, images: Object.fromEntries(images.map(item => [item.slot, true])) };
 }
 export async function GET(req) {
   return guarded(async () => {
