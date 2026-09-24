@@ -94,7 +94,7 @@ async function loadCharacters() {
     chatUI.refreshIdentity();
     const remembered = localStorage.getItem(`active-character:${state.profile.id}`);
     const active = state.characters.find(item => item.id === remembered);
-    if (active && !state.selected) $('characterButton').textContent = `${active.name} ▾`;
+    if (active && !state.selected) $('characterButton').textContent = active.name;
   } catch (cause) { $('characterList').textContent = cause.message; }
 }
 function renderList() {
@@ -105,7 +105,7 @@ function renderList() {
     characterDirty = false; state.selected = null;
     localStorage.removeItem(`active-character:${state.profile.id}`);
     $('characterPanel').hidden = true; $('characterMenu').hidden = true;
-    $('characterButton').textContent = 'Select character ▾'; chatUI.refreshIdentity();
+    $('characterButton').textContent = 'Select character'; chatUI.refreshIdentity();
   });
   list.append(none);
   if (!state.characters.length) {
@@ -131,7 +131,7 @@ async function deleteCharacter(character) {
     if (localStorage.getItem(`active-character:${state.profile.id}`) === character.id) localStorage.removeItem(`active-character:${state.profile.id}`);
     if (state.selected?.id === character.id) closeCharacter();
     if (state.selected?.id === character.id) state.selected = null;
-    $('characterButton').textContent = 'Select character ▾';
+    $('characterButton').textContent = 'Select character';
     await loadCharacters();
   } catch (cause) { alert(cause.message); }
 }
@@ -151,7 +151,7 @@ function editCharacter(character = null) {
   $('characterButton').setAttribute('aria-expanded', 'false');
   $('characterPanel').hidden = false;
   $('characterHeading').textContent = character ? character.name : 'New character';
-  $('characterButton').textContent = character ? `${character.name} ▾` : 'Select character ▾';
+  $('characterButton').textContent = character ? character.name : 'Select character';
   $('characterName').value = character?.name || '';
   $('characterKind').value = character?.kind || 'pc';
   for (const key of ['profession', 'origin', 'faction', 'appearance', 'motivation', 'description']) {

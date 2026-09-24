@@ -37,6 +37,9 @@ test('chat persists ordered text and server dice, checks ownership, and exports 
     assert.equal(roll.baseDice.length, 5); assert.equal(roll.gearDice.length, 1);
     assert.equal(roll.successes, [...roll.baseDice, ...roll.gearDice].filter(d => d === 6).length);
     assert.equal((await POST(request('', 'POST', { type: 'skill', characterId, attribute: 'perception', modifier: 11 }, one))).status, 400);
+    const adjusted = (await (await POST(request('', 'POST', { type: 'skill', characterId, attribute: 'logic', talent: 'Lookout', base: 9, gear: 2 }, one))).json()).message;
+    assert.equal(adjusted.roll.baseDice.length, 9); assert.equal(adjusted.roll.gearDice.length, 2);
+    assert.equal((await POST(request('', 'POST', { type: 'skill', characterId, attribute: 'logic', base: 31 }, one))).status, 400);
     const poolMessage = (await (await POST(request('', 'POST', { type: 'pool', base: 4, modifier: -1, gear: 2 }, two))).json()).message;
     assert.equal(poolMessage.roll.baseDice.length, 3); assert.equal(poolMessage.roll.gearDice.length, 2);
     assert.equal((await POST(request('', 'POST', { type: 'push', messageId: rollMessage.id }, two))).status, 403);
@@ -57,8 +60,8 @@ test('chat persists ordered text and server dice, checks ownership, and exports 
     assert.equal(empathySecond.roll.pushCount, 2);
     assert.equal((await POST(request('', 'POST', { type: 'push', messageId: empathySecond.id }, one))).status, 400);
     const all = (await (await GET(request('', 'GET', undefined, two))).json()).messages;
-    assert.equal(all.length, 9);
-    assert.equal((await (await GET(request(`?after=${first.id}`, 'GET', undefined, one))).json()).messages.length, 8);
+    assert.equal(all.length, 10);
+    assert.equal((await (await GET(request(`?after=${first.id}`, 'GET', undefined, one))).json()).messages.length, 9);
     const today = new Date().toISOString().slice(0, 10);
     const exportResponse = await GET(request(`?export=text&from=${today}&through=${today}`, 'GET', undefined, one));
     const exportText = await exportResponse.text();

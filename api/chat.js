@@ -81,16 +81,18 @@ export async function POST(req) {
       kind = 'roll';
     } else if (input.type === 'skill') {
       if (!character) return error('Select a character to roll an action');
-      const modifier = input.modifier ?? 0; const gear = input.gear ?? 0;
+      const modifier = input.base === undefined ? input.modifier ?? 0 : 0; const gear = input.gear ?? 0;
       if (!attributes.has(input.attribute) || !Number.isInteger(modifier) || modifier < -10 || modifier > 10 || !Number.isInteger(gear) || gear < 0 || gear > 10) return error('Invalid roll options');
       const stats = JSON.parse(character.attributes); const sheet = JSON.parse(character.sheet);
       const talent = input.talent || '';
       const found = talent ? sheet.talents?.find(item => item.name === talent) : null;
       if (talent && (!found || typeof talent !== 'string')) return error('Talent unavailable');
       const level = found?.level || 0;
-      const count = Math.max(1, Math.min(30, stats[input.attribute] + level + modifier));
+      const suggested = Math.max(1, Math.min(30, stats[input.attribute] + level + modifier));
+      if (input.base !== undefined && (!Number.isInteger(input.base) || input.base < 1 || input.base > 30)) return error('Invalid base dice count');
+      const count = input.base ?? suggested;
       const baseDice = dice(count); const gearDice = dice(gear);
-      roll = { type: 'skill', attribute: input.attribute, talent, talentLevel: level, modifier, gear, baseDice, gearDice, successes: successes(baseDice, gearDice) };
+      roll = { type: 'skill', attribute: input.attribute, talent, talentLevel: level, base: count, modifier, gear, baseDice, gearDice, successes: successes(baseDice, gearDice) };
       kind = 'roll';
     } else if (input.type === 'push') {
       if (!Number.isSafeInteger(input.messageId) || input.messageId < 1) return error('Invalid roll to push');

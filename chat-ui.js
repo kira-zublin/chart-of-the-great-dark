@@ -16,6 +16,7 @@ export function initChatUI(request, profile, character) {
     for (const talent of picked?.sheet?.talents || []) select.add(new Option(`${talent.name} (+${talent.level})`, talent.name));
     $('chatRollType').querySelector('option[value="skill"]').disabled = !picked;
     if (!picked && $('chatRollType').value === 'skill') $('chatRollType').value = 'pool';
+    if (picked && $('chatRollType').value === 'skill') $('chatBase').value = suggestedBase();
     updateRollPreview();
   }
   function addText(parent, value) {
@@ -80,16 +81,20 @@ export function initChatUI(request, profile, character) {
   });
   const rollDialog = $('chatRollDialog'); const exportDialog = $('chatExportDialog');
   const rollMode = $('chatRollType');
-  function updateRollPreview() {
-    const skill = rollMode.value === 'skill';
-    $('chatPoolFields').hidden = skill; $('chatSkillFields').hidden = !skill;
+  function suggestedBase() {
     const picked = character();
     const talent = picked?.sheet?.talents?.find(item => item.name === $('chatTalent').value);
-    const base = skill ? Number(picked?.attributes?.[$('chatAttribute').value] || 0) + Number(talent?.level || 0) : Number($('chatBase').value);
-    const modifier = Number($('chatModifier').value); const gear = Number($('chatGear').value);
-    $('chatRollPreview').textContent = Number.isFinite(base + modifier + gear) ? `Roll ${Math.max(1, Math.min(30, base + modifier))} base dice and ${gear} gear dice. Modifier changes base dice only.` : '';
+    return Math.max(1, Math.min(30, Number(picked?.attributes?.[$('chatAttribute').value] || 0) + Number(talent?.level || 0)));
   }
-  for (const id of ['chatRollType', 'chatBase', 'chatAttribute', 'chatTalent', 'chatModifier', 'chatGear']) $(''+id).addEventListener('input', updateRollPreview);
+  function updateRollPreview() {
+    const skill = rollMode.value === 'skill';
+    $('chatSkillFields').hidden = !skill;
+    const base = Number($('chatBase').value); const gear = Number($('chatGear').value);
+    $('chatRollPreview').textContent = Number.isInteger(base) && Number.isInteger(gear) ? `Roll ${base} base dice and ${gear} gear dice.` : '';
+  }
+  rollMode.addEventListener('change', () => { if (rollMode.value === 'skill') $('chatBase').value = suggestedBase(); updateRollPreview(); });
+  for (const id of ['chatAttribute', 'chatTalent']) $(id).addEventListener('change', () => { if (rollMode.value === 'skill') $('chatBase').value = suggestedBase(); updateRollPreview(); });
+  for (const id of ['chatBase', 'chatGear']) $(id).addEventListener('input', updateRollPreview);
   $('chatRollOpen').addEventListener('click', () => { identity(); rollDialog.showModal(); });
   $('chatRollClose').addEventListener('click', () => rollDialog.close());
   $('chatExportOpen').addEventListener('click', () => exportDialog.showModal());
@@ -97,8 +102,8 @@ export function initChatUI(request, profile, character) {
   $('chatRollForm').addEventListener('submit', async event => {
     event.preventDefault();
     const button = $('chatRollSubmit'); button.disabled = true; $('chatRollStatus').textContent = '';
-    const shared = { modifier: Number($('chatModifier').value), gear: Number($('chatGear').value) };
-    const payload = rollMode.value === 'skill' ? { type: 'skill', attribute: $('chatAttribute').value, talent: $('chatTalent').value, ...shared } : { type: 'pool', base: Number($('chatBase').value), ...shared };
+    const shared = { base: Number($('chatBase').value), gear: Number($('chatGear').value) };
+    const payload = rollMode.value === 'skill' ? { type: 'skill', attribute: $('chatAttribute').value, talent: $('chatTalent').value, ...shared } : { type: 'pool', ...shared };
     const result = await send(payload);
     if (result) {
       pushId = result.id; pushCount = 0;
