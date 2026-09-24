@@ -1,18 +1,56 @@
 const $ = id => document.getElementById(id);
 const roles = ['delver', 'burrower', 'scout', 'guard', 'archaeologist'];
 const sections = {
-  bird: [['name', 'Name'], ['type', 'Type'], ['appearance', 'Appearance'], ['health', 'Health', 'number'], ['energy', 'Energy', 'number'], ['powers', 'Powers']],
-  rover: [['name', 'Name'], ['model', 'Model'], ['hull', 'Hull', 'number'], ['armor', 'Armor', 'number'], ['blight', 'Blight protection', 'number'], ['speed', 'Speed'], ['range', 'Range'], ['upgrades', 'Upgrades'], ['cargo', 'Cargo']],
-  shuttle: [['name', 'Name'], ['model', 'Model'], ['hull', 'Hull', 'number'], ['armor', 'Armor', 'number'], ['blight', 'Blight protection', 'number'], ['speed', 'Travel speed'], ['range', 'Range'], ['upgrades', 'Upgrades'], ['cargo', 'Cargo']]
+  bird: [['name', 'Name'], ['type', 'Type'], ['appearance', 'Appearance', 'long'], ['description', 'Description', 'long'], ['health', 'Health', 'number'], ['energy', 'Energy', 'number'], ['powers', 'Powers']],
+  rover: [['name', 'Name'], ['model', 'Model'], ['hull', 'Hull', 'number'], ['armor', 'Armor', 'number'], ['blight', 'Blight protection', 'number'], ['speed', 'Speed'], ['range', 'Range'], ['upgrades', 'Upgrades'], ['cargo', 'Cargo', 'long']],
+  shuttle: [['name', 'Name'], ['model', 'Model'], ['hull', 'Hull', 'number'], ['armor', 'Armor', 'number'], ['blight', 'Blight protection', 'number'], ['speed', 'Travel speed'], ['range', 'Range'], ['upgrades', 'Upgrades'], ['cargo', 'Cargo', 'long']]
 };
 export function initCrewUI(request, profile, canLeaveCharacter) {
   let crew = null; let characters = []; let timer = null; let loading = false;
   const panel = $('crewPanel');
   const message = text => { $('crewMessage').textContent = text; };
+  const tabs = ['Info', 'Maneuvers', 'Bird', 'Rover', 'Shuttle'];
+  function selectTab(name) {
+    for (const tab of tabs) {
+      const active = tab === name;
+      $('crewTab' + tab).setAttribute('aria-selected', String(active));
+      $('crewTab' + tab).tabIndex = active ? 0 : -1;
+      $('crewPane' + tab).hidden = !active;
+    }
+  }
+  for (const [index, tab] of tabs.entries()) {
+    const button = $('crewTab' + tab);
+    button.addEventListener('click', () => selectTab(tab));
+    button.addEventListener('keydown', event => {
+      const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : event.key === 'ArrowLeft' ? (index - 1 + tabs.length) % tabs.length : -1;
+      if (next < 0) return;
+      event.preventDefault(); selectTab(tabs[next]); $('crewTab' + tabs[next]).focus();
+    });
+  }
+  function renderPortrait(slot) {
+    const prefix = slot === 'crew' ? 'crew' : 'bird';
+    const preview = $(prefix + 'Portrait');
+    preview.hidden = !crew.images?.[slot];
+    $('remove' + prefix[0].toUpperCase() + prefix.slice(1) + 'Portrait').hidden = !crew.images?.[slot];
+    if (!preview.hidden) preview.src = `/api/crew-image?slot=${slot}&v=${Date.now()}`;
+    else preview.removeAttribute('src');
+  }
+  function maneuverValues() { return [...$('crewManeuverRows').querySelectorAll('input')].map(input => input.value.trim()).filter(Boolean); }
+  function addManeuver(value = '') {
+    const row = document.createElement('div'); row.className = 'entry-row';
+    const input = document.createElement('input'); input.maxLength = 120; input.value = value; input.setAttribute('aria-label', 'Crew maneuver');
+    input.addEventListener('change', () => saveField('maneuvers', maneuverValues()));
+    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove';
+    remove.addEventListener('click', () => { row.remove(); saveField('maneuvers', maneuverValues()); });
+    row.append(input, remove); $('crewManeuverRows').append(row);
+    return input;
+  }
   function render() {
     if (!crew) return;
     $('crewName').value = crew.name; $('crewPoints').value = crew.crew_points;
-    $('crewManeuvers').value = crew.maneuvers.join('\n');
+    $('crewManeuverRows').replaceChildren();
+    for (const value of crew.maneuvers) addManeuver(value);
+    renderPortrait('crew'); renderPortrait('bird');
     const roleRows = $('crewRoleRows'); roleRows.replaceChildren();
     for (const role of roles) {
       const assigned = crew.roles.find(item => item.role === role);
@@ -41,9 +79,10 @@ export function initCrewUI(request, profile, canLeaveCharacter) {
       const box = $('crew' + section[0].toUpperCase() + section.slice(1)); box.replaceChildren();
       for (const [key, title, type] of fields) {
         const label = document.createElement('label'); label.textContent = title;
-        const input = document.createElement('input'); input.dataset.crewSection = section; input.dataset.crewKey = key;
+        const input = document.createElement(type === 'long' ? 'textarea' : 'input'); input.dataset.crewSection = section; input.dataset.crewKey = key;
         if (type === 'number') { input.type = 'number'; input.min = '0'; input.max = '999'; }
-        else input.maxLength = 500;
+        else input.maxLength = type === 'long' ? 2000 : 500;
+        if (type === 'long') label.classList.add('wide-field');
         input.value = crew[section]?.[key] ?? (type === 'number' ? 0 : ''); label.append(input); box.append(label);
       }
     }
@@ -55,7 +94,7 @@ export function initCrewUI(request, profile, canLeaveCharacter) {
     try {
       const [data, list] = await Promise.all([request('/api/crew'), request('/api/characters')]);
       characters = list.characters;
-      if (!crew || data.crew.revision !== crew.revision || JSON.stringify(data.crew.roles) !== JSON.stringify(crew.roles) || force) { crew = data.crew; render(); }
+      if (!crew || data.crew.revision !== crew.revision || JSON.stringify(data.crew.roles) !== JSON.stringify(crew.roles) || JSON.stringify(data.crew.images) !== JSON.stringify(crew.images) || force) { crew = data.crew; render(); }
     } catch (cause) { message(cause.message); }
     finally { loading = false; }
   }
@@ -66,8 +105,32 @@ export function initCrewUI(request, profile, canLeaveCharacter) {
       crew = data.crew; message('Crew change saved.'); render();
     } catch (cause) { message(cause.message + ' Your entry has not been saved.'); }
   }
-  for (const [id, field, numeric] of [['crewName', 'name', false], ['crewPoints', 'crew_points', true], ['crewManeuvers', 'maneuvers', false]]) {
-    $(id).addEventListener('change', () => saveField(field, field === 'maneuvers' ? $(id).value.split('\n').map(x => x.trim()).filter(Boolean) : numeric ? Number($(id).value) : $(id).value));
+  for (const [id, field, numeric] of [['crewName', 'name', false], ['crewPoints', 'crew_points', true]]) {
+    $(id).addEventListener('change', () => saveField(field, numeric ? Number($(id).value) : $(id).value));
+  }
+  $('addCrewManeuver').addEventListener('click', () => {
+    if ($('crewManeuverRows').children.length >= 30) { message('Maximum 30 maneuvers.'); return; }
+    addManeuver().focus();
+  });
+  for (const slot of ['crew', 'bird']) {
+    const prefix = slot === 'crew' ? 'crew' : 'bird';
+    $(prefix + 'PortraitInput').addEventListener('change', async event => {
+      const file = event.target.files?.[0]; if (!file) return;
+      try {
+        if (file.size > 2 * 1024 * 1024) throw new Error('Image must be under 2 MB');
+        const response = await fetch(`/api/crew-image?slot=${slot}`, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+        if (!response.ok) throw new Error((await response.json()).error || 'Image upload failed');
+        crew.images[slot] = true; renderPortrait(slot); message('Portrait saved.');
+      } catch (cause) { message(cause.message); }
+      finally { event.target.value = ''; }
+    });
+    $('remove' + prefix[0].toUpperCase() + prefix.slice(1) + 'Portrait').addEventListener('click', async () => {
+      try {
+        const response = await fetch(`/api/crew-image?slot=${slot}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error((await response.json()).error || 'Could not remove portrait');
+        delete crew.images[slot]; renderPortrait(slot); message('Portrait removed.');
+      } catch (cause) { message(cause.message); }
+    });
   }
   for (const section of Object.keys(sections)) $('crew' + section[0].toUpperCase() + section.slice(1)).addEventListener('change', () => {
     const value = {};
@@ -80,7 +143,7 @@ export function initCrewUI(request, profile, canLeaveCharacter) {
     if (!profile()) return;
     if (!canLeaveCharacter()) return;
     $('characterPanel').hidden = true;
-    panel.hidden = false; message(''); load(true);
+    panel.hidden = false; selectTab('Info'); message(''); load(true);
     clearInterval(timer); timer = setInterval(() => { if (!document.hidden) load(); }, 4000);
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });

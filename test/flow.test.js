@@ -6,7 +6,9 @@ import { GET as imageGet, PUT as imagePut } from '../api/image.js';
 import { db } from '../lib/server.js';
 import { applyInitialSchema } from '../scripts/migrate.js';
 import { applySheetAndCrewSchema } from '../scripts/migrate-002.js';
+import { applyCrewImageSchema } from '../scripts/migrate-003.js';
 import { GET as crewGet, PATCH as crewPatch } from '../api/crew.js';
+import { GET as crewImageGet, PUT as crewImagePut, DELETE as crewImageDelete } from '../api/crew-image.js';
 
 const base = 'http://localhost:3000';
 function req(path, method = 'GET', value, cookie = '') {
@@ -31,6 +33,8 @@ test('registration, sessions, role boundaries, characters, and image persistence
     const sql = db(); client = sql.client;
     await applyInitialSchema(sql);
     await applySheetAndCrewSchema(sql);
+    await applyCrewImageSchema(sql);
+    await applyCrewImageSchema(sql);
     const invalidInvite = await result(await authPost(req('/api/auth', 'POST', { action: 'register', name: 'Player One', password: 'long-password-123', role: 'player', inviteCode: 'wrong' })));
     assert.equal(invalidInvite.status, 403);
     const playerRes = await authPost(req('/api/auth', 'POST', { action: 'register', name: 'Player One', password: 'long-password-123', role: 'player', inviteCode: process.env.REGISTRATION_INVITE_CODE }));
@@ -63,6 +67,19 @@ test('registration, sessions, role boundaries, characters, and image persistence
     assert.equal((await result(await charactersGet(req('/api/characters', 'GET', undefined, playerCookie)))).body.characters[0].sheet.specialty, 'Cartographer');
 
     const crewBefore = (await result(await crewGet(req('/api/crew', 'GET', undefined, playerCookie)))).body.crew;
+    assert.deepEqual(crewBefore.images, {});
+    const crewImageBytes = Buffer.from('89504e470d0a1a0a00000000', 'hex');
+    const imageRequest = (slot, method, cookie, bytes = crewImageBytes) => new Request(base + `/api/crew-image?slot=${slot}`, { method, headers: { ...(cookie ? { cookie } : {}), ...(method === 'PUT' ? { 'Content-Type': 'image/png' } : {}) }, body: method === 'PUT' ? bytes : undefined });
+    assert.equal((await crewImagePut(imageRequest('crew', 'PUT', '', crewImageBytes))).status, 401);
+    assert.equal((await crewImagePut(imageRequest('crew', 'PUT', playerCookie, Buffer.from('not an image')))).status, 400);
+    assert.equal((await crewImagePut(imageRequest('crew', 'PUT', playerCookie))).status, 200);
+    assert.equal((await crewImagePut(imageRequest('bird', 'PUT', playerCookie))).status, 200);
+    assert.equal((await crewImageGet(imageRequest('bird', 'GET', gmCookie))).status, 200);
+    assert.equal((await crewImageGet(imageRequest('crew', 'GET', gmCookie))).status, 200);
+    assert.equal((await crewImageGet(imageRequest('crew', 'GET', ''))).status, 401);
+    assert.deepEqual((await result(await crewGet(req('/api/crew', 'GET', undefined, gmCookie)))).body.crew.images, { crew: true, bird: true });
+    assert.equal((await crewImageDelete(imageRequest('bird', 'DELETE', gmCookie))).status, 200);
+    assert.equal((await crewImageGet(imageRequest('bird', 'GET', playerCookie))).status, 404);
     assert.equal(crewBefore.roles.length, 5);
     const assign = await crewPatch(req('/api/crew', 'PATCH', { action: 'assign', role: 'scout', expectedId: null, characterId: id }, playerCookie));
     assert.equal(assign.status, 200);

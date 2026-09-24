@@ -53,4 +53,8 @@ test('extended sheet and crew fields reject malformed persistent data', () => {
   assert.equal(cleanCrewField('bird', { name: 'Garuda', health: -1 }), null);
   assert.equal(cleanCrewField('unknown', 'text'), null);
   assert.equal(cleanCrewField('crew_points', 0), 0);
+  assert.equal(cleanCrewField('bird', { appearance: 'a'.repeat(2000), description: 'b'.repeat(2000) }).description.length, 2000);
+  assert.equal(cleanCrewField('bird', { description: 'b'.repeat(2001) }), null);
+  assert.equal(cleanCrewField('rover', { cargo: 'c'.repeat(2000) }).cargo.length, 2000);
+  assert.equal(cleanCrewField('shuttle', { cargo: 'c'.repeat(2001) }), null);
 });

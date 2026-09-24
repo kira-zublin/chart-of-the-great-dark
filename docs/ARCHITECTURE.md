@@ -21,6 +21,7 @@ The rules PDFs are local references in `gamerules/` and are deliberately exclude
 ## Expanded sheets and shared crew
 
 `db/002_sheets_and_crew.sql` adds a validated JSON `sheet` column to characters without replacing the original fields. Existing characters receive an empty sheet that the UI fills with defaults. Repeatable talents and gear live in this bounded JSON object; the API validates types, lengths, and item counts before writing. `scripts/migrate-002.js` applies this migration explicitly and skips the already-added column when rerun.
+`db/003_crew_images.sql` adds two shared portrait slots (crew and Bird). The image API accepts signed-in profiles, checks JPEG/PNG/WebP signatures and the 2 MB limit, and stores image bytes in Turso. Apply it with `scripts/migrate-003.js` before deploying code that reads `crew_images`.
 
 The crew is a single durable row in Turso, with five role slots in `crew_roles` referencing character IDs. The database prevents the same character occupying two slots and clears references when a character is deleted. The API requires a session for every read and write. Players may assign or clear their own PCs; the GM may manage any PC. Other crew fields are shared edits by all signed-in profiles. Each field-sized patch uses a revision comparison; a stale write receives HTTP 409 instead of overwriting newer state. Role assignment compares the expected occupant in SQL before changing the slot.
 

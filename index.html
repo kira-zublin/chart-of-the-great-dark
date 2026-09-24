@@ -109,7 +109,7 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 .entry-row button{justify-self:end;min-height:28px;padding:3px 8px}
 .crew-panel{z-index:13}.crew-panel label{display:grid;gap:6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#c8b98f}
 .crew-panel .character-grid{margin-bottom:8px}
-.crew-panel .entry-row select{width:100%}
+.crew-panel .entry-row select{width:100%}.crew-tabs{grid-template-columns:repeat(5,minmax(0,1fr))}.crew-tab-panel[hidden]{display:none}.crew-tab-panel{display:grid;gap:12px}.crew-panel .wide-field{grid-column:1/-1}.crew-panel .wide-field textarea{min-height:100px;resize:vertical}.crew-panel .portrait-controls{display:grid;gap:8px}.crew-panel .portrait-controls button{justify-self:start}.crew-panel .portrait-controls input{width:100%}
 .character-wrap{display:flex;gap:8px;align-items:flex-start}
 .character-panel{overflow-x:hidden}.character-form,.sheet-section,.character-grid,.stat-grid{min-width:0}
 .sheet-section>.character-grid,.entry-row .character-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -246,13 +246,23 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 <aside class="character-panel crew-panel" id="crewPanel" aria-label="Crew sheet" hidden>
   <div class="panel-head"><div><div class="eyebrow">Shared expedition record</div><h2>Crew Sheet</h2></div><button id="closeCrew" type="button" aria-label="Close crew sheet">×</button></div>
   <p id="crewMessage" class="message" role="status"></p>
-  <label>Crew name<input id="crewName" maxlength="100"></label>
-  <label>Crew points<input id="crewPoints" type="number" min="0" max="999"></label>
-  <div class="rule">Delve roles</div><div id="crewRoleRows" class="entry-list"></div>
-  <div class="rule">Crew maneuvers</div><label>One maneuver per line<textarea id="crewManeuvers" maxlength="3600"></textarea></label>
-  <div class="rule">Bird</div><div id="crewBird" class="character-grid"></div>
-  <div class="rule">Rover</div><div id="crewRover" class="character-grid"></div>
-  <div class="rule">Shuttle</div><div id="crewShuttle" class="character-grid"></div>
+  <div class="sheet-tabs crew-tabs" role="tablist" aria-label="Crew sections">
+    <button type="button" role="tab" id="crewTabInfo" aria-controls="crewPaneInfo" aria-selected="true" tabindex="0">Crew Info</button>
+    <button type="button" role="tab" id="crewTabManeuvers" aria-controls="crewPaneManeuvers" aria-selected="false" tabindex="-1">Maneuvers</button>
+    <button type="button" role="tab" id="crewTabBird" aria-controls="crewPaneBird" aria-selected="false" tabindex="-1">Bird</button>
+    <button type="button" role="tab" id="crewTabRover" aria-controls="crewPaneRover" aria-selected="false" tabindex="-1">Rover</button>
+    <button type="button" role="tab" id="crewTabShuttle" aria-controls="crewPaneShuttle" aria-selected="false" tabindex="-1">Shuttle</button>
+  </div>
+  <section id="crewPaneInfo" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabInfo">
+    <label>Crew name<input id="crewName" maxlength="100"></label>
+    <label>Crew points<input id="crewPoints" type="number" min="0" max="999"></label>
+    <div class="portrait-controls"><div class="rule">Crew portrait</div><img id="crewPortrait" class="image-preview" alt="Crew portrait" hidden><label>Upload portrait<input id="crewPortraitInput" type="file" accept="image/png,image/jpeg,image/webp"></label><button id="removeCrewPortrait" type="button" hidden>Remove portrait</button></div>
+    <div class="rule">Delve roles</div><div id="crewRoleRows" class="entry-list"></div>
+  </section>
+  <section id="crewPaneManeuvers" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabManeuvers" hidden><div class="rule">Crew maneuvers</div><div id="crewManeuverRows" class="entry-list"></div><button id="addCrewManeuver" type="button">Add maneuver</button></section>
+  <section id="crewPaneBird" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabBird" hidden><div class="portrait-controls"><div class="rule">Bird portrait</div><img id="birdPortrait" class="image-preview" alt="Bird portrait" hidden><label>Upload portrait<input id="birdPortraitInput" type="file" accept="image/png,image/jpeg,image/webp"></label><button id="removeBirdPortrait" type="button" hidden>Remove portrait</button></div><div id="crewBird" class="character-grid"></div></section>
+  <section id="crewPaneRover" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabRover" hidden><div id="crewRover" class="character-grid"></div></section>
+  <section id="crewPaneShuttle" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabShuttle" hidden><div id="crewShuttle" class="character-grid"></div></section>
   <p class="field-hint">Changes save when you leave a field. The sheet refreshes while open.</p>
 </aside><div class="legend"><span><i class="dot blue"></i>Known system</span><span><i class="dot" style="border-radius:2px;background:#aa6c4c"></i>Landmark</span><span><i class="dot"></i>Confirmed delve</span><span><i class="dot red"></i>Rumored / unstable site</span></div>
 </main>

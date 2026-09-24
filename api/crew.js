@@ -7,7 +7,7 @@ function objectFields(value, keys) {
   const result = {};
   for (const [key, type] of Object.entries(keys)) {
     const item = value[key] ?? (type === 'number' ? 0 : '');
-    if (type === 'number' ? !Number.isInteger(item) || item < 0 || item > 999 : typeof item !== 'string' || item.length > 500) return null;
+    if (type === 'number' ? !Number.isInteger(item) || item < 0 || item > 999 : typeof item !== 'string' || item.length > (type === 'long' ? 2000 : 500)) return null;
     result[key] = type === 'number' ? item : item.trim();
   }
   return result;
@@ -15,15 +15,16 @@ function objectFields(value, keys) {
 export function cleanCrewField(field, value) {
   if (field === 'name') return typeof value === 'string' && value.length <= 100 ? value.trim() : null;
   if (field === 'crew_points') return Number.isInteger(value) && value >= 0 && value <= 999 ? value : null;
-  if (field === 'bird') return objectFields(value, { name: 'text', type: 'text', appearance: 'text', health: 'number', energy: 'number', powers: 'text' });
-  if (field === 'rover' || field === 'shuttle') return objectFields(value, { name: 'text', model: 'text', hull: 'number', armor: 'number', blight: 'number', speed: 'text', range: 'text', upgrades: 'text', cargo: 'text' });
+  if (field === 'bird') return objectFields(value, { name: 'text', type: 'text', appearance: 'long', description: 'long', health: 'number', energy: 'number', powers: 'text' });
+  if (field === 'rover' || field === 'shuttle') return objectFields(value, { name: 'text', model: 'text', hull: 'number', armor: 'number', blight: 'number', speed: 'text', range: 'text', upgrades: 'text', cargo: 'long' });
   if (field === 'maneuvers' && Array.isArray(value) && value.length <= 30 && value.every(item => typeof item === 'string' && item.length <= 120)) return value.map(item => item.trim()).filter(Boolean);
   return null;
 }
 async function readCrew(sql) {
   const crew = (await sql`SELECT * FROM crew WHERE id = 1`)[0];
   const members = await sql.query('SELECT r.role, r.character_id, c.name AS character_name, c.owner_id FROM crew_roles r LEFT JOIN characters c ON c.id = r.character_id ORDER BY r.rowid');
-  return { ...crew, bird: JSON.parse(crew.bird), rover: JSON.parse(crew.rover), shuttle: JSON.parse(crew.shuttle), maneuvers: JSON.parse(crew.maneuvers), roles: members };
+  const images = await sql`SELECT slot FROM crew_images`;
+  return { ...crew, bird: JSON.parse(crew.bird), rover: JSON.parse(crew.rover), shuttle: JSON.parse(crew.shuttle), maneuvers: JSON.parse(crew.maneuvers), roles: members, images: Object.fromEntries(images.map(item => [item.slot, true])) };
 }
 export async function GET(req) {
   return guarded(async () => {
