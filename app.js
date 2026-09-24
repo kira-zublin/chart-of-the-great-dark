@@ -1,5 +1,6 @@
 import { collectSheet, renderSheet, setSheetDirtyHandler, setSheetTab } from './sheet-ui.js';
 import { initCrewUI } from './crew-ui.js';
+import { initChatUI } from './chat-ui.js';
 const $ = id => document.getElementById(id);
 const state = { profile: null, characters: [], selected: null, registering: false };
 const stats = ['strength', 'agility', 'logic', 'insight', 'perception', 'empathy'];
@@ -10,6 +11,10 @@ $('characterForm').addEventListener('change', () => { characterDirty = true; });
 const crewUI = initCrewUI(request, () => state.profile, () => {
   if (characterDirty && !confirm('Discard unsaved character changes?')) return false;
   characterDirty = false; return true;
+});
+const chatUI = initChatUI(request, () => state.profile, () => {
+  const id = state.selected?.id || (state.profile && localStorage.getItem(`active-character:${state.profile.id}`));
+  return state.characters.find(item => item.id === id) || null;
 });
 
 async function request(path, options = {}) {
@@ -24,13 +29,16 @@ function showApp(profile) {
   $('loginScreen').hidden = Boolean(profile);
   $('mapStage').hidden = !profile;
   document.body.classList.toggle('signed-in', Boolean(profile));
+  $('chatDock').hidden = !profile;
   if (profile) {
     $('accountButton').textContent = profile.name + ' ▾';
     $('accountRole').textContent = profile.role === 'gm' ? 'Game Master' : 'Player';
     $('filterRow').hidden = profile.role !== 'gm';
     $('characterKindRow').hidden = profile.role !== 'gm';
     loadCharacters();
+    chatUI.start();
   } else {
+    chatUI.stop();
     state.characters = []; state.selected = null;
     $('characterPanel').hidden = true;
     $('accountMenu').hidden = true;
@@ -83,6 +91,7 @@ async function loadCharacters() {
     const data = await request('/api/characters' + (filter === 'all' ? '' : `?kind=${filter}`));
     state.characters = data.characters;
     renderList();
+    chatUI.refreshIdentity();
     const remembered = localStorage.getItem(`active-character:${state.profile.id}`);
     const active = state.characters.find(item => item.id === remembered);
     if (active && !state.selected) $('characterButton').textContent = `${active.name} ▾`;
@@ -90,6 +99,15 @@ async function loadCharacters() {
 }
 function renderList() {
   const list = $('characterList'); list.replaceChildren();
+  const none = document.createElement('button'); none.type = 'button'; none.textContent = 'No active character';
+  none.addEventListener('click', () => {
+    if (characterDirty && !confirm('Discard unsaved character changes?')) return;
+    characterDirty = false; state.selected = null;
+    localStorage.removeItem(`active-character:${state.profile.id}`);
+    $('characterPanel').hidden = true; $('characterMenu').hidden = true;
+    $('characterButton').textContent = 'Select character ▾'; chatUI.refreshIdentity();
+  });
+  list.append(none);
   if (!state.characters.length) {
     const empty = document.createElement('div'); empty.className = 'menu-note'; empty.textContent = 'No characters in this view yet.'; list.append(empty);
   }
@@ -128,6 +146,7 @@ function editCharacter(character = null) {
   crewUI.close();
   state.selected = character;
   if (character) localStorage.setItem(`active-character:${state.profile.id}`, character.id);
+  chatUI.refreshIdentity();
   $('characterMenu').hidden = true;
   $('characterButton').setAttribute('aria-expanded', 'false');
   $('characterPanel').hidden = false;

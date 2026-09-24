@@ -7,6 +7,7 @@ import { db } from '../lib/server.js';
 import { applyInitialSchema } from '../scripts/migrate.js';
 import { applySheetAndCrewSchema } from '../scripts/migrate-002.js';
 import { applyCrewImageSchema } from '../scripts/migrate-003.js';
+import { applyChatSchema } from '../scripts/migrate-004.js';
 import { GET as crewGet, PATCH as crewPatch } from '../api/crew.js';
 import { GET as crewImageGet, PUT as crewImagePut, DELETE as crewImageDelete } from '../api/crew-image.js';
 
@@ -35,6 +36,7 @@ test('registration, sessions, role boundaries, characters, and image persistence
     await applySheetAndCrewSchema(sql);
     await applyCrewImageSchema(sql);
     await applyCrewImageSchema(sql);
+    await applyChatSchema(sql);
     const invalidInvite = await result(await authPost(req('/api/auth', 'POST', { action: 'register', name: 'Player One', password: 'long-password-123', role: 'player', inviteCode: 'wrong' })));
     assert.equal(invalidInvite.status, 403);
     const playerRes = await authPost(req('/api/auth', 'POST', { action: 'register', name: 'Player One', password: 'long-password-123', role: 'player', inviteCode: process.env.REGISTRATION_INVITE_CODE }));

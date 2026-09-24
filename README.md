@@ -28,6 +28,8 @@ The persistent version needs a Turso database and Vercel Functions. Install depe
 For an existing database, back it up and apply the additive character/crew migration with `node --env-file=.env.local scripts/migrate-002.js` **before deploying this version**. The migration can be rerun safely and preserves existing characters. Confirm the environment file points to the intended database before running it. Preview and Production require separate runs against their own databases; never use a Production credential for Preview testing.
 Apply the additive shared-portrait migration with `node --env-file=.env.local scripts/migrate-003.js` before deploying the tabbed Crew Sheet. Run it separately for each intended database; it is safe to rerun.
 
+Apply the additive chat migration with `node --env-file=.env.local scripts/migrate-004.js` before deploying chat code to that environment. Run Preview and Production separately against their corresponding databases. The chat migration is safe to rerun. Signed-in players share one chat stream with plain text, clickable links, d6 rolls, and action rolls. Chat history can be downloaded as a text file over an inclusive UTC date range.
+
 The two rules PDFs in `gamerules/` remain local and are ignored by Git. Do not commit them or any `.env` file. For Preview and Production, configure separate Turso databases and the three environment variables in Vercel before deploying. Apply the schema to each database once. See `docs/ARCHITECTURE.md` for the data and authorization model.
 
 ## Planned direction
