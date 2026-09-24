@@ -36,7 +36,7 @@ button{min-height:40px;padding:8px 14px;border:1px solid rgba(205,184,125,.2);ba
 button:hover{border-color:rgba(205,184,125,.55)} button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .grid{stroke:rgba(205,184,125,.13);stroke-width:.75;fill:none}.const{stroke:rgba(205,184,125,.23);stroke-width:.8;fill:none}.orbit{stroke:rgba(205,184,125,.18);stroke-width:.8;fill:none;stroke-dasharray:2 5}
 .route{stroke:rgba(205,184,125,.16);stroke-width:1;fill:none}.activeRoute{stroke:#d5bd80;stroke-width:1.5;fill:none;stroke-dasharray:7 7}.motion .activeRoute{animation:routeDash 2.8s linear infinite}@keyframes routeDash{to{stroke-dashoffset:-56}}
-.system{cursor:pointer;outline:none}.system text{fill:rgba(226,215,184,.72);font-size:11px;letter-spacing:1.5px;paint-order:stroke;stroke:#091014;stroke-width:3px;stroke-linejoin:round}.system:hover text,.system.selected text,.system:focus text{fill:#f0e3bf}
+.map-hit{fill:transparent;pointer-events:all}.system{cursor:pointer;outline:none}.system text{fill:rgba(226,215,184,.72);font-size:11px;letter-spacing:1.5px;paint-order:stroke;stroke:#091014;stroke-width:3px;stroke-linejoin:round}.system:hover text,.system.selected text,.system:focus text{fill:#f0e3bf}
 .bloom{opacity:.22;filter:blur(3px);transform-box:fill-box;transform-origin:center;transition:.35s}.system:hover .bloom,.system.selected .bloom,.system:focus .bloom{opacity:.4;transform:scale(1.1)}
 .line{fill:none;stroke:rgba(211,190,132,.58);stroke-width:1;transform-box:fill-box;transform-origin:center;transition:.3s}.line.faint{opacity:.46;stroke-dasharray:3 4}.line.bold{opacity:.92;stroke:rgba(230,207,148,.78)}.system.selected .line{stroke:#e0c98c;opacity:1}
 .node{fill:#d6bf82;opacity:.9}.core{fill:#f0dd99;filter:url(#glow);transform-box:fill-box;transform-origin:center;transition:.25s}.starburst{fill:none;stroke:#eddba1;stroke-width:1;transform-box:fill-box;transform-origin:center;transition:.3s}.system:hover .core,.system.selected .core,.system:focus .core{transform:scale(1.2)}.system:hover .starburst,.system.selected .starburst,.system:focus .starburst{transform:scale(1.08)}
@@ -116,7 +116,7 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 .character-panel input,.character-panel select,.character-panel textarea{min-width:0}
 .chat-dock{position:absolute;z-index:11;right:20px;bottom:16px;width:min(440px,calc(100vw - 40px));background:#0d171c;box-shadow:0 12px 40px #000b;border:1px solid rgba(205,184,125,.45)}
 .chat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(205,184,125,.25);padding:5px 10px;color:var(--gold);font-size:13px;letter-spacing:.1em;text-transform:uppercase}
-.chat-head button{min-height:30px;padding:3px 9px}.chat-content{padding:8px}.chat-messages{height:220px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:9px;padding:4px 2px 8px}
+.chat-head button{min-height:30px;padding:3px 9px}.chat-head button[data-unread="true"]::after{content:"!";display:inline-grid;place-items:center;margin-left:7px;width:17px;height:17px;border-radius:50%;background:#b77a45;color:#0d171c;font-weight:bold}.chat-content{padding:8px}.chat-messages{height:220px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:9px;padding:4px 2px 8px}
 .chat-entry{display:grid;grid-template-columns:36px 1fr;gap:8px;min-width:0}.chat-avatar{width:36px;height:36px;object-fit:cover;border:1px solid #8c794d}.chat-entry>div{min-width:0}.chat-entry-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 8px;font-size:11px;color:#d8c697}.chat-entry-head time{color:#a89d84;font-size:10px}.chat-body,.chat-roll{font-size:13px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}.chat-roll{color:#e2bc79}.chat-body a{color:#9cc4db}.chat-identity{font-size:11px;color:#b9ac8e;padding:5px 0}.chat-compose{display:flex;gap:5px}.chat-compose input{min-width:0;flex:1;background:#091115;color:var(--paper);border:1px solid #6b6045;padding:8px}.chat-actions,.chat-roll-fields,.chat-export{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;align-items:center}.chat-actions button,.chat-roll-fields button,.chat-export button{min-height:32px;padding:5px 8px}.chat-roll-fields select,.chat-roll-fields input,.chat-export input{min-height:32px;background:#091115;color:var(--paper);border:1px solid #6b6045;padding:3px;max-width:105px}.chat-roll-fields label,.chat-export label{font-size:10px;display:grid;gap:2px;color:#b9ac8e}.chat-status{min-height:16px;color:#e5a18d;font-size:11px;margin:4px 0 0}
 @media(max-width:700px){.chat-dock{left:0;right:0;bottom:0;width:100%;max-height:75vh}.chat-messages{height:min(34vh,240px)}.chat-content{overflow-y:auto;max-height:calc(75vh - 44px)}}
 .chat-export input{max-width:none;width:125px}
@@ -131,7 +131,7 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 </head>
 <body>
 <main id="app">
-<section class="login-screen" id="loginScreen" aria-label="Sign in"><div class="login-card"><div class="eyebrow">Explorers Guild Â· Chart Access</div><h1>CHART OF THE GREAT DARK</h1><p id="authLead">Sign in to open your chart.</p><form id="authForm" class="form-stack"><label>Profile name<input id="authName" name="name" autocomplete="username" maxlength="32" required></label><label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="10" required></label><label id="inviteRow" hidden>Invitation code<input id="authInvite" name="invite" autocomplete="off"></label><label id="roleRow" hidden>Profile type<select id="authRole"><option value="player">Player</option><option value="gm">GM</option></select></label><button class="primary-button" id="authSubmit" type="submit">Sign in</button><p id="authMessage" class="message" role="alert"></p></form><button class="text-button" id="authToggle" type="button">Create a profile</button></div></section>
+<section class="login-screen" id="loginScreen" aria-label="Sign in"><div class="login-card"><div class="eyebrow">Explorers Guild &middot; Chart Access</div><h1>CHART OF THE GREAT DARK</h1><p id="authLead">Sign in to open your chart.</p><form id="authForm" class="form-stack"><label>Profile name<input id="authName" name="name" autocomplete="username" maxlength="32" required></label><label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="10" required></label><label id="inviteRow" hidden>Invitation code<input id="authInvite" name="invite" autocomplete="off"></label><label id="roleRow" hidden>Profile type<select id="authRole"><option value="player">Player</option><option value="gm">GM</option></select></label><button class="primary-button" id="authSubmit" type="submit">Sign in</button><p id="authMessage" class="message" role="alert"></p></form><button class="text-button" id="authToggle" type="button">Create a profile</button></div></section>
 <div class="stage" id="mapStage" hidden>
 <section class="chart" aria-label="Interactive Chart of the Great Dark prototype">
 <div class="bg-layer" id="bgLayer" aria-hidden="true"></div>
@@ -166,9 +166,11 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 </g>
 <path class="route" d="M205 372 C310 322 380 286 514 238"/><path class="route" d="M205 372 C330 382 510 404 676 350"/><path class="route" d="M205 372 C274 445 405 494 560 474"/><path id="activeRoute" class="activeRoute" d="M205 372 C310 322 380 286 514 238"/>
 <g class="system" data-key="home" tabindex="0" role="button" aria-label="Jumuah" transform="translate(205 372)">
+<rect class="map-hit" x="-43" y="-54" width="130" height="105"/>
 <circle class="bloom" r="20" fill="#5f8297"/><circle class="line faint spinA" r="20"/><circle class="line" r="11"/><path class="line" d="M-29 0H29 M0-29V29"/><path class="line faint" d="M-19-19L19 19 M19-19L-19 19"/><circle class="core" r="4"/><path class="starburst" d="M0-12L3-3L12 0L3 3L0 12L-3 3L-12 0L-3-3Z"/><text x="-8" y="-35">JUMUAH</text></g>
 <path class="const" d="M205 372 L302 298" style="opacity:.34"/>
 <g class="landmark" data-key="shipcity" tabindex="0" role="button" aria-label="Ship City landmark" transform="translate(315 286)">
+  <rect class="map-hit" x="-59" y="-62" width="255" height="126"/>
   <circle class="image-halo" r="48"/>
   <circle class="image-ring spinOrbit" r="52"/>
   <ellipse class="image-ring soft spinOrbitReverse" rx="61" ry="43" transform="rotate(-17)"/>
@@ -184,18 +186,21 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
   <circle class="node floatB" cx="-52" cy="0" r="1.8"/>
 
   <text x="62" y="-4">SHIP CITY</text>
-  <text x="62" y="12" style="font-size:8px;letter-spacing:1.1px;opacity:.62">LANDMARK Â· JUMUAH</text>
+  <text x="62" y="12" style="font-size:8px;letter-spacing:1.1px;opacity:.62">LANDMARK &middot; JUMUAH</text>
 </g>
 <g class="system" data-key="choir" tabindex="0" role="button" aria-label="The Choir Below" transform="translate(514 238)">
+<rect class="map-hit" x="-46" y="-57" width="224" height="107"/>
 <ellipse class="bloom" rx="35" ry="24" fill="#bd724b" transform="rotate(-16)"/><ellipse class="bloom" rx="25" ry="18" fill="#d2a34e" transform="rotate(20)"/><circle class="line faint spinA" r="29"/><circle class="line spinB" r="20"/><path class="line bold" d="M-42 0H42"/><path class="line" d="M0-39V39"/><path class="line faint" d="M-29-29L29 29"/><path class="line faint" d="M-33 12C-12 1 12 1 33-12"/><path class="line faint" d="M-33-12C-12-1 12-1 33 12"/><circle class="node floatA" cx="0" cy="-29" r="2.3"/><circle class="node floatB" cx="20" cy="0" r="2"/><circle class="node floatA" cx="0" cy="29" r="2.3"/><circle class="node floatB" cx="-20" cy="0" r="2"/><image class="delve-icon" href="assets/delve-1.png" x="-18" y="-18" width="36" height="36" preserveAspectRatio="xMidYMid meet"/><text x="19" y="-41">THE CHOIR BELOW</text></g>
 <g class="system" data-key="feathers" tabindex="0" role="button" aria-label="Vault of Seven Feathers" transform="translate(676 350)">
+<rect class="map-hit" x="-46" y="-55" width="266" height="109"/>
 <ellipse class="bloom" rx="32" ry="21" fill="#617e90" transform="rotate(10)"/><ellipse class="bloom" rx="23" ry="31" fill="#b89b56" transform="rotate(-17)"/><ellipse class="line faint spinA" rx="31" ry="16" transform="rotate(-14)"/><ellipse class="line spinB" rx="18" ry="27" transform="rotate(18)"/><path class="line bold" d="M0-40V40"/><path class="line" d="M-34 0H34"/><path class="line faint" d="M-10-32C-16-23-15-14-6-7"/><path class="line faint" d="M6-31C2-23 3-15 10-7"/><path class="line faint" d="M-24-19C-27-8-24 2-14 10"/><path class="line faint" d="M24-19C27-8 24 2 14 10"/><path class="line faint" d="M-22 18C-16 10-12 7-6 4"/><path class="line faint" d="M22 18C16 10 12 7 6 4"/><path class="line faint" d="M0 32C-3 22-3 16 0 8"/><circle class="node floatA" cx="0" cy="-31" r="2"/><circle class="node floatB" cx="-24" cy="-17" r="2"/><circle class="node floatA" cx="24" cy="-17" r="2"/><circle class="node floatB" cx="-22" cy="16" r="2"/><circle class="node floatA" cx="22" cy="16" r="2"/><circle class="node floatB" cx="0" cy="31" r="2"/><circle class="node" cx="0" cy="0" r="1.7"/><image class="delve-icon" href="assets/delve-2.png" x="-18" y="-18" width="36" height="36" preserveAspectRatio="xMidYMid meet"/><text x="20" y="-37">VAULT OF SEVEN FEATHERS</text></g>
 <g class="system" data-key="reliquary" tabindex="0" role="button" aria-label="Red Glass Reliquary" transform="translate(560 474)">
+<rect class="map-hit" x="-46" y="-47" width="254" height="109"/>
 <ellipse class="bloom" rx="36" ry="22" fill="#8f332b" transform="rotate(-22)"/><ellipse class="bloom" rx="19" ry="33" fill="#ba5c4d" transform="rotate(18)"/><path class="line faint spinA" d="M-28-7A29 29 0 1 1 26-10"/><path class="line spinB" d="M-17-24A29 29 0 0 1 28 8"/><path class="line bold" d="M-39 0H39"/><path class="line" d="M0-36V36"/><path class="line faint" d="M-25-25L-8-8 M10 10L28 28 M-24 24L-8 8 M8-8L25-25"/><circle class="node floatB" cx="-25" cy="0" r="2" fill="#bd7159"/><circle class="node floatA" cx="26" cy="-10" r="2" fill="#bd7159"/><circle class="node floatB" cx="0" cy="25" r="2" fill="#bd7159"/><image class="delve-icon" href="assets/delve-3.png" x="-18" y="-18" width="36" height="36" preserveAspectRatio="xMidYMid meet"/><text x="18" y="40">RED GLASS RELIQUARY</text></g>
 </g></svg>
-<div class="hint">Drag to pan Â· scroll to zoom Â· select a delve or landmark to inspect</div>
+<div class="hint">Drag to pan &middot; scroll to zoom &middot; select a delve or landmark to inspect</div>
 </section>
-<aside class="dossier" id="dossier" aria-live="polite" aria-hidden="true"><button class="close-dossier" id="closeDossier" type="button" aria-label="Close delve details">Ã—</button>
+<aside class="dossier" id="dossier" aria-live="polite" aria-hidden="true"><button class="close-dossier" id="closeDossier" type="button" aria-label="Close delve details">&times;</button>
 <svg class="bird" viewBox="0 0 90 90" aria-hidden="true"><path d="M15 52C29 46 37 28 54 25C64 23 69 28 76 25C71 33 66 37 60 39C67 41 72 46 74 54C65 50 57 49 51 52C42 57 38 67 29 71C31 62 28 57 15 52Z" fill="none" stroke="#b9a36e" stroke-width="2"/><circle cx="60" cy="32" r="2" fill="#cfbc84"/><path d="M27 70L21 80M33 68L31 81" stroke="#8d7a4e" stroke-width="1.5"/></svg>
 <div class="chapter" id="chapter"></div><h2 id="name"></h2><div class="chips" id="chips"></div><p class="lede" id="lede"></p>
 <div id="delveDetails"><div class="rule">Known particulars</div><dl><dt>System</dt><dd id="system"></dd><dt>Sponsor</dt><dd id="sponsor"></dd><dt>Signal</dt><dd id="signal"></dd><dt>Risk</dt><dd id="risk"></dd><dt>Return</dt><dd id="return"></dd></dl><div class="rumor" id="rumor"></div></div>
@@ -203,8 +208,8 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 </aside></div>
 <section class="chat-dock" id="chatDock" aria-label="Campaign chat" hidden>
   <div class="chat-resize" id="chatResize" role="separator" aria-orientation="horizontal" aria-label="Resize chat height" tabindex="0"></div>
-  <div class="chat-head"><span>Campaign chat</span><button id="chatToggle" type="button" aria-controls="chatContent" aria-expanded="true">Hide</button></div>
-  <div class="chat-content" id="chatContent">
+  <div class="chat-head"><span>Campaign chat</span><button id="chatToggle" type="button" aria-controls="chatContent" aria-expanded="false" aria-label="Show chat">Show</button></div>
+  <div class="chat-content" id="chatContent" hidden>
     <div class="chat-messages" id="chatMessages" role="log" aria-label="Chat messages" aria-live="polite"></div>
     <div class="chat-identity" id="chatIdentity"></div>
     <form class="chat-compose" id="chatForm"><input id="chatMessage" aria-label="Message" maxlength="2000" placeholder="Message the campaign" required><button id="chatSend" type="submit">Send</button></form>
@@ -309,17 +314,17 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 const root=document.getElementById("app"), chart=document.querySelector(".chart"), bgLayer=document.getElementById("bgLayer"), svg=document.getElementById("map"), route=document.getElementById("activeRoute"), dossier=document.getElementById("dossier");
 const motion=!matchMedia("(prefers-reduced-motion: reduce)").matches;root.classList.toggle("motion",motion);
 const info={
-choir:{chapter:"Expedition prospect Â· 01",name:"The Choir Below",chips:["Confirmed ruin","Builder origin","Guild interest"],lede:"A buried complex answers long-range scans with a repeating harmonic pulse. The pattern is too precise to be geological and too old to belong to the Diaspora.",system:"Hesentau drift",sponsor:"Explorers Guild",signal:"Seven-note repeating carrier",risk:"Moderate Â· structural unknowns",ret:"Artifacts Â· cartographic priority",rumor:"â€œThe first survey team said the stone was singing back to their Bird.â€",route:"M205 372 C310 322 380 286 514 238",view:[320,78,430,330]},
-feathers:{chapter:"Expedition prospect Â· 02",name:"Vault of Seven Feathers",chips:["Confirmed ruin","Bird resonance","Unclaimed"],lede:"Seven black spires surround a narrow fissure in the moonâ€™s crust. Garuda activity increases sharply whenever a vessel crosses the inner ring.",system:"Ninhulam outer moon",sponsor:"Open claim",signal:"Intermittent Garuda resonance",risk:"High Â· unknown fauna",ret:"Glyphs Â· probable intact archive",rumor:"â€œEvery crew sees a different seventh tower. The Bird always sees the same one.â€",route:"M205 372 C330 382 510 404 676 350",view:[465,175,430,330]},
-reliquary:{chapter:"Expedition prospect Â· 03",name:"Red Glass Reliquary",chips:["Rumored","Blight suspected","Restricted"],lede:"A fragmentary chart recovered from a wreck marks a chamber beneath a red-glass plateau. No expedition has yet verified that the site exists.",system:"Uncatalogued body",sponsor:"None",signal:"No direct contact",risk:"Severe Â· Blight indicators",ret:"Unknown",rumor:"â€œDo not follow the red reflection. The real entrance casts no light.â€",route:"M205 372 C274 445 405 494 560 474",view:[350,285,430,330]}
+choir:{chapter:"Expedition prospect \u00b7 01",name:"The Choir Below",chips:["Confirmed ruin","Builder origin","Guild interest"],lede:"A buried complex answers long-range scans with a repeating harmonic pulse. The pattern is too precise to be geological and too old to belong to the Diaspora.",system:"Hesentau drift",sponsor:"Explorers Guild",signal:"Seven-note repeating carrier",risk:"Moderate \u00b7 structural unknowns",ret:"Artifacts \u00b7 cartographic priority",rumor:"The first survey team said the stone was singing back to their Bird.",route:"M205 372 C310 322 380 286 514 238",view:[320,78,430,330]},
+feathers:{chapter:"Expedition prospect \u00b7 02",name:"Vault of Seven Feathers",chips:["Confirmed ruin","Bird resonance","Unclaimed"],lede:"Seven black spires surround a narrow fissure in the moon's crust. Garuda activity increases sharply whenever a vessel crosses the inner ring.",system:"Ninhulam outer moon",sponsor:"Open claim",signal:"Intermittent Garuda resonance",risk:"High \u00b7 unknown fauna",ret:"Glyphs \u00b7 probable intact archive",rumor:"Every crew sees a different seventh tower. The Bird always sees the same one.",route:"M205 372 C330 382 510 404 676 350",view:[465,175,430,330]},
+reliquary:{chapter:"Expedition prospect \u00b7 03",name:"Red Glass Reliquary",chips:["Rumored","Blight suspected","Restricted"],lede:"A fragmentary chart recovered from a wreck marks a chamber beneath a red-glass plateau. No expedition has yet verified that the site exists.",system:"Uncatalogued body",sponsor:"None",signal:"No direct contact",risk:"Severe \u00b7 Blight indicators",ret:"Unknown",rumor:"Do not follow the red reflection. The real entrance casts no light.",route:"M205 372 C274 445 405 494 560 474",view:[350,285,430,330]}
 };
 const landmarks={
-shipcity:{chapter:"Landmark Â· Jumuah System",name:"Ship City",chips:["Asteroid-metropolis","Home of the Diaspora","Explorers' base"],lede:"Built through and around an asteroid, Ship City is the only true city of the Lost Horizon: a tangled metropolis of hulls, stone, gardens, guild palaces, workshops and docks, and the base from which expeditions push into the Great Dark.",location:"Jumuah system",nature:"Asteroid-metropolis",importance:"Heart of Diaspora civilization and primary expedition base",notable:"The Chasm Â· Astrolaab Tower Â· Hull Town Â· Aluminum Bay",note:"Known as the Dying City, Ship City remains a beacon in the dark.",view:[120,125,475,355]}
+shipcity:{chapter:"Landmark \u00b7 Jumuah System",name:"Ship City",chips:["Asteroid-metropolis","Home of the Diaspora","Explorers' base"],lede:"Built through and around an asteroid, Ship City is the only true city of the Lost Horizon: a tangled metropolis of hulls, stone, gardens, guild palaces, workshops and docks, and the base from which expeditions push into the Great Dark.",location:"Jumuah system",nature:"Asteroid-metropolis",importance:"Heart of Diaspora civilization and primary expedition base",notable:"The Chasm \u00b7 Astrolaab Tower \u00b7 Hull Town \u00b7 Aluminum Bay",note:"Known as the Dying City, Ship City remains a beacon in the dark.",view:[120,125,475,355]}
 };
 const $=id=>document.getElementById(id);
 const defaultView=[0,0,900,600], minW=250, maxW=1800;
 const bgBounds={x:-450,y:-206.25,w:1800,h:1012.5};
-let view=defaultView.slice(), target=view.slice(), raf=0, dragging=false, pointerId=null, lastX=0,lastY=0,moved=false;
+let view=defaultView.slice(), target=view.slice(), raf=0, dragging=false, pointerId=null, lastX=0,lastY=0;
 
 function syncBackground(){
  const r=chart.getBoundingClientRect();if(!r.width||!r.height)return;
@@ -355,12 +360,12 @@ function closeDossier(){
 }
 document.querySelectorAll(".system").forEach(n=>{
  const go=()=>{if(n.dataset.key==="home"){closeDossier()}else openDossier(n.dataset.key)};
- n.addEventListener("click",e=>{if(!moved)go()});
+ n.addEventListener("click",go);
  n.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
 });
 document.querySelectorAll(".landmark").forEach(n=>{
  const go=()=>openLandmark(n.dataset.key);
- n.addEventListener("click",e=>{if(!moved)go()});
+ n.addEventListener("click",go);
  n.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
 });
 $("closeDossier").addEventListener("click",closeDossier);
@@ -368,11 +373,11 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDossier()});
 
 svg.addEventListener("pointerdown",e=>{
  if(e.button!==0||e.target.closest(".system,.landmark"))return;
- cancelAnimationFrame(raf);dragging=true;moved=false;pointerId=e.pointerId;lastX=e.clientX;lastY=e.clientY;chart.classList.add("dragging");svg.setPointerCapture(pointerId);
+ cancelAnimationFrame(raf);dragging=true;pointerId=e.pointerId;lastX=e.clientX;lastY=e.clientY;chart.classList.add("dragging");svg.setPointerCapture(pointerId);
 });
 svg.addEventListener("pointermove",e=>{
  if(!dragging||e.pointerId!==pointerId)return;
- const dx=e.clientX-lastX,dy=e.clientY-lastY;if(Math.abs(dx)+Math.abs(dy)>2)moved=true;
+ const dx=e.clientX-lastX,dy=e.clientY-lastY;
  const r=svg.getBoundingClientRect();const unitsPerPx=Math.min(view[2]/r.width,view[3]/r.height);
  setView([view[0]-dx*unitsPerPx,view[1]-dy*unitsPerPx,view[2],view[3]]);
  lastX=e.clientX;lastY=e.clientY;

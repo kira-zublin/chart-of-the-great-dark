@@ -4,10 +4,22 @@ const attributes = ['strength', 'agility', 'logic', 'insight', 'perception', 'em
 
 export function initChatUI(request, profile, character) {
   let lastId = 0; let timer = null; let loading = false; let first = true;
+  let lastViewedId = 0; let hasViewedBefore = false;
   let pushId = null; let pushCount = 0; let secondPush = false;
   const list = $('chatMessages');
   const message = $('chatMessage');
   const toggle = $('chatToggle');
+
+  function setUnread(unread) {
+    toggle.dataset.unread = String(unread);
+    toggle.setAttribute('aria-label', $('chatContent').hidden ? unread ? 'Show chat, new messages' : 'Show chat' : 'Hide chat');
+  }
+  function markViewed() {
+    lastViewedId = Math.max(lastViewedId, lastId);
+    if (profile()) localStorage.setItem(`chat-viewed:${profile().id}`, String(lastViewedId));
+    hasViewedBefore = true;
+    setUnread(false);
+  }
 
   function identity() {
     const picked = character();
@@ -60,6 +72,10 @@ export function initChatUI(request, profile, character) {
     try {
       const data = await request(`/api/chat${lastId ? `?after=${lastId}` : ''}`);
       for (const item of data.messages) render(item);
+      const historyReset = first && lastId < lastViewedId;
+      if (historyReset) lastViewedId = lastId;
+      if ((first && !hasViewedBefore) || historyReset || !$('chatContent').hidden) markViewed();
+      else if (data.messages.some(item => Number(item.id) > lastViewedId && item.player_name !== profile()?.name)) setUnread(true);
       $('chatStatus').textContent = '';
       first = false;
     } catch (cause) { $('chatStatus').textContent = cause.message; }
@@ -70,7 +86,7 @@ export function initChatUI(request, profile, character) {
     const selected = character();
     try {
       const data = await request('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, characterId: payload.type === 'push' ? null : selected?.id || null }) });
-      render(data.message); return data.message;
+      render(data.message); if (!$('chatContent').hidden) markViewed(); return data.message;
     } catch (cause) { $('chatStatus').textContent = cause.message; return null; }
   }
   $('chatForm').addEventListener('submit', async event => {
@@ -127,7 +143,8 @@ export function initChatUI(request, profile, character) {
     const open = $('chatContent').hidden;
     $('chatContent').hidden = !open; toggle.setAttribute('aria-expanded', String(open));
     toggle.textContent = open ? 'Hide' : 'Show';
-    if (open) { poll(); list.scrollTop = list.scrollHeight; }
+    if (open) { markViewed(); poll(); list.scrollTop = list.scrollHeight; }
+    else setUnread(false);
   });
   $('chatExportForm').addEventListener('submit', async event => {
     event.preventDefault();
@@ -164,9 +181,8 @@ export function initChatUI(request, profile, character) {
     resize.addEventListener('pointermove', onMove); resize.addEventListener('pointerup', end); resize.addEventListener('pointercancel', end);
   });
   resize.addEventListener('keydown', event => { if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); setHeight(dock.getBoundingClientRect().height + (event.key === 'ArrowUp' ? 24 : -24)); } });
-  if (matchMedia('(max-width: 700px)').matches) { $('chatContent').hidden = true; toggle.setAttribute('aria-expanded', 'false'); toggle.textContent = 'Show'; }
   return {
-    start() { lastId = 0; first = true; list.replaceChildren(); identity(); poll(); clearInterval(timer); timer = setInterval(poll, 2000); },
+    start() { lastId = 0; first = true; const saved = localStorage.getItem(`chat-viewed:${profile().id}`); hasViewedBefore = saved !== null; lastViewedId = Math.max(0, Number(saved) || 0); $('chatContent').hidden = true; toggle.textContent = 'Show'; toggle.setAttribute('aria-expanded', 'false'); setUnread(false); list.replaceChildren(); identity(); poll(); clearInterval(timer); timer = setInterval(poll, 2000); },
     stop() { clearInterval(timer); timer = null; lastId = 0; pushId = null; pushCount = 0; secondPush = false; $('chatPush').hidden = true; $('chatRollResult').textContent = ''; list.replaceChildren(); rollDialog.close(); exportDialog.close(); },
     refreshIdentity: identity
   };
