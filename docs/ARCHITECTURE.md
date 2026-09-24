@@ -16,4 +16,12 @@ Players can list, edit, and delete their own PCs. GMs can list and filter all ch
 
 Use separate Turso databases for Preview/Development and Production. Configure `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `REGISTRATION_INVITE_CODE` in the corresponding Vercel environments. Do not use production data for automated tests or preview experiments. Back up the production database before future schema migrations; do not reset it when deploying a new build.
 
-The rules PDFs are local references in `gamerules/` and are deliberately excluded from Git. The character sheet currently covers identity, description, and the six core attributes from the Explorer Sheet. Additional rules fields, maps, NPC authoring beyond a basic NPC record, chat, and presence remain future features.
+The rules PDFs are local references in `gamerules/` and are deliberately excluded from Git. Rules automation, maps, NPC authoring beyond a basic NPC record, chat, and presence remain future features.
+
+## Expanded sheets and shared crew
+
+`db/002_sheets_and_crew.sql` adds a validated JSON `sheet` column to characters without replacing the original fields. Existing characters receive an empty sheet that the UI fills with defaults. Repeatable talents and gear live in this bounded JSON object; the API validates types, lengths, and item counts before writing. `scripts/migrate-002.js` applies this migration explicitly and skips the already-added column when rerun.
+
+The crew is a single durable row in Turso, with five role slots in `crew_roles` referencing character IDs. The database prevents the same character occupying two slots and clears references when a character is deleted. The API requires a session for every read and write. Players may assign or clear their own PCs; the GM may manage any PC. Other crew fields are shared edits by all signed-in profiles. Each field-sized patch uses a revision comparison; a stale write receives HTTP 409 instead of overwriting newer state. Role assignment compares the expected occupant in SQL before changing the slot.
+
+While the Crew Sheet is open, clients fetch the latest state every four seconds and on returning to the browser tab. They immediately refetch after successful writes; polling pauses during active field editing. Turso remains authoritative, so refreshes and separate Vercel Function instances see the same state. This near-real-time approach adds no dedicated messaging service. Chat or subsecond presence can later use a push transport without changing the crew persistence model.

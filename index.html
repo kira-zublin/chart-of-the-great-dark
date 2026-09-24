@@ -95,17 +95,36 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 .menu-note{font-size:11px;color:#a99b78;padding:8px 4px;line-height:1.4}.role-label{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#b7a274}.character-panel{position:fixed;right:0;top:0;bottom:0;z-index:12;width:min(460px,100vw);overflow:auto;padding:25px 24px 34px;border-left:1px solid rgba(205,184,125,.42);background:linear-gradient(#182025f7,#0c1419fa);box-shadow:-15px 0 40px #0008}.character-panel h2{margin:10px 0 18px;font-weight:400;font-size:29px}.character-form{display:grid;gap:14px}.character-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.character-panel .panel-head{display:flex;justify-content:space-between;align-items:start;gap:12px}.character-panel .panel-head button{padding:0;min-width:38px}.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.image-preview{width:100%;max-height:150px;object-fit:contain;margin-top:8px;background:#071014}.image-preview[hidden]{display:none}.panel-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.character-panel .message{margin:0}
 .character-panel{background:linear-gradient(#182025,#0c1419)}
 @media(max-width:800px){.hud{padding-top:0}.character-wrap{align-self:flex-start}.character-menu{left:0;right:auto}.character-panel{width:100vw}.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.sheet-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;position:sticky;top:-25px;z-index:2;background:#182025;padding:8px 0;margin:0 0 12px}
+.sheet-tabs button{min-width:0;padding:7px 2px;font-size:9px;letter-spacing:0;overflow-wrap:anywhere}
+.sheet-tabs button[aria-selected="true"]{background:#b79a60;color:#111916;border-color:#d7bb7d}
+.sheet-section{display:grid;gap:14px}.sheet-section[hidden]{display:none}
+.panel-footer{position:sticky;bottom:-34px;z-index:2;background:#0c1419;padding:8px 0 14px;border-top:1px solid rgba(205,184,125,.25)}
+.field-hint{font-size:12px;line-height:1.4;color:#b8aa88;margin:2px 0}
+.condition-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.condition-grid label{display:flex;align-items:center;gap:7px;font-size:11px}
+.condition-grid input{width:auto;min-height:0}
+.entry-list{display:grid;gap:8px}.entry-row{border:1px solid rgba(205,184,125,.22);padding:9px;display:grid;gap:8px}
+.entry-row .character-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.entry-row button{justify-self:end;min-height:28px;padding:3px 8px}
+.crew-panel{z-index:13}.crew-panel label{display:grid;gap:6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#c8b98f}
+.crew-panel .character-grid{margin-bottom:8px}
+.crew-panel .entry-row select{width:100%}
+.character-wrap{display:flex;gap:8px;align-items:flex-start}
+.character-panel{overflow-x:hidden}.character-form,.sheet-section,.character-grid,.stat-grid{min-width:0}
+.sheet-section>.character-grid,.entry-row .character-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.character-panel input,.character-panel select,.character-panel textarea{min-width:0}
 </style>
 </head>
 <body>
 <main id="app">
-<section class="login-screen" id="loginScreen" aria-label="Sign in"><div class="login-card"><div class="eyebrow">Explorers Guild · Chart Access</div><h1>CHART OF THE GREAT DARK</h1><p id="authLead">Sign in to open your chart.</p><form id="authForm" class="form-stack"><label>Profile name<input id="authName" name="name" autocomplete="username" maxlength="32" required></label><label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="10" required></label><label id="inviteRow" hidden>Invitation code<input id="authInvite" name="invite" autocomplete="off"></label><label id="roleRow" hidden>Profile type<select id="authRole"><option value="player">Player</option><option value="gm">GM</option></select></label><button class="primary-button" id="authSubmit" type="submit">Sign in</button><p id="authMessage" class="message" role="alert"></p></form><button class="text-button" id="authToggle" type="button">Create a profile</button></div></section>
+<section class="login-screen" id="loginScreen" aria-label="Sign in"><div class="login-card"><div class="eyebrow">Explorers Guild Â· Chart Access</div><h1>CHART OF THE GREAT DARK</h1><p id="authLead">Sign in to open your chart.</p><form id="authForm" class="form-stack"><label>Profile name<input id="authName" name="name" autocomplete="username" maxlength="32" required></label><label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="10" required></label><label id="inviteRow" hidden>Invitation code<input id="authInvite" name="invite" autocomplete="off"></label><label id="roleRow" hidden>Profile type<select id="authRole"><option value="player">Player</option><option value="gm">GM</option></select></label><button class="primary-button" id="authSubmit" type="submit">Sign in</button><p id="authMessage" class="message" role="alert"></p></form><button class="text-button" id="authToggle" type="button">Create a profile</button></div></section>
 <div class="stage" id="mapStage" hidden>
 <section class="chart" aria-label="Interactive Chart of the Great Dark prototype">
 <div class="bg-layer" id="bgLayer" aria-hidden="true"></div>
 <div class="bg-fog" aria-hidden="true"></div>
 <canvas id="dust" aria-hidden="true"></canvas>
-<div class="hud"><div><div class="account-wrap"><button id="accountButton" type="button" aria-expanded="false">Profile</button><div class="account-menu" id="accountMenu" hidden><div id="accountRole" class="role-label"></div><button id="logoutButton" type="button">Log out</button></div></div><div class="eyebrow">Explorers Guild · Cartographic Instrument 07</div><div class="title">CHART OF THE GREAT DARK</div></div><div class="character-wrap"><button id="characterButton" type="button" aria-expanded="false">Select character ▾</button><div class="character-menu" id="characterMenu" hidden><div id="characterList"></div><button id="createCharacter" type="button">Create a new character</button><label id="filterRow" hidden>Show <select id="characterFilter"><option value="all">All characters</option><option value="pc">Player characters</option><option value="npc">NPCs</option></select></label></div></div></div>
+<div class="hud"><div><div class="account-wrap"><button id="accountButton" type="button" aria-expanded="false">Profile</button><div class="account-menu" id="accountMenu" hidden><div id="accountRole" class="role-label"></div><button id="logoutButton" type="button">Log out</button></div></div><div class="eyebrow">Explorers Guild Â· Cartographic Instrument 07</div><div class="title">CHART OF THE GREAT DARK</div></div><div class="character-wrap"><button id="openCrew" type="button">Crew Sheet</button><button id="characterButton" type="button" aria-expanded="false">Select character â–¾</button><div class="character-menu" id="characterMenu" hidden><div id="characterList"></div><button id="createCharacter" type="button">Create a new character</button><label id="filterRow" hidden>Show <select id="characterFilter"><option value="all">All characters</option><option value="pc">Player characters</option><option value="npc">NPCs</option></select></label></div></div></div>
 <svg class="map" id="map" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Star chart with selectable delves and landmarks">
 <defs>
 <filter id="glow" x="-200%" y="-200%" width="400%" height="400%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -152,7 +171,7 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
   <circle class="node floatB" cx="-52" cy="0" r="1.8"/>
 
   <text x="62" y="-4">SHIP CITY</text>
-  <text x="62" y="12" style="font-size:8px;letter-spacing:1.1px;opacity:.62">LANDMARK · JUMUAH</text>
+  <text x="62" y="12" style="font-size:8px;letter-spacing:1.1px;opacity:.62">LANDMARK Â· JUMUAH</text>
 </g>
 <g class="system" data-key="choir" tabindex="0" role="button" aria-label="The Choir Below" transform="translate(514 238)">
 <ellipse class="bloom" rx="35" ry="24" fill="#bd724b" transform="rotate(-16)"/><ellipse class="bloom" rx="25" ry="18" fill="#d2a34e" transform="rotate(20)"/><circle class="line faint spinA" r="29"/><circle class="line spinB" r="20"/><path class="line bold" d="M-42 0H42"/><path class="line" d="M0-39V39"/><path class="line faint" d="M-29-29L29 29"/><path class="line faint" d="M-33 12C-12 1 12 1 33-12"/><path class="line faint" d="M-33-12C-12-1 12-1 33 12"/><circle class="node floatA" cx="0" cy="-29" r="2.3"/><circle class="node floatB" cx="20" cy="0" r="2"/><circle class="node floatA" cx="0" cy="29" r="2.3"/><circle class="node floatB" cx="-20" cy="0" r="2"/><image class="delve-icon" href="assets/delve-1.png" x="-18" y="-18" width="36" height="36" preserveAspectRatio="xMidYMid meet"/><text x="19" y="-41">THE CHOIR BELOW</text></g>
@@ -161,28 +180,93 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 <g class="system" data-key="reliquary" tabindex="0" role="button" aria-label="Red Glass Reliquary" transform="translate(560 474)">
 <ellipse class="bloom" rx="36" ry="22" fill="#8f332b" transform="rotate(-22)"/><ellipse class="bloom" rx="19" ry="33" fill="#ba5c4d" transform="rotate(18)"/><path class="line faint spinA" d="M-28-7A29 29 0 1 1 26-10"/><path class="line spinB" d="M-17-24A29 29 0 0 1 28 8"/><path class="line bold" d="M-39 0H39"/><path class="line" d="M0-36V36"/><path class="line faint" d="M-25-25L-8-8 M10 10L28 28 M-24 24L-8 8 M8-8L25-25"/><circle class="node floatB" cx="-25" cy="0" r="2" fill="#bd7159"/><circle class="node floatA" cx="26" cy="-10" r="2" fill="#bd7159"/><circle class="node floatB" cx="0" cy="25" r="2" fill="#bd7159"/><image class="delve-icon" href="assets/delve-3.png" x="-18" y="-18" width="36" height="36" preserveAspectRatio="xMidYMid meet"/><text x="18" y="40">RED GLASS RELIQUARY</text></g>
 </g></svg>
-<div class="hint">Drag to pan · scroll to zoom · select a delve or landmark to inspect</div>
+<div class="hint">Drag to pan Â· scroll to zoom Â· select a delve or landmark to inspect</div>
 </section>
-<aside class="dossier" id="dossier" aria-live="polite" aria-hidden="true"><button class="close-dossier" id="closeDossier" type="button" aria-label="Close delve details">×</button>
+<aside class="dossier" id="dossier" aria-live="polite" aria-hidden="true"><button class="close-dossier" id="closeDossier" type="button" aria-label="Close delve details">Ã—</button>
 <svg class="bird" viewBox="0 0 90 90" aria-hidden="true"><path d="M15 52C29 46 37 28 54 25C64 23 69 28 76 25C71 33 66 37 60 39C67 41 72 46 74 54C65 50 57 49 51 52C42 57 38 67 29 71C31 62 28 57 15 52Z" fill="none" stroke="#b9a36e" stroke-width="2"/><circle cx="60" cy="32" r="2" fill="#cfbc84"/><path d="M27 70L21 80M33 68L31 81" stroke="#8d7a4e" stroke-width="1.5"/></svg>
 <div class="chapter" id="chapter"></div><h2 id="name"></h2><div class="chips" id="chips"></div><p class="lede" id="lede"></p>
 <div id="delveDetails"><div class="rule">Known particulars</div><dl><dt>System</dt><dd id="system"></dd><dt>Sponsor</dt><dd id="sponsor"></dd><dt>Signal</dt><dd id="signal"></dd><dt>Risk</dt><dd id="risk"></dd><dt>Return</dt><dd id="return"></dd></dl><div class="rumor" id="rumor"></div></div>
 <div id="landmarkDetails" hidden><div class="rule">Landmark record</div><dl><dt>Location</dt><dd id="landmarkLocation"></dd><dt>Nature</dt><dd id="landmarkNature"></dd><dt>Importance</dt><dd id="landmarkImportance"></dd><dt>Notable</dt><dd id="landmarkNotable"></dd></dl><div class="rumor" id="landmarkNote"></div></div>
 </aside></div>
-<aside class="character-panel" id="characterPanel" aria-label="Character editor" hidden><div class="panel-head"><div><div class="eyebrow">Explorer record</div><h2 id="characterHeading">New character</h2></div><button id="closeCharacter" type="button" aria-label="Close character editor">×</button></div><form id="characterForm" class="character-form"><label>Character name<input id="characterName" maxlength="80" required></label><label id="characterKindRow">Type<select id="characterKind"><option value="pc">Player character</option><option value="npc">NPC</option></select></label><div class="character-grid"><label>Profession<input id="characterProfession" maxlength="500"></label><label>Origin<input id="characterOrigin" maxlength="500"></label><label>Faction<input id="characterFaction" maxlength="500"></label><label>Motivation<input id="characterMotivation" maxlength="500"></label></div><label>Appearance<textarea id="characterAppearance" maxlength="500"></textarea></label><label>Description<textarea id="characterDescription" maxlength="4000"></textarea></label><div class="rule">Core attributes</div><div class="stat-grid"><label>Strength<input id="statStrength" type="number" min="0" max="99" value="0" required></label><label>Agility<input id="statAgility" type="number" min="0" max="99" value="0" required></label><label>Logic<input id="statLogic" type="number" min="0" max="99" value="0" required></label><label>Insight<input id="statInsight" type="number" min="0" max="99" value="0" required></label><label>Perception<input id="statPerception" type="number" min="0" max="99" value="0" required></label><label>Empathy<input id="statEmpathy" type="number" min="0" max="99" value="0" required></label></div><div class="rule">Character images</div><label>Portrait (JPEG, PNG, or WebP; up to 2 MB)<input id="characterPortrait" type="file" accept="image/png,image/jpeg,image/webp"><img class="image-preview" id="portraitPreview" alt="Portrait preview" hidden></label><label>Full stand-up (JPEG, PNG, or WebP; up to 2 MB)<input id="characterStandup" type="file" accept="image/png,image/jpeg,image/webp"><img class="image-preview" id="standupPreview" alt="Stand-up preview" hidden></label><p id="characterMessage" class="message" role="alert"></p><div class="panel-actions"><button class="primary-button" type="submit" id="saveCharacter">Save character</button><button id="cancelCharacter" type="button">Close</button></div></form></aside>
-<div class="legend"><span><i class="dot blue"></i>Known system</span><span><i class="dot" style="border-radius:2px;background:#aa6c4c"></i>Landmark</span><span><i class="dot"></i>Confirmed delve</span><span><i class="dot red"></i>Rumored / unstable site</span></div>
+<aside class="character-panel" id="characterPanel" aria-label="Character editor" hidden>
+  <div class="panel-head"><div><div class="eyebrow">Explorer record</div><h2 id="characterHeading">New character</h2></div><button id="closeCharacter" type="button" aria-label="Close character editor">×</button></div>
+  <div class="sheet-tabs" role="tablist" aria-label="Character sections">
+    <button type="button" role="tab" aria-selected="true" aria-controls="tabProfile" id="tabButtonProfile" data-tab="Profile">Profile</button>
+    <button type="button" role="tab" aria-selected="false" aria-controls="tabAbilities" id="tabButtonAbilities" data-tab="Abilities" tabindex="-1">Abilities</button>
+    <button type="button" role="tab" aria-selected="false" aria-controls="tabCondition" id="tabButtonCondition" data-tab="Condition" tabindex="-1">Condition</button>
+    <button type="button" role="tab" aria-selected="false" aria-controls="tabGear" id="tabButtonGear" data-tab="Gear" tabindex="-1">Gear</button>
+  </div>
+  <form id="characterForm" class="character-form" novalidate>
+    <section id="tabProfile" role="tabpanel" aria-labelledby="tabButtonProfile" class="sheet-section">
+      <label>Character name<input id="characterName" maxlength="80" required></label>
+      <label id="characterKindRow">Type<select id="characterKind"><option value="pc">Player character</option><option value="npc">NPC</option></select></label>
+      <div class="character-grid">
+        <label>Profession<input id="characterProfession" maxlength="500"></label><label>Specialty<input id="sheetSpecialty" maxlength="500"></label>
+        <label>Origin<input id="characterOrigin" maxlength="500"></label><label>Faction<input id="characterFaction" maxlength="500"></label>
+        <label>Motivation<input id="characterMotivation" maxlength="500"></label><label>Quirk<input id="sheetQuirk" maxlength="500"></label>
+      </div>
+      <label>Contacts<textarea id="sheetContacts" maxlength="1000"></textarea></label>
+      <label>Appearance<textarea id="characterAppearance" maxlength="500"></textarea></label>
+      <label>Description<textarea id="characterDescription" maxlength="4000"></textarea></label>
+      <div class="rule">Character images</div>
+      <label>Portrait (JPEG, PNG, or WebP; up to 2 MB)<input id="characterPortrait" type="file" accept="image/png,image/jpeg,image/webp"><img class="image-preview" id="portraitPreview" alt="Portrait preview" hidden></label>
+      <label>Full stand-up (JPEG, PNG, or WebP; up to 2 MB)<input id="characterStandup" type="file" accept="image/png,image/jpeg,image/webp"><img class="image-preview" id="standupPreview" alt="Stand-up preview" hidden></label>
+    </section>
+    <section id="tabAbilities" role="tabpanel" aria-labelledby="tabButtonAbilities" class="sheet-section" hidden>
+      <div class="rule">Core attributes</div><div class="stat-grid">
+        <label>Strength<input id="statStrength" type="number" min="0" max="99" value="0" required></label>
+        <label>Agility<input id="statAgility" type="number" min="0" max="99" value="0" required></label>
+        <label>Logic<input id="statLogic" type="number" min="0" max="99" value="0" required></label>
+        <label>Insight<input id="statInsight" type="number" min="0" max="99" value="0" required></label>
+        <label>Perception<input id="statPerception" type="number" min="0" max="99" value="0" required></label>
+        <label>Empathy<input id="statEmpathy" type="number" min="0" max="99" value="0" required></label>
+      </div><p id="attributeHint" class="field-hint"></p>
+      <label>Experience points<input id="sheetExperience" type="number" min="0" max="999999" value="0"></label>
+      <div class="rule">Talents</div><div id="talentRows" class="entry-list"></div><button type="button" id="addTalent">Add talent</button>
+    </section>
+    <section id="tabCondition" role="tabpanel" aria-labelledby="tabButtonCondition" class="sheet-section" hidden>
+      <p class="field-hint">Maximum Health = Strength + Agility; Hope = Logic + Empathy; Heart = Insight + Perception.</p>
+      <div class="stat-grid"><label>Health now<input id="sheetHealth" type="number" min="0" max="99"></label><label>Hope now<input id="sheetHope" type="number" min="0" max="99"></label><label>Heart now<input id="sheetHeart" type="number" min="0" max="99"></label></div>
+      <p id="vitalityMax" class="field-hint"></p><div class="rule">Conditions</div><div id="conditionChecks" class="condition-grid"></div>
+      <label>Critical injuries<textarea id="sheetInjuries" maxlength="2000"></textarea></label>
+      <label>Mental trauma<textarea id="sheetTrauma" maxlength="2000"></textarea></label>
+      <label>Blight manifestations<textarea id="sheetBlight" maxlength="2000"></textarea></label>
+    </section>
+    <section id="tabGear" role="tabpanel" aria-labelledby="tabButtonGear" class="sheet-section" hidden>
+      <div class="character-grid"><label>Supply<input id="sheetSupply" type="number" min="0" max="999999"></label><label>Rukh<input id="sheetRukh" type="number" min="0" max="999999"></label></div>
+      <label>Keepsake<input id="sheetKeepsake" maxlength="1000"></label>
+      <div class="rule">Weapons</div><div id="weaponRows" class="entry-list"></div><button type="button" data-add-entry="weapons">Add weapon</button>
+      <div class="rule">Armor &amp; suits</div><div id="armorRows" class="entry-list"></div><button type="button" data-add-entry="armor">Add armor</button>
+      <div class="rule">Equipment</div><div id="equipmentRows" class="entry-list"></div><button type="button" data-add-entry="equipment">Add item</button>
+      <div class="rule">Tiny items</div><div id="tinyItemRows" class="entry-list"></div><button type="button" data-add-entry="tinyItems">Add tiny item</button>
+    </section>
+    <div class="panel-footer"><p id="characterMessage" class="message" role="status"></p><div class="panel-actions"><button class="primary-button" type="submit" id="saveCharacter">Save character</button><button id="cancelCharacter" type="button">Close</button></div></div>
+  </form>
+</aside>
+<aside class="character-panel crew-panel" id="crewPanel" aria-label="Crew sheet" hidden>
+  <div class="panel-head"><div><div class="eyebrow">Shared expedition record</div><h2>Crew Sheet</h2></div><button id="closeCrew" type="button" aria-label="Close crew sheet">×</button></div>
+  <p id="crewMessage" class="message" role="status"></p>
+  <label>Crew name<input id="crewName" maxlength="100"></label>
+  <label>Crew points<input id="crewPoints" type="number" min="0" max="999"></label>
+  <div class="rule">Delve roles</div><div id="crewRoleRows" class="entry-list"></div>
+  <div class="rule">Crew maneuvers</div><label>One maneuver per line<textarea id="crewManeuvers" maxlength="3600"></textarea></label>
+  <div class="rule">Bird</div><div id="crewBird" class="character-grid"></div>
+  <div class="rule">Rover</div><div id="crewRover" class="character-grid"></div>
+  <div class="rule">Shuttle</div><div id="crewShuttle" class="character-grid"></div>
+  <p class="field-hint">Changes save when you leave a field. The sheet refreshes while open.</p>
+</aside><div class="legend"><span><i class="dot blue"></i>Known system</span><span><i class="dot" style="border-radius:2px;background:#aa6c4c"></i>Landmark</span><span><i class="dot"></i>Confirmed delve</span><span><i class="dot red"></i>Rumored / unstable site</span></div>
 </main>
 <script>
 (()=>{
 const root=document.getElementById("app"), chart=document.querySelector(".chart"), bgLayer=document.getElementById("bgLayer"), svg=document.getElementById("map"), route=document.getElementById("activeRoute"), dossier=document.getElementById("dossier");
 const motion=!matchMedia("(prefers-reduced-motion: reduce)").matches;root.classList.toggle("motion",motion);
 const info={
-choir:{chapter:"Expedition prospect · 01",name:"The Choir Below",chips:["Confirmed ruin","Builder origin","Guild interest"],lede:"A buried complex answers long-range scans with a repeating harmonic pulse. The pattern is too precise to be geological and too old to belong to the Diaspora.",system:"Hesentau drift",sponsor:"Explorers Guild",signal:"Seven-note repeating carrier",risk:"Moderate · structural unknowns",ret:"Artifacts · cartographic priority",rumor:"“The first survey team said the stone was singing back to their Bird.”",route:"M205 372 C310 322 380 286 514 238",view:[320,78,430,330]},
-feathers:{chapter:"Expedition prospect · 02",name:"Vault of Seven Feathers",chips:["Confirmed ruin","Bird resonance","Unclaimed"],lede:"Seven black spires surround a narrow fissure in the moon’s crust. Garuda activity increases sharply whenever a vessel crosses the inner ring.",system:"Ninhulam outer moon",sponsor:"Open claim",signal:"Intermittent Garuda resonance",risk:"High · unknown fauna",ret:"Glyphs · probable intact archive",rumor:"“Every crew sees a different seventh tower. The Bird always sees the same one.”",route:"M205 372 C330 382 510 404 676 350",view:[465,175,430,330]},
-reliquary:{chapter:"Expedition prospect · 03",name:"Red Glass Reliquary",chips:["Rumored","Blight suspected","Restricted"],lede:"A fragmentary chart recovered from a wreck marks a chamber beneath a red-glass plateau. No expedition has yet verified that the site exists.",system:"Uncatalogued body",sponsor:"None",signal:"No direct contact",risk:"Severe · Blight indicators",ret:"Unknown",rumor:"“Do not follow the red reflection. The real entrance casts no light.”",route:"M205 372 C274 445 405 494 560 474",view:[350,285,430,330]}
+choir:{chapter:"Expedition prospect Â· 01",name:"The Choir Below",chips:["Confirmed ruin","Builder origin","Guild interest"],lede:"A buried complex answers long-range scans with a repeating harmonic pulse. The pattern is too precise to be geological and too old to belong to the Diaspora.",system:"Hesentau drift",sponsor:"Explorers Guild",signal:"Seven-note repeating carrier",risk:"Moderate Â· structural unknowns",ret:"Artifacts Â· cartographic priority",rumor:"â€œThe first survey team said the stone was singing back to their Bird.â€",route:"M205 372 C310 322 380 286 514 238",view:[320,78,430,330]},
+feathers:{chapter:"Expedition prospect Â· 02",name:"Vault of Seven Feathers",chips:["Confirmed ruin","Bird resonance","Unclaimed"],lede:"Seven black spires surround a narrow fissure in the moonâ€™s crust. Garuda activity increases sharply whenever a vessel crosses the inner ring.",system:"Ninhulam outer moon",sponsor:"Open claim",signal:"Intermittent Garuda resonance",risk:"High Â· unknown fauna",ret:"Glyphs Â· probable intact archive",rumor:"â€œEvery crew sees a different seventh tower. The Bird always sees the same one.â€",route:"M205 372 C330 382 510 404 676 350",view:[465,175,430,330]},
+reliquary:{chapter:"Expedition prospect Â· 03",name:"Red Glass Reliquary",chips:["Rumored","Blight suspected","Restricted"],lede:"A fragmentary chart recovered from a wreck marks a chamber beneath a red-glass plateau. No expedition has yet verified that the site exists.",system:"Uncatalogued body",sponsor:"None",signal:"No direct contact",risk:"Severe Â· Blight indicators",ret:"Unknown",rumor:"â€œDo not follow the red reflection. The real entrance casts no light.â€",route:"M205 372 C274 445 405 494 560 474",view:[350,285,430,330]}
 };
 const landmarks={
-shipcity:{chapter:"Landmark · Jumuah System",name:"Ship City",chips:["Asteroid-metropolis","Home of the Diaspora","Explorers' base"],lede:"Built through and around an asteroid, Ship City is the only true city of the Lost Horizon: a tangled metropolis of hulls, stone, gardens, guild palaces, workshops and docks, and the base from which expeditions push into the Great Dark.",location:"Jumuah system",nature:"Asteroid-metropolis",importance:"Heart of Diaspora civilization and primary expedition base",notable:"The Chasm · Astrolaab Tower · Hull Town · Aluminum Bay",note:"Known as the Dying City, Ship City remains a beacon in the dark.",view:[120,125,475,355]}
+shipcity:{chapter:"Landmark Â· Jumuah System",name:"Ship City",chips:["Asteroid-metropolis","Home of the Diaspora","Explorers' base"],lede:"Built through and around an asteroid, Ship City is the only true city of the Lost Horizon: a tangled metropolis of hulls, stone, gardens, guild palaces, workshops and docks, and the base from which expeditions push into the Great Dark.",location:"Jumuah system",nature:"Asteroid-metropolis",importance:"Heart of Diaspora civilization and primary expedition base",notable:"The Chasm Â· Astrolaab Tower Â· Hull Town Â· Aluminum Bay",note:"Known as the Dying City, Ship City remains a beacon in the dark.",view:[120,125,475,355]}
 };
 const $=id=>document.getElementById(id);
 const defaultView=[0,0,900,600], minW=250, maxW=1800;

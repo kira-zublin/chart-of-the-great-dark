@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { canCreate, canEdit, clean } from '../api/characters.js';
 import { cookie, equalSecrets, passwordHash, tokenFrom, validateCredentials } from '../lib/server.js';
+import { cleanSheet } from '../lib/sheet.js';
+import { cleanCrewField } from '../api/crew.js';
 
 const valid = {
   kind: 'pc', name: 'Amina', profession: 'Explorer', origin: '', faction: '',
@@ -42,4 +44,13 @@ test('session cookie is HTTP only and cleared on logout', () => {
   assert.match(cookie(request, 'a'.repeat(64)), /HttpOnly; SameSite=Lax; Path=\/; Max-Age=.*; Secure/);
   assert.match(cookie(request, '', 0), /Max-Age=0/);
   assert.equal(tokenFrom(new Request('https://example.test/', { headers: { cookie: `other=x; chart_session=${'a'.repeat(64)}` } })), 'a'.repeat(64));
+});
+
+test('extended sheet and crew fields reject malformed persistent data', () => {
+  assert.equal(cleanSheet({ conditions: ['not-a-condition'] }), null);
+  assert.equal(cleanSheet({ talents: [{ name: 'Lookout', level: 100 }] }), null);
+  assert.equal(cleanSheet({ weapons: [{ name: 'Pistol', bonus: 2, damage: -1 }] }), null);
+  assert.equal(cleanCrewField('bird', { name: 'Garuda', health: -1 }), null);
+  assert.equal(cleanCrewField('unknown', 'text'), null);
+  assert.equal(cleanCrewField('crew_points', 0), 0);
 });
