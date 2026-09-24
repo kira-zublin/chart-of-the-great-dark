@@ -8,6 +8,7 @@
 <style>
 :root{--paper:#ded2ae;--gold:#cdb87d;--gold2:#8c794d;--rust:#a35f46;--ink:#080d12;--ink2:#0d151a;--muted:#978c72}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#03070b;color:var(--paper);font-family:Georgia,"Times New Roman",serif}
 body{min-height:100vh}
 #app{position:relative;width:100vw;height:100vh;overflow:hidden}
@@ -79,16 +80,32 @@ button:hover{border-color:rgba(205,184,125,.55)} button:focus-visible{outline:2p
 .chapter{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#9f8d61;margin-bottom:18px}.dossier h2{max-width:76%;margin:0;font-size:30px;line-height:1.05;font-weight:500;color:#e3d4ae}.chips{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0 17px}.chip{border:1px solid rgba(205,184,125,.26);padding:4px 7px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#bbae8a}.lede{font-size:14px;line-height:1.55;color:#c9bea4}.rule{display:flex;align-items:center;gap:8px;margin:18px 0 13px;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#a8966d}.rule:before,.rule:after{content:"";height:1px;flex:1;background:rgba(205,184,125,.22)}dl{display:grid;grid-template-columns:88px 1fr;gap:9px 12px;margin:0}dt{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8f825f}dd{margin:0;font-size:13px;line-height:1.35;color:#c7bca2}.rumor{margin-top:18px;padding:14px 0 0 15px;border-left:1px solid rgba(205,184,125,.34);font-size:13px;line-height:1.45;font-style:italic;color:#ae9f80}.hint{position:absolute;left:16px;bottom:14px;z-index:4;max-width:82%;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:rgba(216,207,181,.5);pointer-events:none}.legend{position:fixed;z-index:5;right:18px;bottom:16px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px 16px;font-size:12px;color:var(--muted);pointer-events:none}.legend span{display:inline-flex;align-items:center;gap:7px}.dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:#cdb77d}.dot.red{background:#a35f46}.dot.blue{background:#718b9b}
 @media(max-width:800px){.hud{left:14px;right:14px;top:12px;flex-direction:column}.controls{justify-content:flex-start}.title{font-size:25px}.dossier{width:min(360px,94vw)}.legend{left:14px;right:14px;justify-content:flex-start}.hint{bottom:48px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+.stage[hidden],.login-screen[hidden],.character-panel[hidden],.account-menu[hidden],.character-menu[hidden]{display:none}
+body:not(.signed-in) .legend{display:none}
+.login-screen{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 50% 30%,#17252a,#03070b 68%)}
+.login-card{width:min(420px,100%);padding:34px;border:1px solid rgba(205,184,125,.38);background:linear-gradient(150deg,rgba(22,30,31,.96),rgba(7,13,18,.98));box-shadow:0 20px 70px #0009}
+.login-card h1{margin:8px 0 22px;font-size:30px;font-weight:400;letter-spacing:.08em}.login-card p{line-height:1.5;color:#b8aa88}
+.form-stack{display:grid;gap:14px}.form-stack label,.character-form label{display:grid;gap:6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#c8b98f}
+input,textarea,select{width:100%;min-height:38px;padding:9px 10px;border:1px solid rgba(205,184,125,.32);border-radius:0;background:#10191d;color:#eee1bf;font:14px Georgia,serif;letter-spacing:normal;text-transform:none}
+textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.primary-button{background:#b79a60;color:#111916;border-color:#d7bb7d}.text-button{border:0;background:transparent;text-decoration:underline;padding:6px;min-height:30px;letter-spacing:normal;text-transform:none;font-size:13px}
+.message{min-height:20px;color:#f0b89e;font-size:13px;line-height:1.4}.login-card .message{margin:0}
+.account-wrap,.character-wrap{position:relative;pointer-events:auto}.account-menu,.character-menu{position:absolute;top:46px;z-index:20;min-width:220px;padding:10px;border:1px solid rgba(205,184,125,.42);background:#10191d;box-shadow:0 12px 28px #0009}
+.account-menu{left:0}.character-menu{right:0;min-width:290px;max-height:min(65vh,490px);overflow:auto}.menu-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(205,184,125,.14)}.menu-row button:first-child{flex:1;text-align:left;border:0;letter-spacing:normal;text-transform:none;font-size:14px}.menu-row .delete-character{min-width:34px;padding:4px 8px;color:#e6a790;font-size:17px}
+.menu-note{font-size:11px;color:#a99b78;padding:8px 4px;line-height:1.4}.role-label{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#b7a274}.character-panel{position:fixed;right:0;top:0;bottom:0;z-index:12;width:min(460px,100vw);overflow:auto;padding:25px 24px 34px;border-left:1px solid rgba(205,184,125,.42);background:linear-gradient(#182025f7,#0c1419fa);box-shadow:-15px 0 40px #0008}.character-panel h2{margin:10px 0 18px;font-weight:400;font-size:29px}.character-form{display:grid;gap:14px}.character-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.character-panel .panel-head{display:flex;justify-content:space-between;align-items:start;gap:12px}.character-panel .panel-head button{padding:0;min-width:38px}.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.image-preview{width:100%;max-height:150px;object-fit:contain;margin-top:8px;background:#071014}.image-preview[hidden]{display:none}.panel-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.character-panel .message{margin:0}
+.character-panel{background:linear-gradient(#182025,#0c1419)}
+@media(max-width:800px){.hud{padding-top:0}.character-wrap{align-self:flex-start}.character-menu{left:0;right:auto}.character-panel{width:100vw}.stat-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 <main id="app">
-<div class="stage">
+<section class="login-screen" id="loginScreen" aria-label="Sign in"><div class="login-card"><div class="eyebrow">Explorers Guild · Chart Access</div><h1>CHART OF THE GREAT DARK</h1><p id="authLead">Sign in to open your chart.</p><form id="authForm" class="form-stack"><label>Profile name<input id="authName" name="name" autocomplete="username" maxlength="32" required></label><label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="10" required></label><label id="inviteRow" hidden>Invitation code<input id="authInvite" name="invite" autocomplete="off"></label><label id="roleRow" hidden>Profile type<select id="authRole"><option value="player">Player</option><option value="gm">GM</option></select></label><button class="primary-button" id="authSubmit" type="submit">Sign in</button><p id="authMessage" class="message" role="alert"></p></form><button class="text-button" id="authToggle" type="button">Create a profile</button></div></section>
+<div class="stage" id="mapStage" hidden>
 <section class="chart" aria-label="Interactive Chart of the Great Dark prototype">
 <div class="bg-layer" id="bgLayer" aria-hidden="true"></div>
 <div class="bg-fog" aria-hidden="true"></div>
 <canvas id="dust" aria-hidden="true"></canvas>
-<div class="hud"><div><div class="eyebrow">Explorers Guild · Cartographic Instrument 07</div><div class="title">CHART OF THE GREAT DARK</div></div><div class="controls"><button id="reset" type="button">Reset chart</button></div></div>
+<div class="hud"><div><div class="account-wrap"><button id="accountButton" type="button" aria-expanded="false">Profile</button><div class="account-menu" id="accountMenu" hidden><div id="accountRole" class="role-label"></div><button id="logoutButton" type="button">Log out</button></div></div><div class="eyebrow">Explorers Guild · Cartographic Instrument 07</div><div class="title">CHART OF THE GREAT DARK</div></div><div class="character-wrap"><button id="characterButton" type="button" aria-expanded="false">Select character ▾</button><div class="character-menu" id="characterMenu" hidden><div id="characterList"></div><button id="createCharacter" type="button">Create a new character</button><label id="filterRow" hidden>Show <select id="characterFilter"><option value="all">All characters</option><option value="pc">Player characters</option><option value="npc">NPCs</option></select></label></div></div></div>
 <svg class="map" id="map" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Star chart with selectable delves and landmarks">
 <defs>
 <filter id="glow" x="-200%" y="-200%" width="400%" height="400%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -152,6 +169,7 @@ button:hover{border-color:rgba(205,184,125,.55)} button:focus-visible{outline:2p
 <div id="delveDetails"><div class="rule">Known particulars</div><dl><dt>System</dt><dd id="system"></dd><dt>Sponsor</dt><dd id="sponsor"></dd><dt>Signal</dt><dd id="signal"></dd><dt>Risk</dt><dd id="risk"></dd><dt>Return</dt><dd id="return"></dd></dl><div class="rumor" id="rumor"></div></div>
 <div id="landmarkDetails" hidden><div class="rule">Landmark record</div><dl><dt>Location</dt><dd id="landmarkLocation"></dd><dt>Nature</dt><dd id="landmarkNature"></dd><dt>Importance</dt><dd id="landmarkImportance"></dd><dt>Notable</dt><dd id="landmarkNotable"></dd></dl><div class="rumor" id="landmarkNote"></div></div>
 </aside></div>
+<aside class="character-panel" id="characterPanel" aria-label="Character editor" hidden><div class="panel-head"><div><div class="eyebrow">Explorer record</div><h2 id="characterHeading">New character</h2></div><button id="closeCharacter" type="button" aria-label="Close character editor">×</button></div><form id="characterForm" class="character-form"><label>Character name<input id="characterName" maxlength="80" required></label><label id="characterKindRow">Type<select id="characterKind"><option value="pc">Player character</option><option value="npc">NPC</option></select></label><div class="character-grid"><label>Profession<input id="characterProfession" maxlength="500"></label><label>Origin<input id="characterOrigin" maxlength="500"></label><label>Faction<input id="characterFaction" maxlength="500"></label><label>Motivation<input id="characterMotivation" maxlength="500"></label></div><label>Appearance<textarea id="characterAppearance" maxlength="500"></textarea></label><label>Description<textarea id="characterDescription" maxlength="4000"></textarea></label><div class="rule">Core attributes</div><div class="stat-grid"><label>Strength<input id="statStrength" type="number" min="0" max="99" value="0" required></label><label>Agility<input id="statAgility" type="number" min="0" max="99" value="0" required></label><label>Logic<input id="statLogic" type="number" min="0" max="99" value="0" required></label><label>Insight<input id="statInsight" type="number" min="0" max="99" value="0" required></label><label>Perception<input id="statPerception" type="number" min="0" max="99" value="0" required></label><label>Empathy<input id="statEmpathy" type="number" min="0" max="99" value="0" required></label></div><div class="rule">Character images</div><label>Portrait (JPEG, PNG, or WebP; up to 2 MB)<input id="characterPortrait" type="file" accept="image/png,image/jpeg,image/webp"><img class="image-preview" id="portraitPreview" alt="Portrait preview" hidden></label><label>Full stand-up (JPEG, PNG, or WebP; up to 2 MB)<input id="characterStandup" type="file" accept="image/png,image/jpeg,image/webp"><img class="image-preview" id="standupPreview" alt="Stand-up preview" hidden></label><p id="characterMessage" class="message" role="alert"></p><div class="panel-actions"><button class="primary-button" type="submit" id="saveCharacter">Save character</button><button id="cancelCharacter" type="button">Close</button></div></form></aside>
 <div class="legend"><span><i class="dot blue"></i>Known system</span><span><i class="dot" style="border-radius:2px;background:#aa6c4c"></i>Landmark</span><span><i class="dot"></i>Confirmed delve</span><span><i class="dot red"></i>Rumored / unstable site</span></div>
 </main>
 <script>
@@ -214,7 +232,6 @@ document.querySelectorAll(".landmark").forEach(n=>{
  n.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
 });
 $("closeDossier").addEventListener("click",closeDossier);
-$("reset").addEventListener("click",()=>{closeDossier();animateTo(defaultView)});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDossier()});
 
 svg.addEventListener("pointerdown",e=>{
@@ -295,5 +312,6 @@ function dust(){
 resize();dust();new ResizeObserver(resize).observe(chart);
 })();
 </script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
