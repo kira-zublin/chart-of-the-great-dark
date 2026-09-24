@@ -1,9 +1,10 @@
 import { body, currentProfile, db, error, guarded, json, randomUUID } from '../lib/server.js';
+import { cleanSheet } from '../lib/sheet.js';
 
 const fields = ['name', 'profession', 'origin', 'faction', 'appearance', 'motivation', 'description'];
 const statNames = ['strength', 'agility', 'logic', 'insight', 'perception', 'empathy'];
-const select = `SELECT c.id, c.owner_id, c.kind, c.name, c.profession, c.origin, c.faction, c.appearance, c.motivation, c.description, c.attributes, c.created_at, c.updated_at, p.name AS owner_name, EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'portrait') AS has_portrait, EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'standup') AS has_standup FROM characters c JOIN profiles p ON p.id = c.owner_id`;
-function present(row) { return { ...row, attributes: JSON.parse(row.attributes), has_portrait: Boolean(row.has_portrait), has_standup: Boolean(row.has_standup) }; }
+const select = `SELECT c.id, c.owner_id, c.kind, c.name, c.profession, c.origin, c.faction, c.appearance, c.motivation, c.description, c.attributes, c.sheet, c.created_at, c.updated_at, p.name AS owner_name, EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'portrait') AS has_portrait, EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'standup') AS has_standup FROM characters c JOIN profiles p ON p.id = c.owner_id`;
+function present(row) { return { ...row, attributes: JSON.parse(row.attributes), sheet: JSON.parse(row.sheet), has_portrait: Boolean(row.has_portrait), has_standup: Boolean(row.has_standup) }; }
 
 export function clean(input) {
   if (!input || typeof input !== 'object') return null;
@@ -23,6 +24,10 @@ export function clean(input) {
     attributes[stat] = value;
   }
   result.attributes = attributes;
+  if (input.sheet !== undefined) {
+    result.sheet = cleanSheet(input.sheet);
+    if (!result.sheet) return null;
+  }
   return result;
 }
 
@@ -60,7 +65,7 @@ export async function POST(req) {
     if (!input) return error('Check the character fields');
     if (!canCreate(profile, input.kind)) return error('Only a GM can create NPCs', 403);
     const id = randomUUID();
-    await sql`INSERT INTO characters (id, owner_id, kind, name, profession, origin, faction, appearance, motivation, description, attributes) VALUES (${id}, ${profile.id}, ${input.kind}, ${input.name}, ${input.profession}, ${input.origin}, ${input.faction}, ${input.appearance}, ${input.motivation}, ${input.description}, ${JSON.stringify(input.attributes)})`;
+    await sql`INSERT INTO characters (id, owner_id, kind, name, profession, origin, faction, appearance, motivation, description, attributes, sheet) VALUES (${id}, ${profile.id}, ${input.kind}, ${input.name}, ${input.profession}, ${input.origin}, ${input.faction}, ${input.appearance}, ${input.motivation}, ${input.description}, ${JSON.stringify(input.attributes)}, ${JSON.stringify(input.sheet ?? cleanSheet())})`;
     return json({ id }, 201);
   });
 }
@@ -76,7 +81,8 @@ export async function PUT(req) {
     const found = await sql`SELECT owner_id, kind FROM characters WHERE id = ${id} LIMIT 1`;
     if (!found.length) return error('Character not found', 404);
     if (!canEdit(profile, found[0], input.kind)) return error('You cannot edit this character', 403);
-    await sql`UPDATE characters SET kind = ${input.kind}, name = ${input.name}, profession = ${input.profession}, origin = ${input.origin}, faction = ${input.faction}, appearance = ${input.appearance}, motivation = ${input.motivation}, description = ${input.description}, attributes = ${JSON.stringify(input.attributes)}, updated_at = unixepoch() WHERE id = ${id}`;
+    if (!input.sheet) input.sheet = JSON.parse((await sql`SELECT sheet FROM characters WHERE id = ${id}`)[0].sheet);
+    await sql`UPDATE characters SET kind = ${input.kind}, name = ${input.name}, profession = ${input.profession}, origin = ${input.origin}, faction = ${input.faction}, appearance = ${input.appearance}, motivation = ${input.motivation}, description = ${input.description}, attributes = ${JSON.stringify(input.attributes)}, sheet = ${JSON.stringify(input.sheet)}, updated_at = unixepoch() WHERE id = ${id}`;
     return json({ ok: true });
   });
 }

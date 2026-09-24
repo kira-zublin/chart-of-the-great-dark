@@ -1,6 +1,16 @@
+import { collectSheet, renderSheet, setSheetDirtyHandler, setSheetTab } from './sheet-ui.js';
+import { initCrewUI } from './crew-ui.js';
 const $ = id => document.getElementById(id);
 const state = { profile: null, characters: [], selected: null, registering: false };
 const stats = ['strength', 'agility', 'logic', 'insight', 'perception', 'empathy'];
+let characterDirty = false;
+setSheetDirtyHandler(() => { characterDirty = true; });
+$('characterForm').addEventListener('input', () => { characterDirty = true; });
+$('characterForm').addEventListener('change', () => { characterDirty = true; });
+const crewUI = initCrewUI(request, () => state.profile, () => {
+  if (characterDirty && !confirm('Discard unsaved character changes?')) return false;
+  characterDirty = false; return true;
+});
 
 async function request(path, options = {}) {
   const response = await fetch(path, { credentials: 'same-origin', ...options });
@@ -25,6 +35,7 @@ function showApp(profile) {
     $('characterPanel').hidden = true;
     $('accountMenu').hidden = true;
     $('characterMenu').hidden = true;
+    crewUI.close();
   }
 }
 function toggleMenu(button, menu) {
@@ -95,6 +106,8 @@ function renderList() {
 $('characterFilter').addEventListener('change', loadCharacters);
 async function deleteCharacter(character) {
   if (!confirm(`Delete ${character.name}? This permanently removes the character and both images.`)) return;
+  if (state.selected?.id === character.id && characterDirty && !confirm('Discard unsaved character changes?')) return;
+  if (state.selected?.id === character.id) characterDirty = false;
   try {
     await request(`/api/characters?id=${encodeURIComponent(character.id)}`, { method: 'DELETE' });
     if (localStorage.getItem(`active-character:${state.profile.id}`) === character.id) localStorage.removeItem(`active-character:${state.profile.id}`);
@@ -111,6 +124,8 @@ function showPreview(slot, character) {
   img.hidden = !has; img.src = has ? imageUrl(character.id, slot) : '';
 }
 function editCharacter(character = null) {
+  if (characterDirty && !$('characterPanel').hidden && !confirm('Discard unsaved character changes?')) return;
+  crewUI.close();
   state.selected = character;
   if (character) localStorage.setItem(`active-character:${state.profile.id}`, character.id);
   $('characterMenu').hidden = true;
@@ -123,12 +138,17 @@ function editCharacter(character = null) {
   for (const key of ['profession', 'origin', 'faction', 'appearance', 'motivation', 'description']) {
     $(`character${key[0].toUpperCase()}${key.slice(1)}`).value = character?.[key] || '';
   }
-  for (const stat of stats) $(`stat${stat[0].toUpperCase()}${stat.slice(1)}`).value = character?.attributes?.[stat] ?? 0;
+  for (const stat of stats) $(`stat${stat[0].toUpperCase()}${stat.slice(1)}`).value = character?.attributes?.[stat] ?? 4;
+  renderSheet(character?.sheet, character?.attributes);
   $('characterPortrait').value = ''; $('characterStandup').value = '';
   showPreview('portrait', character); showPreview('standup', character);
+  characterDirty = false;
   setError('characterMessage'); $('characterName').focus();
 }
-function closeCharacter() { $('characterPanel').hidden = true; }
+function closeCharacter() {
+  if (characterDirty && !confirm('Discard unsaved character changes?')) return;
+  characterDirty = false; $('characterPanel').hidden = true;
+}
 $('createCharacter').addEventListener('click', () => editCharacter());
 $('closeCharacter').addEventListener('click', closeCharacter);
 $('cancelCharacter').addEventListener('click', closeCharacter);
@@ -144,7 +164,8 @@ for (const slot of ['portrait', 'standup']) {
 $('characterForm').addEventListener('submit', async event => {
   event.preventDefault(); setError('characterMessage');
   const save = $('saveCharacter'); save.disabled = true;
-  const payload = { id: state.selected?.id, kind: state.profile.role === 'gm' ? $('characterKind').value : 'pc', name: $('characterName').value, attributes: {} };
+  const payload = { id: state.selected?.id, kind: state.profile.role === 'gm' ? $('characterKind').value : 'pc', name: $('characterName').value, attributes: {}, sheet: collectSheet() };
+  if (!payload.name.trim()) { setSheetTab('Profile'); setError('characterMessage', 'Enter a character name.'); save.disabled = false; return; }
   for (const key of ['profession', 'origin', 'faction', 'appearance', 'motivation', 'description']) payload[key] = $(`character${key[0].toUpperCase()}${key.slice(1)}`).value;
   for (const stat of stats) payload.attributes[stat] = Number($(`stat${stat[0].toUpperCase()}${stat.slice(1)}`).value);
   try {
@@ -157,6 +178,7 @@ $('characterForm').addEventListener('submit', async event => {
     }
     await loadCharacters();
     const character = state.characters.find(item => item.id === id);
+    characterDirty = false;
     if (character) editCharacter(character);
     setError('characterMessage', 'Character saved.');
   } catch (cause) { setError('characterMessage', cause.message); }
