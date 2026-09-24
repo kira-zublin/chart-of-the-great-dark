@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check": "node --check api/auth.js && node --check api/characters.js && node --check api/crew.js && node --check api/chat.js && node --check api/image.js && node --check api/crew-image.js && node --check lib/server.js && node --check lib/sheet.js && node --check app.js && node --check chat-ui.js && node --check sheet-ui.js && node --check crew-ui.js && node --check scripts/migrate.js && node --check scripts/migrate-002.js && node --check scripts/migrate-003.js && node --check scripts/migrate-004.js && node --check scripts/preview-migrate.js"
+    "check": "node --check api/auth.js && node --check api/characters.js && node --check api/crew.js && node --check api/chat.js && node --check api/image.js && node --check api/crew-image.js && node --check lib/server.js && node --check lib/sheet.js && node --check app.js && node --check chat-ui.js && node --check sheet-ui.js && node --check crew-ui.js && node --check scripts/migrate.js && node --check scripts/migrate-002.js && node --check scripts/migrate-003.js && node --check scripts/migrate-004.js && node --check scripts/migrate-005.js && node --check scripts/preview-migrate.js"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0"

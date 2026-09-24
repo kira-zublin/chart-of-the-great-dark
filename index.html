@@ -120,6 +120,13 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 .chat-entry{display:grid;grid-template-columns:36px 1fr;gap:8px;min-width:0}.chat-avatar{width:36px;height:36px;object-fit:cover;border:1px solid #8c794d}.chat-entry>div{min-width:0}.chat-entry-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 8px;font-size:11px;color:#d8c697}.chat-entry-head time{color:#a89d84;font-size:10px}.chat-body,.chat-roll{font-size:13px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}.chat-roll{color:#e2bc79}.chat-body a{color:#9cc4db}.chat-identity{font-size:11px;color:#b9ac8e;padding:5px 0}.chat-compose{display:flex;gap:5px}.chat-compose input{min-width:0;flex:1;background:#091115;color:var(--paper);border:1px solid #6b6045;padding:8px}.chat-actions,.chat-roll-fields,.chat-export{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;align-items:center}.chat-actions button,.chat-roll-fields button,.chat-export button{min-height:32px;padding:5px 8px}.chat-roll-fields select,.chat-roll-fields input,.chat-export input{min-height:32px;background:#091115;color:var(--paper);border:1px solid #6b6045;padding:3px;max-width:105px}.chat-roll-fields label,.chat-export label{font-size:10px;display:grid;gap:2px;color:#b9ac8e}.chat-status{min-height:16px;color:#e5a18d;font-size:11px;margin:4px 0 0}
 @media(max-width:700px){.chat-dock{left:0;right:0;bottom:0;width:100%;max-height:75vh}.chat-messages{height:min(34vh,240px)}.chat-content{overflow-y:auto;max-height:calc(75vh - 44px)}}
 .chat-export input{max-width:none;width:125px}
+.chat-dock{left:0;right:0;bottom:0;width:100%;height:var(--chat-height,340px);display:flex;flex-direction:column;max-height:85vh}
+.chat-dock[hidden]{display:none}.chat-resize{height:9px;flex:none;cursor:ns-resize;touch-action:none;background:linear-gradient(90deg,transparent,#a89561,transparent) center 3px/84px 2px no-repeat}.chat-resize:focus-visible{outline:2px solid var(--gold)}
+.chat-dock:has(.chat-content[hidden]){height:auto}.chat-dock:has(.chat-content[hidden]) .chat-resize{display:none}
+.chat-content{display:flex;flex:1;min-height:0;flex-direction:column}.chat-content[hidden]{display:none}.chat-messages{height:auto;flex:1;min-height:0}.chat-actions{margin-top:6px}
+.chat-dialog{border:1px solid rgba(205,184,125,.6);background:#0d171c;color:var(--paper);box-shadow:0 20px 60px #000c;width:min(470px,calc(100vw - 24px));max-height:85vh;overflow:auto;padding:18px}.chat-dialog::backdrop{background:#0009}.chat-dialog h2{margin:0;color:var(--gold);font-size:19px}.chat-dialog form{display:grid;gap:12px}.chat-dialog label{display:grid;gap:5px;color:#d0bd92;font-size:12px}.chat-dialog input,.chat-dialog select{width:100%;min-height:36px;background:#091115;color:var(--paper);border:1px solid #6b6045;padding:5px}.chat-dialog .dialog-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.chat-dialog .dialog-head button{min-height:32px}.chat-dialog .dialog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.chat-dialog .dialog-actions{display:flex;gap:8px;align-items:center}.chat-dialog .dialog-status{min-height:18px;color:#e5a18d;margin:0;font-size:12px}.chat-dialog .roll-preview{color:#d0bd92;font-size:12px;margin:0}.chat-dialog .roll-result{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;margin:0}
+.chat-dialog [hidden]{display:none!important}
+@media(max-width:700px){.chat-dock{max-height:85vh}.chat-content{max-height:none;overflow:hidden}.chat-messages{height:auto}.chat-dialog .dialog-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -195,19 +202,31 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 <div id="landmarkDetails" hidden><div class="rule">Landmark record</div><dl><dt>Location</dt><dd id="landmarkLocation"></dd><dt>Nature</dt><dd id="landmarkNature"></dd><dt>Importance</dt><dd id="landmarkImportance"></dd><dt>Notable</dt><dd id="landmarkNotable"></dd></dl><div class="rumor" id="landmarkNote"></div></div>
 </aside></div>
 <section class="chat-dock" id="chatDock" aria-label="Campaign chat" hidden>
+  <div class="chat-resize" id="chatResize" role="separator" aria-orientation="horizontal" aria-label="Resize chat height" tabindex="0"></div>
   <div class="chat-head"><span>Campaign chat</span><button id="chatToggle" type="button" aria-controls="chatContent" aria-expanded="true">Hide</button></div>
   <div class="chat-content" id="chatContent">
     <div class="chat-messages" id="chatMessages" role="log" aria-label="Chat messages" aria-live="polite"></div>
     <div class="chat-identity" id="chatIdentity"></div>
     <form class="chat-compose" id="chatForm"><input id="chatMessage" aria-label="Message" maxlength="2000" placeholder="Message the campaign" required><button id="chatSend" type="submit">Send</button></form>
-    <div class="chat-actions"><button id="chatSimpleButton" type="button">Roll d6</button><button id="chatSkillButton" type="button">Action roll</button></div>
-    <form id="chatRollForm" class="chat-roll-fields" hidden>
-      <label>Attribute<select id="chatAttribute"></select></label><label>Talent<select id="chatTalent"></select></label><label>Bonus / penalty<input id="chatModifier" type="number" min="-10" max="10" value="0" required></label><label>Gear dice<input id="chatGear" type="number" min="0" max="10" value="0" required></label><button id="chatRollSubmit" type="submit">Roll</button>
-    </form>
-    <div class="chat-export"><label>From (UTC)<input id="chatFrom" type="date"></label><label>Through (UTC)<input id="chatThrough" type="date"></label><button id="chatExport" type="button">Download log</button></div>
+    <div class="chat-actions"><button id="chatRollOpen" type="button">Roll</button><button id="chatExportOpen" type="button">Download Log</button></div>
     <p class="chat-status" id="chatStatus" role="status"></p>
   </div>
 </section>
+<dialog class="chat-dialog" id="chatRollDialog" aria-labelledby="chatRollHeading"><form id="chatRollForm">
+  <div class="dialog-head"><h2 id="chatRollHeading">Roll dice</h2><button id="chatRollClose" type="button" aria-label="Close roll window">Close</button></div>
+  <label>Roll type<select id="chatRollType"><option value="pool">Dice pool</option><option value="skill">Character action</option></select></label>
+  <div id="chatPoolFields" class="dialog-grid"><label>Base dice<input id="chatBase" type="number" min="1" max="30" value="1" required></label></div>
+  <div id="chatSkillFields" class="dialog-grid" hidden><label>Attribute<select id="chatAttribute"></select></label><label>Talent<select id="chatTalent"></select></label></div>
+  <div class="dialog-grid"><label>Bonus / penalty (base dice)<input id="chatModifier" type="number" min="-10" max="10" value="0" required></label><label>Gear dice<input id="chatGear" type="number" min="0" max="10" value="0" required></label></div>
+  <p class="roll-preview" id="chatRollPreview"></p><p class="roll-result" id="chatRollResult" role="status"></p>
+  <p class="roll-preview">After a push, apply any Hope loss or gear wear on the sheets with the GM.</p>
+  <div class="dialog-actions"><button id="chatRollSubmit" type="submit">Roll</button><button id="chatPush" type="button" hidden>Push roll</button></div><p class="dialog-status" id="chatRollStatus" role="alert"></p>
+</form></dialog>
+<dialog class="chat-dialog" id="chatExportDialog" aria-labelledby="chatExportHeading"><form id="chatExportForm">
+  <div class="dialog-head"><h2 id="chatExportHeading">Download chat log</h2><button id="chatExportClose" type="button" aria-label="Close download window">Close</button></div>
+  <p>Select an inclusive UTC date range.</p><div class="dialog-grid"><label>From<input id="chatFrom" type="date" required></label><label>Through<input id="chatThrough" type="date" required></label></div>
+  <button id="chatExport" type="submit">Confirm and download</button><p class="dialog-status" id="chatExportStatus" role="alert"></p>
+</form></dialog>
 <aside class="character-panel" id="characterPanel" aria-label="Character editor" hidden>
   <div class="panel-head"><div><div class="eyebrow">Explorer record</div><h2 id="characterHeading">New character</h2></div><button id="closeCharacter" type="button" aria-label="Close character editor">×</button></div>
   <div class="sheet-tabs" role="tablist" aria-label="Character sections">

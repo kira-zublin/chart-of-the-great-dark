@@ -4,9 +4,9 @@ const attributes = ['strength', 'agility', 'logic', 'insight', 'perception', 'em
 
 export function initChatUI(request, profile, character) {
   let lastId = 0; let timer = null; let loading = false; let first = true;
+  let pushId = null; let pushCount = 0; let secondPush = false;
   const list = $('chatMessages');
   const message = $('chatMessage');
-  const controls = $('chatRollControls');
   const toggle = $('chatToggle');
 
   function identity() {
@@ -14,8 +14,9 @@ export function initChatUI(request, profile, character) {
     $('chatIdentity').textContent = picked ? `${picked.name} <${profile()?.name}>` : profile()?.name || '';
     const select = $('chatTalent'); select.replaceChildren(new Option('No talent', ''));
     for (const talent of picked?.sheet?.talents || []) select.add(new Option(`${talent.name} (+${talent.level})`, talent.name));
-    $('chatSkillButton').disabled = !picked;
-    $('chatSkillButton').title = picked ? '' : 'Select a character to roll an action';
+    $('chatRollType').querySelector('option[value="skill"]').disabled = !picked;
+    if (!picked && $('chatRollType').value === 'skill') $('chatRollType').value = 'pool';
+    updateRollPreview();
   }
   function addText(parent, value) {
     const parts = value.split(/(https?:\/\/[^\s<>]+)/g);
@@ -28,8 +29,11 @@ export function initChatUI(request, profile, character) {
   }
   function rollText(roll) {
     if (roll.type === 'simple') return `Rolled d6: ${roll.dice[0]}`;
+    const label = roll.attribute ? `${roll.attribute}${roll.talent ? ` + ${roll.talent} (${roll.talentLevel})` : ''}` : 'dice pool';
     const base = roll.baseDice.join(', '); const gear = roll.gearDice.length ? ` · Gear [${roll.gearDice.join(', ')}]` : '';
-    return `${roll.attribute}${roll.talent ? ` + ${roll.talent} (${roll.talentLevel})` : ''}${roll.modifier ? ` ${roll.modifier > 0 ? '+' : ''}${roll.modifier}` : ''} · Base [${base}]${gear} · ${roll.successes} ${roll.successes === 1 ? 'success' : 'successes'}`;
+    const push = roll.type === 'push' ? `Push ${roll.pushCount}: ` : 'Rolled ';
+    const costs = roll.type === 'push' ? ` · ${roll.hopeLoss} Hope loss · ${roll.gearWear} gear wear` : '';
+    return `${push}${label} · Base [${base}]${gear} · ${roll.successes} ${roll.successes === 1 ? 'success' : 'successes'}${costs}`;
   }
   function render(item) {
     if (list.querySelector(`[data-id="${item.id}"]`)) return;
@@ -65,8 +69,8 @@ export function initChatUI(request, profile, character) {
     const selected = character();
     try {
       const data = await request('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, characterId: selected?.id || null }) });
-      render(data.message); return true;
-    } catch (cause) { $('chatStatus').textContent = cause.message; return false; }
+      render(data.message); return data.message;
+    } catch (cause) { $('chatStatus').textContent = cause.message; return null; }
   }
   $('chatForm').addEventListener('submit', async event => {
     event.preventDefault(); if (!message.value.trim()) return;
@@ -74,12 +78,44 @@ export function initChatUI(request, profile, character) {
     if (await send({ type: 'text', text: message.value })) message.value = '';
     $('chatSend').disabled = false; message.focus();
   });
-  $('chatSimpleButton').addEventListener('click', () => send({ type: 'simple' }));
-  $('chatSkillButton').addEventListener('click', () => { controls.hidden = !controls.hidden; });
+  const rollDialog = $('chatRollDialog'); const exportDialog = $('chatExportDialog');
+  const rollMode = $('chatRollType');
+  function updateRollPreview() {
+    const skill = rollMode.value === 'skill';
+    $('chatPoolFields').hidden = skill; $('chatSkillFields').hidden = !skill;
+    const picked = character();
+    const talent = picked?.sheet?.talents?.find(item => item.name === $('chatTalent').value);
+    const base = skill ? Number(picked?.attributes?.[$('chatAttribute').value] || 0) + Number(talent?.level || 0) : Number($('chatBase').value);
+    const modifier = Number($('chatModifier').value); const gear = Number($('chatGear').value);
+    $('chatRollPreview').textContent = Number.isFinite(base + modifier + gear) ? `Roll ${Math.max(1, Math.min(30, base + modifier))} base dice and ${gear} gear dice. Modifier changes base dice only.` : '';
+  }
+  for (const id of ['chatRollType', 'chatBase', 'chatAttribute', 'chatTalent', 'chatModifier', 'chatGear']) $(''+id).addEventListener('input', updateRollPreview);
+  $('chatRollOpen').addEventListener('click', () => { identity(); rollDialog.showModal(); });
+  $('chatRollClose').addEventListener('click', () => rollDialog.close());
+  $('chatExportOpen').addEventListener('click', () => exportDialog.showModal());
+  $('chatExportClose').addEventListener('click', () => exportDialog.close());
   $('chatRollForm').addEventListener('submit', async event => {
     event.preventDefault();
-    const button = $('chatRollSubmit'); button.disabled = true;
-    await send({ type: 'skill', attribute: $('chatAttribute').value, talent: $('chatTalent').value, modifier: Number($('chatModifier').value), gear: Number($('chatGear').value) });
+    const button = $('chatRollSubmit'); button.disabled = true; $('chatRollStatus').textContent = '';
+    const shared = { modifier: Number($('chatModifier').value), gear: Number($('chatGear').value) };
+    const payload = rollMode.value === 'skill' ? { type: 'skill', attribute: $('chatAttribute').value, talent: $('chatTalent').value, ...shared } : { type: 'pool', base: Number($('chatBase').value), ...shared };
+    const result = await send(payload);
+    if (result) {
+      pushId = result.id; pushCount = 0;
+      secondPush = payload.type === 'skill' && payload.attribute === 'empathy' && (character()?.sheet?.talents || []).some(item => item.name === 'Renowned');
+      $('chatPush').hidden = false; $('chatRollResult').textContent = rollText(result.roll);
+    } else $('chatRollStatus').textContent = $('chatStatus').textContent;
+    button.disabled = false;
+  });
+  $('chatPush').addEventListener('click', async () => {
+    if (!pushId) return;
+    const button = $('chatPush'); button.disabled = true; $('chatRollStatus').textContent = '';
+    const result = await send({ type: 'push', messageId: pushId });
+    if (result) {
+      pushId = result.id; pushCount = result.roll.pushCount;
+      button.hidden = pushCount >= (secondPush ? 2 : 1);
+      $('chatRollResult').textContent += `\n${rollText(result.roll)}`;
+    } else $('chatRollStatus').textContent = $('chatStatus').textContent;
     button.disabled = false;
   });
   toggle.addEventListener('click', () => {
@@ -88,24 +124,45 @@ export function initChatUI(request, profile, character) {
     toggle.textContent = open ? 'Hide' : 'Show';
     if (open) { poll(); list.scrollTop = list.scrollHeight; }
   });
-  $('chatExport').addEventListener('click', async () => {
+  $('chatExportForm').addEventListener('submit', async event => {
+    event.preventDefault();
     const from = $('chatFrom').value; const through = $('chatThrough').value;
-    if (!from || !through || from > through) { $('chatStatus').textContent = 'Choose a valid date range.'; return; }
+    if (!from || !through || from > through) { $('chatExportStatus').textContent = 'Choose a valid date range.'; return; }
+    const button = $('chatExport'); button.disabled = true; $('chatExportStatus').textContent = '';
     try {
       const response = await fetch(`/api/chat?export=text&from=${encodeURIComponent(from)}&through=${encodeURIComponent(through)}`, { credentials: 'same-origin' });
       if (!response.ok) throw new Error((await response.json()).error || 'Export failed');
       const url = URL.createObjectURL(await response.blob()); const link = document.createElement('a');
       link.href = url; link.download = `campaign-chat-${from}-to-${through}.txt`; link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (cause) { $('chatStatus').textContent = cause.message; }
+      exportDialog.close();
+    } catch (cause) { $('chatExportStatus').textContent = cause.message; }
+    finally { button.disabled = false; }
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
   for (const name of attributes) $('chatAttribute').add(new Option(name[0].toUpperCase() + name.slice(1), name));
   const today = new Date().toISOString().slice(0, 10); $('chatFrom').value = today; $('chatThrough').value = today;
+  const dock = $('chatDock'); const resize = $('chatResize');
+  const savedHeight = Number(localStorage.getItem('campaignChatHeight'));
+  function setHeight(value) {
+    const height = Math.max(170, Math.min(Math.round(window.innerHeight * .85), Math.round(value)));
+    dock.style.setProperty('--chat-height', `${height}px`); resize.setAttribute('aria-valuenow', String(height));
+    localStorage.setItem('campaignChatHeight', String(height));
+  }
+  if (savedHeight) setHeight(savedHeight);
+  resize.addEventListener('pointerdown', event => {
+    const startY = event.clientY; const startHeight = dock.getBoundingClientRect().height;
+    resize.setPointerCapture(event.pointerId);
+    const move = next => setHeight(startHeight + startY - next.clientY);
+    const onMove = next => move(next);
+    const end = () => { resize.removeEventListener('pointermove', onMove); resize.removeEventListener('pointerup', end); resize.removeEventListener('pointercancel', end); };
+    resize.addEventListener('pointermove', onMove); resize.addEventListener('pointerup', end); resize.addEventListener('pointercancel', end);
+  });
+  resize.addEventListener('keydown', event => { if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); setHeight(dock.getBoundingClientRect().height + (event.key === 'ArrowUp' ? 24 : -24)); } });
   if (matchMedia('(max-width: 700px)').matches) { $('chatContent').hidden = true; toggle.setAttribute('aria-expanded', 'false'); toggle.textContent = 'Show'; }
   return {
     start() { lastId = 0; first = true; list.replaceChildren(); identity(); poll(); clearInterval(timer); timer = setInterval(poll, 2000); },
-    stop() { clearInterval(timer); timer = null; lastId = 0; list.replaceChildren(); },
+    stop() { clearInterval(timer); timer = null; lastId = 0; list.replaceChildren(); rollDialog.close(); exportDialog.close(); },
     refreshIdentity: identity
   };
 }
