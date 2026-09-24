@@ -68,7 +68,7 @@ export function initChatUI(request, profile, character) {
     $('chatStatus').textContent = '';
     const selected = character();
     try {
-      const data = await request('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, characterId: selected?.id || null }) });
+      const data = await request('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, characterId: payload.type === 'push' ? null : selected?.id || null }) });
       render(data.message); return data.message;
     } catch (cause) { $('chatStatus').textContent = cause.message; return null; }
   }
@@ -162,7 +162,7 @@ export function initChatUI(request, profile, character) {
   if (matchMedia('(max-width: 700px)').matches) { $('chatContent').hidden = true; toggle.setAttribute('aria-expanded', 'false'); toggle.textContent = 'Show'; }
   return {
     start() { lastId = 0; first = true; list.replaceChildren(); identity(); poll(); clearInterval(timer); timer = setInterval(poll, 2000); },
-    stop() { clearInterval(timer); timer = null; lastId = 0; list.replaceChildren(); rollDialog.close(); exportDialog.close(); },
+    stop() { clearInterval(timer); timer = null; lastId = 0; pushId = null; pushCount = 0; secondPush = false; $('chatPush').hidden = true; $('chatRollResult').textContent = ''; list.replaceChildren(); rollDialog.close(); exportDialog.close(); },
     refreshIdentity: identity
   };
 }
