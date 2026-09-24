@@ -54,7 +54,8 @@ export function initCrewUI(request, profile, canLeaveCharacter) {
     loading = true;
     try {
       const [data, list] = await Promise.all([request('/api/crew'), request('/api/characters')]);
-      characters = list.characters; if (!crew || data.crew.revision !== crew.revision || force) { crew = data.crew; render(); }
+      characters = list.characters;
+      if (!crew || data.crew.revision !== crew.revision || JSON.stringify(data.crew.roles) !== JSON.stringify(crew.roles) || force) { crew = data.crew; render(); }
     } catch (cause) { message(cause.message); }
     finally { loading = false; }
   }
