@@ -125,7 +125,7 @@ svg.map .unavailable text { fill: #b7b7b5; }
   bottom: 0;
   width: min(390px, 92vw);
   overflow: auto;
-  padding: 74px 26px 30px;
+  padding: 0 0 30px;
   border-right: 1px solid #b69c65;
   background: linear-gradient(155deg, #172228f8, #0a1116fc);
   box-shadow: 20px 0 60px #0008;
@@ -135,13 +135,20 @@ svg.map .unavailable text { fill: #b7b7b5; }
   transition: transform .35s ease, opacity .25s ease;
 }
 .world-location-dossier.open { transform: translateX(0); opacity: 1; pointer-events: auto; }
-.world-location-dossier:before { content: ""; position: absolute; top: 55px; left: 25px; right: 25px; height: 1px; background: linear-gradient(90deg, transparent, #b99a62, transparent); }
-.world-location-dossier h2 { font-size: 31px; font-weight: 400; margin: 12px 0 18px; color: #ebdbb6; }
+.world-location-dossier .dossier-art { height: clamp(210px, 30vh, 320px); background: radial-gradient(circle at 50% 40%, #47555e, #121d25 70%); background-size: cover; background-position: center; position: relative; }
+.world-location-dossier .dossier-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, #172228 1%, transparent 60%), linear-gradient(90deg, #1019206b, transparent 55%); }
+.world-location-dossier .dossier-body { position: relative; padding: 0 28px; margin-top: -18px; }
+.world-location-dossier h2 { font-size: clamp(30px, 8vw, 38px); line-height: 1.08; font-weight: 400; margin: 13px 0 15px; color: #f1dfb8; text-shadow: 0 2px 14px #0009; }
 .world-location-dossier p { font-size: 14px; line-height: 1.65; color: #c8bda4; }
+.world-location-dossier .dossier-teaser { font-size: 16px; line-height: 1.45; color: #eee0be; margin: 0 0 15px; }
+.world-location-dossier .dossier-description { margin: 0; }
+.world-location-dossier .dossier-quote { margin: 24px 0 0; padding: 16px 0 0 16px; border-left: 2px solid #bc9d61; color: #e3d3ae; }
+.world-location-dossier blockquote { margin: 0; font: italic 17px/1.45 Georgia,serif; }
+.world-location-dossier figcaption { margin-top: 8px; color: #bca87d; font-size: 11px; letter-spacing: .07em; }
 .world-location-dossier .dossier-kind { font-size: 10px; letter-spacing: .25em; text-transform: uppercase; color: #b89b60; }
 .world-location-dossier .dossier-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 26px; }
 .world-location-dossier .dossier-actions button { min-width: 130px; }
-.world-location-dossier .dossier-close { position: absolute; left: 18px; top: 13px; width: 38px; height: 38px; min-height: 38px; border-radius: 50%; padding: 0; font-size: 20px; }
+.world-location-dossier .dossier-close { position: absolute; z-index: 2; left: 18px; top: 13px; width: 38px; height: 38px; min-height: 38px; border-radius: 50%; padding: 0; font-size: 20px; background: #111b22dd; }
 
 .settlement-marker {
   --marker-accent: #cda76a;

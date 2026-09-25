@@ -3,6 +3,7 @@ import { applyPushSchema } from './migrate-005.js';
 import { applyWorldSchema } from './migrate-006.js';
 import { applyChoirParent } from './migrate-007.js';
 import { applyLocationAccess } from './migrate-008.js';
+import { applyLocationCards } from './migrate-009.js';
 
 if (process.env.VERCEL_ENV === 'preview') {
   await applyChatSchema();
@@ -10,6 +11,7 @@ if (process.env.VERCEL_ENV === 'preview') {
   await applyWorldSchema();
   await applyChoirParent();
   await applyLocationAccess();
+  await applyLocationCards();
   console.log('Preview chat and world schemas applied.');
 } else {
   console.log('Preview migration skipped outside Vercel Preview.');

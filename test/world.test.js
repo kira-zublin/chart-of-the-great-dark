@@ -7,6 +7,7 @@ import { applyChatSchema } from '../scripts/migrate-004.js';
 import { applyWorldSchema } from '../scripts/migrate-006.js';
 import { applyChoirParent } from '../scripts/migrate-007.js';
 import { applyLocationAccess } from '../scripts/migrate-008.js';
+import { applyLocationCards } from '../scripts/migrate-009.js';
 import { GET as authGet, POST as authPost } from '../api/auth.js';
 import { POST as characterPost } from '../api/characters.js';
 import { GET as worldGet, POST as worldPost } from '../api/world.js';
@@ -26,7 +27,7 @@ test('world positions, fog, GM permissions, pulls, and uploaded art', async () =
   process.env.REGISTRATION_INVITE_CODE = 'private invitation';
   const sql = db();
   try {
-    await applyInitialSchema(sql); await applySheetAndCrewSchema(sql); await applyChatSchema(sql); await applyWorldSchema(sql); await applyWorldSchema(sql); await applyLocationAccess(sql); await applyLocationAccess(sql);
+    await applyInitialSchema(sql); await applySheetAndCrewSchema(sql); await applyChatSchema(sql); await applyWorldSchema(sql); await applyWorldSchema(sql); await applyLocationAccess(sql); await applyLocationAccess(sql); await applyLocationCards(sql); await applyLocationCards(sql);
     assert.equal((await sql`SELECT parent_id FROM locations WHERE id = 'choir'`)[0].parent_id, 'ship-city');
     await sql`UPDATE locations SET parent_id = 'star-map' WHERE id = 'choir'`;
     await applyChoirParent(sql); await applyChoirParent(sql);
@@ -62,7 +63,7 @@ test('world positions, fog, GM permissions, pulls, and uploaded art', async () =
     assert.equal(pulled.status, 200); assert.notDeepEqual([pulled.body.moved[0].x, pulled.body.moved[0].y], [pulled.body.moved[1].x, pulled.body.moved[1].y]);
     const throughDoor = await data(await worldPost(req('/api/world', 'POST', { action: 'move', characterId: a, locationId: 'choir', linkId: 'depths-choir-door' }, alice)));
     assert.equal(throughDoor.status, 200); assert.deepEqual([throughDoor.body.moved[0].x, throughDoor.body.moved[0].y], [9, 3]);
-    const created = await data(await worldPost(req('/api/world', 'POST', { action: 'create', parentId: 'ship-city', title: 'Test Hall', kind: 'diorama', description: 'A test.', x: 45, y: 60 }, gm)));
+    const created = await data(await worldPost(req('/api/world', 'POST', { action: 'create', parentId: 'ship-city', title: 'Test Hall', kind: 'diorama', teaser: 'A short impression.', description: 'A test.', quote: 'A voice from the city.', quoteSpeaker: 'A resident', x: 45, y: 60 }, gm)));
     assert.equal(created.status, 201);
     const bytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lXcAAAAASUVORK5CYII=', 'base64');
     assert.equal((await characterImagePut(new Request(base + `/api/image?id=${a}&slot=portrait`, { method: 'PUT', headers: { cookie: alice, 'Content-Type': 'image/png' }, body: bytes }))).status, 200);
@@ -70,13 +71,18 @@ test('world positions, fog, GM permissions, pulls, and uploaded art', async () =
     const uploadReq = new Request(base + `/api/location-image?id=${created.body.id}`, { method: 'PUT', headers: { cookie: gm, 'Content-Type': 'image/png' }, body: bytes });
     assert.equal((await imagePut(uploadReq)).status, 200);
     assert.equal((await imageGet(req(`/api/location-image?id=${created.body.id}`, 'GET', undefined, alice))).status, 200);
+    const cardReq = new Request(base + `/api/location-image?id=${created.body.id}&slot=card`, { method: 'PUT', headers: { cookie: gm, 'Content-Type': 'image/png' }, body: bytes });
+    assert.equal((await imagePut(cardReq)).status, 200);
     assert.equal((await worldPost(req('/api/world', 'POST', { action: 'edit', locationId: created.body.id, title: 'Test Hall', description: 'A test.', accessLevel: 'inaccessible', linkId: created.body.linkId, x: 60, y: 65 }, gm))).status, 200);
     const inaccessible = (await data(await worldGet(req('/api/world', 'GET', undefined, alice)))).body;
     assert.equal(inaccessible.locations.find(loc => loc.id === created.body.id).access_level, 'inaccessible');
     assert.equal(inaccessible.locations.find(loc => loc.id === created.body.id).has_image, false);
+    assert.equal(inaccessible.locations.find(loc => loc.id === created.body.id).has_card_image, true);
+    assert.equal(inaccessible.locations.find(loc => loc.id === created.body.id).teaser, 'A short impression.');
     assert.equal(inaccessible.links.find(link => link.id === created.body.linkId).x, 60);
     assert.equal((await worldPost(req('/api/world', 'POST', { action: 'move', characterId: a, locationId: created.body.id }, alice))).status, 404);
     assert.equal((await imageGet(req(`/api/location-image?id=${created.body.id}`, 'GET', undefined, alice))).status, 404);
+    assert.equal((await imageGet(req(`/api/location-image?id=${created.body.id}&slot=card`, 'GET', undefined, alice))).status, 200);
     assert.equal((await worldPost(req('/api/world', 'POST', { action: 'marker', linkId: created.body.linkId, x: 70, y: 75 }, alice))).status, 403);
     assert.equal((await worldPost(req('/api/world', 'POST', { action: 'marker', linkId: created.body.linkId, x: 70, y: 75 }, gm))).status, 200);
     assert.equal((await worldPost(req('/api/world', 'POST', { action: 'marker', linkId: created.body.linkId, x: 101, y: 75 }, gm))).status, 400);

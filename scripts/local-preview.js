@@ -12,6 +12,8 @@ import { applyPushSchema } from './migrate-005.js';
 import { applyWorldSchema } from './migrate-006.js';
 import { applyChoirParent } from './migrate-007.js';
 import { applyLocationAccess } from './migrate-008.js';
+import { applyLocationCards } from './migrate-009.js';
+import { seedShipCitySlice } from './seed-ship-city-slice.js';
 
 process.env.TURSO_DATABASE_URL = 'file::memory:';
 process.env.REGISTRATION_INVITE_CODE = 'local-preview-only';
@@ -24,6 +26,8 @@ await applyPushSchema(sql);
 await applyWorldSchema(sql);
 await applyChoirParent(sql);
 await applyLocationAccess(sql);
+await applyLocationCards(sql);
+await seedShipCitySlice(sql);
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number(process.env.LOCAL_PREVIEW_PORT || 3000);

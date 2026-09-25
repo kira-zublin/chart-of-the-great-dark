@@ -2,6 +2,7 @@ import { body, currentProfile, db, error, guarded, json, randomUUID } from '../l
 import { coord, gridOf, inside, key, nearestOpen, roomAt, roomVisible, uuid, validGrid } from '../lib/world.js';
 
 const safeText = (value, limit) => typeof value === 'string' && value.trim().length > 0 && value.length <= limit ? value.trim() : null;
+const optionalText = (value, limit) => value === undefined ? '' : typeof value === 'string' && value.length <= limit ? value.trim() : null;
 const simpleGrid = () => ({ width: 10, height: 8, entry: [1, 1], blocked: [], rooms: [{ id: 'main', name: 'Main area', squares: Array.from({ length: 8 }, (_, y) => Array.from({ length: 10 }, (_, x) => [x, y])).flat() }] });
 const locate = async (sql, id) => (await sql`SELECT * FROM locations WHERE id = ${id} LIMIT 1`)[0];
 const conflict = cause => String(cause?.code || '').startsWith('SQLITE_CONSTRAINT');
@@ -59,7 +60,7 @@ export async function GET(req) {
       const hidden = !gm && location.kind === 'delve' && row.x !== null && !visibleRoom(location, roomAt(gridOf(location), row.x, row.y));
       return hidden ? { ...row, x: null, y: null, hidden: true } : row;
     });
-    return json({ locations: locations.map(item => ({ ...item, grid: gm || item.access_level === 'accessible' ? gridOf(item) : null, has_image: (gm || item.access_level === 'accessible') && item.image_version > 0 })), links, positions, overrides: gm ? overrides : [], visibleRooms: Object.fromEntries(locations.filter(item => item.kind === 'delve' && (gm || item.access_level === 'accessible')).map(item => [item.id, Object.fromEntries([...gridOf(item).rooms.map(room => room.id), '_unassigned'].map(id => [id, visibleRoom(item, id)]))])) });
+    return json({ locations: locations.map(item => ({ ...item, grid: gm || item.access_level === 'accessible' ? gridOf(item) : null, has_image: (gm || item.access_level === 'accessible') && item.image_version > 0, has_card_image: item.card_image_version > 0 })), links, positions, overrides: gm ? overrides : [], visibleRooms: Object.fromEntries(locations.filter(item => item.kind === 'delve' && (gm || item.access_level === 'accessible')).map(item => [item.id, Object.fromEntries([...gridOf(item).rooms.map(room => room.id), '_unassigned'].map(id => [id, visibleRoom(item, id)]))])) });
   });
 }
 
@@ -106,12 +107,13 @@ export async function POST(req) {
     if (profile.role !== 'gm') return error('Only the GM can edit the world', 403);
     if (data.action === 'create') {
       const title = safeText(data.title, 80), description = typeof data.description === 'string' && data.description.length <= 4000 ? data.description.trim() : null;
-      if (!title || description === null || !['settlement', 'delve', 'diorama', 'poi'].includes(data.kind)) return error('Check location details');
+      const teaser = optionalText(data.teaser, 220), quote = optionalText(data.quote, 280), speaker = optionalText(data.quoteSpeaker, 100);
+      if (!title || description === null || teaser === null || quote === null || speaker === null || !['settlement', 'delve', 'diorama', 'poi'].includes(data.kind)) return error('Check location details');
       const parent = await locate(sql, data.parentId);
       if (!parent || !['star', 'settlement'].includes(parent.kind) || !coord(data.x) || !coord(data.y) || (parent.kind === 'star' ? data.x > 900 || data.y > 600 : data.x > 100 || data.y > 100)) return error('Choose a valid parent and marker position');
       const grid = data.kind === 'delve' ? simpleGrid() : null;
       const id = randomUUID(), linkId = randomUUID();
-      await sql`INSERT INTO locations (id, kind, parent_id, title, description, grid) VALUES (${id}, ${data.kind}, ${parent.id}, ${title}, ${description}, ${JSON.stringify(grid || {})})`;
+      await sql`INSERT INTO locations (id, kind, parent_id, title, description, teaser, quote, quote_speaker, grid) VALUES (${id}, ${data.kind}, ${parent.id}, ${title}, ${description}, ${teaser}, ${quote}, ${speaker}, ${JSON.stringify(grid || {})})`;
       await sql`INSERT INTO location_links (id, from_id, to_id, kind, label, x, y) VALUES (${linkId}, ${parent.id}, ${id}, 'marker', ${title}, ${data.x}, ${data.y})`;
       return json({ id, linkId }, 201);
     }
@@ -119,13 +121,16 @@ export async function POST(req) {
       const location = await locate(sql, data.locationId);
       if (!location || location.kind === 'star') return error('Location unavailable');
       const title = safeText(data.title, 80), description = typeof data.description === 'string' && data.description.length <= 4000 ? data.description.trim() : null;
-      if (!title || description === null || !['invisible', 'inaccessible', 'accessible'].includes(data.accessLevel)) return error('Check location details');
+      const teaser = optionalText(data.teaser === undefined ? location.teaser : data.teaser, 220);
+      const quote = optionalText(data.quote === undefined ? location.quote : data.quote, 280);
+      const speaker = optionalText(data.quoteSpeaker === undefined ? location.quote_speaker : data.quoteSpeaker, 100);
+      if (!title || description === null || teaser === null || quote === null || speaker === null || !['invisible', 'inaccessible', 'accessible'].includes(data.accessLevel)) return error('Check location details');
       let link = null;
       if (data.linkId !== undefined) {
         link = (await sql`SELECT l.*, source.kind AS source_kind FROM location_links l JOIN locations source ON source.id = l.from_id WHERE l.id = ${data.linkId} AND l.to_id = ${location.id} AND l.kind = 'marker' LIMIT 1`)[0];
         if (!link || !Number.isFinite(data.x) || !Number.isFinite(data.y) || data.x < 0 || data.y < 0 || (link.source_kind === 'star' ? data.x > 900 || data.y > 600 : link.source_kind !== 'settlement' || data.x > 100 || data.y > 100)) return error('Choose a valid marker position');
       }
-      await sql`UPDATE locations SET title = ${title}, description = ${description}, access_level = ${data.accessLevel}, visible = ${Number(data.accessLevel !== 'invisible')} WHERE id = ${location.id}`;
+      await sql`UPDATE locations SET title = ${title}, description = ${description}, teaser = ${teaser}, quote = ${quote}, quote_speaker = ${speaker}, access_level = ${data.accessLevel}, visible = ${Number(data.accessLevel !== 'invisible')} WHERE id = ${location.id}`;
       if (link) await sql`UPDATE location_links SET label = ${title}, x = ${data.x}, y = ${data.y} WHERE id = ${link.id}`;
       return json({ ok: true });
     }
