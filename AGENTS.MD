@@ -1,5 +1,7 @@
 # Coriolis Mapping Project — Agent Instructions
 
+Player-facing map terminology: **Hub** (stored as `settlement`), **Explorable** (stored as `delve`), and **Vista** (stored as `diorama`). Keep stored kind identifiers stable until a deliberate data migration. The root star-chart location is named **Chart of the Great Dark**; it is an area title, not a persistent page title.
+
 ## Project Overview
 
 This repository contains a multiplayer web application for a private tabletop RPG campaign using the Coriolis setting.
@@ -230,13 +232,11 @@ Preserve working existing functionality unless a task explicitly replaces it.
 
 ---
 
-## Local Map View
+## Settlement View
 
-Represents a more focused geographic area beneath the star-map scale.
+Represents a focused 2D area with a background and clickable location markers. Settlements may contain markers for any location type, including other settlements.
 
-Its precise interaction model will be defined in the relevant system documentation.
-
-Do not assume that Local Map View behaves identically to the Star Map or Tactical View.
+Do not assume that Settlement View behaves identically to the Star Map or Delve View.
 
 ---
 
@@ -250,7 +250,7 @@ Its implementation should emphasize atmosphere without compromising usability.
 
 ---
 
-## Tactical View
+## Delve View
 
 Represents top-down positional gameplay.
 
@@ -271,18 +271,13 @@ The goal is the subset of tactical functionality useful to this campaign.
 
 # 5. Map Transitions and World State
 
-The four map modes are layers of one game world rather than four unrelated applications.
+The Star Map, Settlement, Diorama, and Delve are views of one persistent campaign world. Points of Interest are informational markers and cannot be entered.
 
-When designing navigation or data structures, account for relationships such as:
+Use explicit connections between locations for travel, including non-hierarchical links between Delves. A separate optional parent reference supports context such as the current planet and the Back button; it does not constrain which locations can connect. Back opens the current location's parent, or is disabled when there is no parent.
 
-Star Map
-→ Local Map
-→ Diorama
-→ Tactical Map
+Viewing a location and moving a character there are distinct actions. Visible map markers may be opened for information without changing character position. Party discovery and visibility are shared. The Star Map is the root view; characters there need no map coordinates.
 
-Not every location must necessarily contain every lower-level map.
-
-Locations should eventually be capable of referencing appropriate child locations or map resources.
+The GM may browse locations without a controlled character and pull selected player characters to the GM's current location. See `docs/MAP-DESIGN.md` for the current map decisions and remaining questions.
 
 Avoid tightly coupling global campaign data to the rendering implementation of one particular map type.
 

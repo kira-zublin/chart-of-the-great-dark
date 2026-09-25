@@ -1,7 +1,9 @@
 import { collectSheet, renderSheet, setSheetDirtyHandler, setSheetTab } from './sheet-ui.js';
 import { initCrewUI } from './crew-ui.js';
 import { initChatUI } from './chat-ui.js';
+import { initWorldUI } from './world-ui.js';
 const $ = id => document.getElementById(id);
+$('mapStage').append(document.querySelector('.hud'));
 const state = { profile: null, characters: [], selected: null, registering: false };
 const stats = ['strength', 'agility', 'logic', 'insight', 'perception', 'empathy'];
 let characterDirty = false;
@@ -15,6 +17,10 @@ const crewUI = initCrewUI(request, () => state.profile, () => {
 const chatUI = initChatUI(request, () => state.profile, () => {
   const id = state.selected?.id || (state.profile && localStorage.getItem(`active-character:${state.profile.id}`));
   return state.characters.find(item => item.id === id) || null;
+});
+const worldUI = initWorldUI(request, () => state.profile, () => {
+  const id = state.selected?.id || (state.profile && localStorage.getItem(`active-character:${state.profile.id}`));
+  return state.characters.find(item => item.id === id && item.kind === 'pc') || null;
 });
 
 async function request(path, options = {}) {
@@ -37,8 +43,10 @@ function showApp(profile) {
     $('characterKindRow').hidden = profile.role !== 'gm';
     loadCharacters();
     chatUI.start();
+    worldUI.start();
   } else {
     chatUI.stop();
+    worldUI.stop();
     state.characters = []; state.selected = null;
     $('characterPanel').hidden = true;
     $('accountMenu').hidden = true;
@@ -92,6 +100,7 @@ async function loadCharacters() {
     state.characters = data.characters;
     renderList();
     chatUI.refreshIdentity();
+    worldUI.characterChanged();
     const remembered = localStorage.getItem(`active-character:${state.profile.id}`);
     const active = state.characters.find(item => item.id === remembered);
     if (active && !state.selected) $('characterButton').textContent = active.name;
@@ -106,6 +115,7 @@ function renderList() {
     localStorage.removeItem(`active-character:${state.profile.id}`);
     $('characterPanel').hidden = true; $('characterMenu').hidden = true;
     $('characterButton').textContent = 'Select character'; chatUI.refreshIdentity();
+    worldUI.characterChanged();
   });
   list.append(none);
   if (!state.characters.length) {
@@ -147,6 +157,7 @@ function editCharacter(character = null) {
   state.selected = character;
   if (character) localStorage.setItem(`active-character:${state.profile.id}`, character.id);
   chatUI.refreshIdentity();
+  worldUI.characterChanged();
   $('characterMenu').hidden = true;
   $('characterButton').setAttribute('aria-expanded', 'false');
   $('characterPanel').hidden = false;

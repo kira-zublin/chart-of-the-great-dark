@@ -45,3 +45,15 @@ The next iterations can add:
 - richer Bird / Garuda UI integration
 
 The current delve names and details are prototype content only.
+
+## World map prototype
+
+After backing up each existing environment's database, apply the additive world migration with `node --env-file=<verified-development-env-file> scripts/migrate-006.js` for the intended local/development database. Apply it separately to Production with `node --env-file=.env.production-migration.local scripts/migrate-006.js` before deploying this feature. Confirm each environment file points to the intended database. Preview builds apply the migration automatically to their isolated database. The migration can be rerun and preserves existing characters.
+
+For databases seeded before the Choir's parent was corrected, run `node --env-file=<verified-environment-file> scripts/migrate-007.js` against the intended database. Confirm the environment file's target first. Preview builds apply this correction automatically. It changes only the original Choir sample while its parent is still the Star Map.
+
+Before deploying the three-state location access UI and API against an existing database, apply `node --env-file=<verified-environment-file> scripts/migrate-008.js` to that database. It preserves legacy hidden locations as Invisible and can be rerun. Preview builds apply it automatically.
+
+The prototype adds a small sample journey, persistent PC positions, connected Settlements, Dioramas, and Delves, room fog, GM pulls, and simple location creation and art upload. The GM palette and room-square editor remain later work; see `docs/MAP-DESIGN.md`.
+
+For a quick local UI preview without database credentials, `npm run dev:local` starts an in-memory campaign at `http://127.0.0.1:3000`. Register with invitation code `local-preview-only`. All preview data disappears when the process stops; use the Turso-backed setup above for persistent development.
