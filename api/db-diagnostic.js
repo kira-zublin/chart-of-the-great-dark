@@ -1,6 +1,6 @@
 import { db, digest, equalSecrets, error, guarded, json } from '../lib/server.js';
 
-// Temporary release diagnostic. Remove after Production's database identity is verified.
+// Temporary release diagnostic. Comparing the database identity across deployments.
 export async function GET(req) {
   const invite = process.env.REGISTRATION_INVITE_CODE;
   if (!invite || !equalSecrets(req.headers.get('x-diagnostic-invite') || '', invite)) return error('Not found', 404);
