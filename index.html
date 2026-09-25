@@ -127,18 +127,21 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 .chat-dialog{border:1px solid rgba(205,184,125,.6);background:#0d171c;color:var(--paper);box-shadow:0 20px 60px #000c;width:min(470px,calc(100vw - 24px));max-height:85vh;overflow:auto;padding:18px}.chat-dialog::backdrop{background:#0009}.chat-dialog h2{margin:0;color:var(--gold);font-size:19px}.chat-dialog form{display:grid;gap:12px}.chat-dialog label{display:grid;gap:5px;color:#d0bd92;font-size:12px}.chat-dialog input,.chat-dialog select{width:100%;min-height:36px;background:#091115;color:var(--paper);border:1px solid #6b6045;padding:5px}.chat-dialog .dialog-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.chat-dialog .dialog-head button{min-height:32px}.chat-dialog .dialog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.chat-dialog .dialog-actions{display:flex;gap:8px;align-items:center}.chat-dialog .dialog-status{min-height:18px;color:#e5a18d;margin:0;font-size:12px}.chat-dialog .roll-preview{color:#d0bd92;font-size:12px;margin:0}.chat-dialog .roll-result{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;margin:0}
 .chat-dialog [hidden]{display:none!important}
 @media(max-width:700px){.chat-dock{max-height:85vh}.chat-content{max-height:none;overflow:hidden}.chat-messages{height:auto}.chat-dialog .dialog-grid{grid-template-columns:1fr 1fr}}
+.world-nav{position:absolute;z-index:7;top:104px;left:20px;right:20px;display:flex;align-items:center;gap:8px;pointer-events:none}.world-nav>*{pointer-events:auto}.world-nav button{min-height:32px;padding:5px 10px}.world-where{background:#0a1219d9;border:1px solid #8c794d66;padding:8px 11px;color:#e1d3ac;font-size:12px;max-width:45vw}.world-nav .world-status{color:#f0b89e;font-size:12px;background:#09131bdf;padding:6px}.world-view{position:absolute;inset:0;z-index:3;overflow:auto;background:#061018}.world-scene{position:relative;min-height:100%;width:100%;background:radial-gradient(ellipse at 50% 40%,#344250,#0a131c 70%);overflow:auto}.world-scene.has-art{background-size:cover;background-position:center}.world-scene:before{content:"";position:absolute;inset:0;background:linear-gradient(#050b13aa,transparent 30%,#050b13a8);pointer-events:none}.world-heading{position:absolute;left:24px;top:155px;z-index:2;max-width:360px;background:#081219e8;padding:15px;border:1px solid #aa95634d}.world-heading h2{margin:0 0 8px;font-weight:400;font-size:29px}.world-heading p{margin:0;line-height:1.45;font-size:13px}.world-presence{position:absolute;left:24px;top:305px;z-index:2;background:#081219d9;padding:12px;max-width:250px;font-size:12px;line-height:1.5}.world-marker{position:absolute;z-index:4;transform:translate(-50%,-50%);background:#17232be6;border:1px solid #d6bc79;min-height:46px;border-radius:50%;padding:10px;color:#f1e3bd}.world-marker.door{border-radius:3px;background:#543f2ccc}.world-marker small{display:block;font-size:9px;color:#c4aa70}.world-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(var(--cols),minmax(34px,1fr));width:max-content;margin:155px auto 120px;border:1px solid #8c794d;background:#17222bca;touch-action:none}.world-cell{width:clamp(34px,4.3vw,58px);height:clamp(34px,4.3vw,58px);border:1px solid #b9a87938;position:relative;display:grid;place-items:center;font-size:10px}.world-cell.blocked{background:#03090ecf}.world-cell.fogged{background:#02070df5;border-color:#131a20;color:transparent}.world-cell.drop-target{outline:2px solid #e8c379;outline-offset:-3px}.world-token{z-index:3;width:84%;height:84%;border:2px solid #e3c47b;border-radius:50%;object-fit:cover;background:#897959;cursor:grab;touch-action:none}.world-token.own{border-color:#dce8d1;cursor:grab}.world-token:active{cursor:grabbing}.world-standups{position:absolute;inset:0;z-index:3;pointer-events:none}.world-standup{position:absolute;width:90px;height:150px;object-fit:contain;transform:translate(-50%,-100%);cursor:grab;pointer-events:auto;touch-action:none;filter:drop-shadow(0 8px 6px #000b)}.world-standup.own{outline:1px solid #dce8d1}.world-panel{position:absolute;z-index:8;right:20px;top:155px;width:min(300px,35vw);max-height:calc(100vh - 225px);overflow:auto;padding:13px;background:#0a141ce9;border:1px solid #8c794d}.world-panel h3{font-size:17px;font-weight:400;margin:2px 0 10px}.world-panel p{font-size:12px;line-height:1.45}.world-panel button{margin:3px;min-height:32px;padding:6px 10px}.world-panel label{display:grid;gap:4px;font-size:11px;margin:8px 0}.world-panel input,.world-panel select,.world-panel textarea{min-height:32px}.world-panel .compact{display:flex;gap:6px;align-items:center}.world-panel .compact input{width:auto}.world-panel .room-row{display:flex;gap:4px;align-items:center;justify-content:space-between;font-size:11px;margin:5px 0}.world-panel .room-row select{width:120px}.world-marker-svg{cursor:pointer}.world-marker-svg circle{fill:#bda269;stroke:#f3d593;stroke-width:2}.world-marker-svg text{fill:#f5e7c6;font-size:11px;paint-order:stroke;stroke:#071018;stroke-width:3px}.world-marker-svg[hidden]{display:none}.world-visit{margin-top:12px}.world-visit button{width:100%}@media(max-width:800px){.world-nav{top:130px;left:12px;right:12px;flex-wrap:wrap}.world-where{max-width:100%}.world-heading{top:190px;left:12px;max-width:calc(100vw - 24px)}.world-presence{top:355px;left:12px}.world-panel{position:relative;right:auto;top:auto;margin:480px 12px 24px;width:auto;max-height:none}.world-grid{margin-top:210px}}
 </style>
+<link rel="stylesheet" href="world-ui.css">
 </head>
 <body>
 <main id="app">
 <section class="login-screen" id="loginScreen" aria-label="Sign in"><div class="login-card"><div class="eyebrow">Explorers Guild &middot; Chart Access</div><h1>CHART OF THE GREAT DARK</h1><p id="authLead">Sign in to open your chart.</p><form id="authForm" class="form-stack"><label>Profile name<input id="authName" name="name" autocomplete="username" maxlength="32" required></label><label>Password<input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="10" required></label><label id="inviteRow" hidden>Invitation code<input id="authInvite" name="invite" autocomplete="off"></label><label id="roleRow" hidden>Profile type<select id="authRole"><option value="player">Player</option><option value="gm">GM</option></select></label><button class="primary-button" id="authSubmit" type="submit">Sign in</button><p id="authMessage" class="message" role="alert"></p></form><button class="text-button" id="authToggle" type="button">Create a profile</button></div></section>
 <div class="stage" id="mapStage" hidden>
+<div class="world-nav" id="worldNav" hidden><button id="worldBack" type="button">Back</button><button id="worldStar" type="button">Star Map</button><span class="world-where" id="worldWhere"></span><span class="world-status" id="worldStatus" role="status"></span></div>
 <section class="chart" aria-label="Interactive Chart of the Great Dark prototype">
 <div class="bg-layer" id="bgLayer" aria-hidden="true"></div>
 <div class="bg-fog" aria-hidden="true"></div>
 <canvas id="dust" aria-hidden="true"></canvas>
-<div class="hud"><div><div class="account-wrap"><button id="accountButton" type="button" aria-expanded="false">Profile</button><div class="account-menu" id="accountMenu" hidden><div id="accountRole" class="role-label"></div><button id="logoutButton" type="button">Log out</button></div></div><div class="title">CHART OF THE GREAT DARK</div></div><div class="character-wrap"><button id="openCrew" type="button">Crew Sheet</button><button id="characterButton" type="button" aria-expanded="false">Select character</button><div class="character-menu" id="characterMenu" hidden><div id="characterList"></div><button id="createCharacter" type="button">Create a new character</button><label id="filterRow" hidden>Show <select id="characterFilter"><option value="all">All characters</option><option value="pc">Player characters</option><option value="npc">NPCs</option></select></label></div></div></div>
-<svg class="map" id="map" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Star chart with selectable delves and landmarks">
+<div class="hud"><div><div class="account-wrap"><button id="accountButton" type="button" aria-expanded="false">Profile</button><div class="account-menu" id="accountMenu" hidden><div id="accountRole" class="role-label"></div><button id="logoutButton" type="button">Log out</button></div></div></div><div class="character-wrap"><button id="openCrew" type="button">Crew Sheet</button><button id="characterButton" type="button" aria-expanded="false">Select character</button><div class="character-menu" id="characterMenu" hidden><div id="characterList"></div><button id="createCharacter" type="button">Create a new character</button><label id="filterRow" hidden>Show <select id="characterFilter"><option value="all">All characters</option><option value="pc">Player characters</option><option value="npc">NPCs</option></select></label></div></div></div>
+<svg class="map" id="map" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Star chart with selectable explorables and landmarks">
 <defs>
 <filter id="glow" x="-200%" y="-200%" width="400%" height="400%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 <filter id="watercolor" x="-60%" y="-60%" width="220%" height="220%"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="7" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="B"/><feGaussianBlur stdDeviation=".65"/></filter>
@@ -169,7 +172,7 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 <rect class="map-hit" x="-43" y="-54" width="130" height="105"/>
 <circle class="bloom" r="20" fill="#5f8297"/><circle class="line faint spinA" r="20"/><circle class="line" r="11"/><path class="line" d="M-29 0H29 M0-29V29"/><path class="line faint" d="M-19-19L19 19 M19-19L-19 19"/><circle class="core" r="4"/><path class="starburst" d="M0-12L3-3L12 0L3 3L0 12L-3 3L-12 0L-3-3Z"/><text x="-8" y="-35">JUMUAH</text></g>
 <path class="const" d="M205 372 L302 298" style="opacity:.34"/>
-<g class="landmark" data-key="shipcity" tabindex="0" role="button" aria-label="Ship City landmark" transform="translate(315 286)">
+<g class="landmark" data-key="shipcity" tabindex="0" role="button" aria-label="Ship City landmark" transform="translate(315 286)" style="display:none">
   <rect class="map-hit" x="-59" y="-62" width="255" height="126"/>
   <circle class="image-halo" r="48"/>
   <circle class="image-ring spinOrbit" r="52"/>
@@ -188,7 +191,7 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
   <text x="62" y="-4">SHIP CITY</text>
   <text x="62" y="12" style="font-size:8px;letter-spacing:1.1px;opacity:.62">LANDMARK &middot; JUMUAH</text>
 </g>
-<g class="system" data-key="choir" tabindex="0" role="button" aria-label="The Choir Below" transform="translate(514 238)">
+<g class="system" data-key="choir" tabindex="0" role="button" aria-label="The Choir Below" transform="translate(514 238)" style="display:none">
 <rect class="map-hit" x="-46" y="-57" width="224" height="107"/>
 <ellipse class="bloom" rx="35" ry="24" fill="#bd724b" transform="rotate(-16)"/><ellipse class="bloom" rx="25" ry="18" fill="#d2a34e" transform="rotate(20)"/><circle class="line faint spinA" r="29"/><circle class="line spinB" r="20"/><path class="line bold" d="M-42 0H42"/><path class="line" d="M0-39V39"/><path class="line faint" d="M-29-29L29 29"/><path class="line faint" d="M-33 12C-12 1 12 1 33-12"/><path class="line faint" d="M-33-12C-12-1 12-1 33 12"/><circle class="node floatA" cx="0" cy="-29" r="2.3"/><circle class="node floatB" cx="20" cy="0" r="2"/><circle class="node floatA" cx="0" cy="29" r="2.3"/><circle class="node floatB" cx="-20" cy="0" r="2"/><image class="delve-icon" href="assets/delve-1.png" x="-18" y="-18" width="36" height="36" preserveAspectRatio="xMidYMid meet"/><text x="19" y="-41">THE CHOIR BELOW</text></g>
 <g class="system" data-key="feathers" tabindex="0" role="button" aria-label="Vault of Seven Feathers" transform="translate(676 350)">
@@ -198,14 +201,20 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 <rect class="map-hit" x="-46" y="-47" width="254" height="109"/>
 <ellipse class="bloom" rx="36" ry="22" fill="#8f332b" transform="rotate(-22)"/><ellipse class="bloom" rx="19" ry="33" fill="#ba5c4d" transform="rotate(18)"/><path class="line faint spinA" d="M-28-7A29 29 0 1 1 26-10"/><path class="line spinB" d="M-17-24A29 29 0 0 1 28 8"/><path class="line bold" d="M-39 0H39"/><path class="line" d="M0-36V36"/><path class="line faint" d="M-25-25L-8-8 M10 10L28 28 M-24 24L-8 8 M8-8L25-25"/><circle class="node floatB" cx="-25" cy="0" r="2" fill="#bd7159"/><circle class="node floatA" cx="26" cy="-10" r="2" fill="#bd7159"/><circle class="node floatB" cx="0" cy="25" r="2" fill="#bd7159"/><image class="delve-icon" href="assets/delve-3.png" x="-18" y="-18" width="36" height="36" preserveAspectRatio="xMidYMid meet"/><text x="18" y="40">RED GLASS RELIQUARY</text></g>
 </g></svg>
-<div class="hint">Drag to pan &middot; scroll to zoom &middot; select a delve or landmark to inspect</div>
+<div class="hint">Drag to pan &middot; scroll to zoom &middot; select an explorable or landmark to inspect</div>
 </section>
-<aside class="dossier" id="dossier" aria-live="polite" aria-hidden="true"><button class="close-dossier" id="closeDossier" type="button" aria-label="Close delve details">&times;</button>
+<aside class="dossier" id="dossier" aria-live="polite" aria-hidden="true"><button class="close-dossier" id="closeDossier" type="button" aria-label="Close location details">&times;</button>
 <svg class="bird" viewBox="0 0 90 90" aria-hidden="true"><path d="M15 52C29 46 37 28 54 25C64 23 69 28 76 25C71 33 66 37 60 39C67 41 72 46 74 54C65 50 57 49 51 52C42 57 38 67 29 71C31 62 28 57 15 52Z" fill="none" stroke="#b9a36e" stroke-width="2"/><circle cx="60" cy="32" r="2" fill="#cfbc84"/><path d="M27 70L21 80M33 68L31 81" stroke="#8d7a4e" stroke-width="1.5"/></svg>
 <div class="chapter" id="chapter"></div><h2 id="name"></h2><div class="chips" id="chips"></div><p class="lede" id="lede"></p>
 <div id="delveDetails"><div class="rule">Known particulars</div><dl><dt>System</dt><dd id="system"></dd><dt>Sponsor</dt><dd id="sponsor"></dd><dt>Signal</dt><dd id="signal"></dd><dt>Risk</dt><dd id="risk"></dd><dt>Return</dt><dd id="return"></dd></dl><div class="rumor" id="rumor"></div></div>
 <div id="landmarkDetails" hidden><div class="rule">Landmark record</div><dl><dt>Location</dt><dd id="landmarkLocation"></dd><dt>Nature</dt><dd id="landmarkNature"></dd><dt>Importance</dt><dd id="landmarkImportance"></dd><dt>Notable</dt><dd id="landmarkNotable"></dd></dl><div class="rumor" id="landmarkNote"></div></div>
+<div class="world-visit"><button id="worldOpenSelected" type="button" hidden>Open location</button></div>
 </aside></div>
+<section class="world-view" id="worldView" aria-label="Location map" hidden></section>
+<header class="world-heading" id="worldHeading"><h2 id="worldHeadingTitle"></h2><p id="worldHeadingDescription"></p></header>
+<aside class="world-panel" id="worldPanel" hidden></aside>
+<aside class="world-location-dossier" id="worldLocationDossier" aria-label="Location details" aria-hidden="true"><button type="button" class="dossier-close" id="worldLocationClose" aria-label="Close location details">&times;</button><div class="dossier-kind" id="worldLocationKind"></div><h2 id="worldLocationTitle"></h2><p id="worldLocationDescription"></p><div class="dossier-actions" id="worldLocationActions"></div></aside>
+<div class="world-move-dock" id="worldMoveDock" hidden></div>
 <section class="chat-dock" id="chatDock" aria-label="Campaign chat" hidden>
   <div class="chat-resize" id="chatResize" role="separator" aria-orientation="horizontal" aria-label="Resize chat height" tabindex="0"></div>
   <div class="chat-head"><span>Campaign chat</span><button id="chatToggle" type="button" aria-controls="chatContent" aria-expanded="false" aria-label="Show chat">Show</button></div>
@@ -300,14 +309,14 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
     <label>Crew name<input id="crewName" maxlength="100"></label>
     <label>Crew points<input id="crewPoints" type="number" min="0" max="999"></label>
     <div class="portrait-controls"><div class="rule">Crew portrait</div><img id="crewPortrait" class="image-preview" alt="Crew portrait" hidden><label>Upload portrait<input id="crewPortraitInput" type="file" accept="image/png,image/jpeg,image/webp"></label><button id="removeCrewPortrait" type="button" hidden>Remove portrait</button></div>
-    <div class="rule">Delve roles</div><div id="crewRoleRows" class="entry-list"></div>
+    <div class="rule">Explorable roles</div><div id="crewRoleRows" class="entry-list"></div>
   </section>
   <section id="crewPaneManeuvers" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabManeuvers" hidden><div class="rule">Crew maneuvers</div><div id="crewManeuverRows" class="entry-list"></div><button id="addCrewManeuver" type="button">Add maneuver</button></section>
   <section id="crewPaneBird" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabBird" hidden><div class="portrait-controls"><div class="rule">Bird portrait</div><img id="birdPortrait" class="image-preview" alt="Bird portrait" hidden><label>Upload portrait<input id="birdPortraitInput" type="file" accept="image/png,image/jpeg,image/webp"></label><button id="removeBirdPortrait" type="button" hidden>Remove portrait</button></div><div id="crewBird" class="character-grid"></div></section>
   <section id="crewPaneRover" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabRover" hidden><div id="crewRover" class="character-grid"></div></section>
   <section id="crewPaneShuttle" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabShuttle" hidden><div id="crewShuttle" class="character-grid"></div></section>
   <p class="field-hint">Changes save when you leave a field. The sheet refreshes while open.</p>
-</aside><div class="legend"><span><i class="dot blue"></i>Known system</span><span><i class="dot" style="border-radius:2px;background:#aa6c4c"></i>Landmark</span><span><i class="dot"></i>Confirmed delve</span><span><i class="dot red"></i>Rumored / unstable site</span></div>
+</aside><div class="legend"><span><i class="dot blue"></i>Known system</span><span><i class="dot" style="border-radius:2px;background:#aa6c4c"></i>Landmark</span><span><i class="dot"></i>Confirmed explorable</span><span><i class="dot red"></i>Rumored / unstable site</span></div>
 </main>
 <script>
 (()=>{
@@ -346,6 +355,7 @@ function openDossier(key){
  $("system").textContent=d.system;$("sponsor").textContent=d.sponsor;$("signal").textContent=d.signal;$("risk").textContent=d.risk;$("return").textContent=d.ret;$("rumor").textContent=d.rumor;
  route.setAttribute("d",d.route);route.style.opacity="1";clearSelections();document.querySelector('.system[data-key="'+key+'"]').classList.add("selected");
  dossier.classList.add("open");dossier.setAttribute("aria-hidden","false");animateTo(d.view);
+ document.dispatchEvent(new CustomEvent('chart-marker',{detail:{key}}));
 }
 function openLandmark(key){
  const d=landmarks[key];if(!d)return;
@@ -354,6 +364,7 @@ function openLandmark(key){
  $("landmarkLocation").textContent=d.location;$("landmarkNature").textContent=d.nature;$("landmarkImportance").textContent=d.importance;$("landmarkNotable").textContent=d.notable;$("landmarkNote").textContent=d.note;
  route.style.opacity="0";clearSelections();document.querySelector('.landmark[data-key="'+key+'"]').classList.add("selected");
  dossier.classList.add("open");dossier.setAttribute("aria-hidden","false");animateTo(d.view);
+ document.dispatchEvent(new CustomEvent('chart-marker',{detail:{key}}));
 }
 function closeDossier(){
  dossier.classList.remove("open");dossier.setAttribute("aria-hidden","true");route.style.opacity="0";clearSelections();animateTo(defaultView);
@@ -373,6 +384,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDossier()});
 
 svg.addEventListener("pointerdown",e=>{
  if(e.button!==0||e.target.closest(".system,.landmark"))return;
+ e.preventDefault();
  cancelAnimationFrame(raf);dragging=true;pointerId=e.pointerId;lastX=e.clientX;lastY=e.clientY;chart.classList.add("dragging");svg.setPointerCapture(pointerId);
 });
 svg.addEventListener("pointermove",e=>{

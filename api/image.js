@@ -18,7 +18,7 @@ export async function GET(req) {
     const p = params(req); if (!p) return error('Invalid image');
     const sql = db(); const profile = await currentProfile(req, sql);
     if (!profile) return error('Image unavailable', 404);
-    const visible = await sql`SELECT c.id FROM characters c WHERE c.id = ${p.id} AND (c.owner_id = ${profile.id} OR ${profile.role} = 'gm' OR EXISTS (SELECT 1 FROM chat_messages m WHERE m.character_id = c.id)) LIMIT 1`;
+    const visible = await sql`SELECT c.id FROM characters c WHERE c.id = ${p.id} AND (c.owner_id = ${profile.id} OR c.kind = 'pc' OR ${profile.role} = 'gm' OR EXISTS (SELECT 1 FROM chat_messages m WHERE m.character_id = c.id)) LIMIT 1`;
     if (!visible.length) return error('Image unavailable', 404);
     const rows = await sql`SELECT mime_type, bytes FROM character_images WHERE character_id = ${p.id} AND slot = ${p.slot} LIMIT 1`;
     if (!rows.length) return error('Image not found', 404);

@@ -1,0 +1,45 @@
+﻿For the next phase of our ‘Chart of the Great Dark’ project, we’re going to build an interactive map of the world that the GM will create and players can explore with their characters.
+
+
+The highest level of this is the Star Map, the screen visible in our current prototype.  The Star Map shows the stars of the Coriolis world which players are able to visit with their ship.  It is the highest level of our game map, and drawn in the format of a beautiful interactive star chart.
+
+
+Each Star within the Star Map represents a Location.  Locations are a generic data object we use to represent a place of varying size.  The player can Visit accessible locations, but what they see when they visit depends on the type of the location.
+
+
+When a player Visits a location (ie: that location is open on their screen) other players can see that they are there by the presence of their character token in that location.  See the location descriptions below for details on how this displays.  If the player switches to another of their characters through the character switching in the top right, their view instantly moves to the location of the character they are now controlling.  All characters begin on the Star Map.
+
+
+Locations are one of the following:
+
+
+Settlement - A Settlement is a large 2D map screen that contains a set of clickable sub-locations.  For example, one location might be Ship City, a large pre-made 2D splash map that contains a set of its own Locations the player can visit.  The locations contained within a settlement might be of any type (allowing for nesting), but the view the player sees is always some form of 2D map with a splash background and clickable icons.  Player tokens aren’t visible on the map, but a list of characters currently viewing the settlement can be seen on the left side (essentially just a list of all characters in the zone.  This doesn’t display their presence or let them move around.
+
+
+Delve - A Delve is a tactical top-down map, a splash background with a grid superimposed on it.  Players and creatures are present in the map as ‘Tokens, which take up a single grid square (or 2x2 squares for large creatures.)  Players can freely move their own token around by clicking and dragging - we won’t implement movement rules at this time, the goal is just to give players the freedom to see where they are.
+
+
+Because character position is important in Delves, they also contain Doors, which can link to other locations - a second level of a dungeon, a Diorama location, or even a settlement.  Multiple Doors might link into the same Delve, and so Doors will need to indicate a specific grid square within the Delve we’re linking to, with players placed and centered on that grid square based on the door they use.  This allows Delves to link together to create larger dungeon maps.
+
+
+Delves will also need a Fog of War mechanic in which certain sections of the Delve are initially hidden, but become visible once the GM reveals them.
+
+
+Diorama - A Diorama is a neutral roleplaying area designed for conversations and roleplay.  When visiting a Diorama location, the player sees a large splash background, and their own character (as well as any other characters present in the Diorama) standing within it.  They can move their own character around by clicking and dragging to position themselves in the scene.  If the character has a Standup image, their Standup image is displayed here.  Otherwise, their portrait is displayed.  Dioramas don’t contain Locations of their own.
+
+
+Point of Interest  - These unvisitable locations are purely informational.  They can be seen on the map and provide descriptive information and an icon, but cannot be visited.
+
+
+When entering a Location that is nested in another location (for example, a Diorama within a Settlement, or a settlement within a star map), a Back button is available allowing the player to return one level up.  The goal isn’t to limit player movement so much as allow them to explore the world.
+
+
+The GM will need options to pull players into particular locations.
+
+
+
+
+Creatures: The GM role is a little different. By default, the GM does not control a single character and move them around. Instead, the GM can move invisibly around all locations, and will have a palette of Creatures they can place in Delves or Dioramas.  These creatures are represented as Tokens in a Delve, or as stand-ups in a Diorama.  The GM populates these areas with Creatures, and positions/controls the Creatures as needed.  The GM can Chat through any creature on the map they are on.
+
+
+Other Aspects of the GM Role: Most of our map will be pre-made, based on maps provided by our book.  We’ll use AI tools to interpret these maps and upload/create them within the site data.  However, the GM will also need to be able to create Locations of their own, which become permanent features of the map.  To create a Delve or Diorama, the DM can upload an image which then becomes the basis for the Diorama or Grid Map, as well as define features of each location.  The GM can also edit values in existing map locations (upload new versions of their background, change titles/text, and so on.)
