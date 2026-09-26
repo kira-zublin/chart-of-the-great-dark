@@ -63,7 +63,8 @@ function rollText(roll) {
   return `${push}${label} · Base [${base}]${gear} · ${roll.successes} ${roll.successes === 1 ? 'success' : 'successes'}${costs}`;
 }
 
-export function initChatUI(request, profile, character) {
+// onMessages(messages, initial) hears every message shown, flagging the first batch of history after sign-in.
+export function initChatUI(request, profile, character, onMessages = () => {}) {
   let lastId = 0; let timer = null; let loading = false; let first = true;
   let lastViewedId = 0; let hasViewedBefore = false;
   let pushId = null; let pushCount = 0; let secondPush = false;
@@ -125,6 +126,7 @@ export function initChatUI(request, profile, character) {
     try {
       const data = await request(`/api/chat${lastId ? `?after=${lastId}` : ''}`);
       for (const item of data.messages) render(item);
+      onMessages(data.messages, first);
       const historyReset = first && lastId < lastViewedId;
       if (historyReset) lastViewedId = lastId;
       if ((first && !hasViewedBefore) || historyReset || !$('chatContent').hidden) markViewed();
@@ -139,7 +141,7 @@ export function initChatUI(request, profile, character) {
     const selected = character();
     try {
       const data = await request('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, characterId: payload.type === 'push' ? null : selected?.id || null }) });
-      render(data.message); if (!$('chatContent').hidden) markViewed(); return data.message;
+      render(data.message); onMessages([data.message], false); if (!$('chatContent').hidden) markViewed(); return data.message;
     } catch (cause) { $('chatStatus').textContent = cause.message; return null; }
   }
   $('chatForm').addEventListener('submit', async event => {

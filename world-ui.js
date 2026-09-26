@@ -50,7 +50,8 @@ export function sceneDropPosition(pointer, drag, bounds) {
   ];
 }
 
-export function initWorldUI(request, profile, activeCharacter) {
+// onScene({ id, speakers }) reports the open Vista and the characters standing in it; null means no Vista is open.
+export function initWorldUI(request, profile, activeCharacter, onScene = () => {}) {
   let world = null, current = 'star-map', incomingLink = null, selectedStar = null, selectedLocal = null, timer = null, previousPosition = null, signature = '', draggingToken = false;
   let editingLinkId = null, editExpanded = false, draggingMarker = false;
   let renderedId = null, bloomOrigin = null, revealedLink = null;
@@ -204,6 +205,7 @@ export function initWorldUI(request, profile, activeCharacter) {
     if (arrived) { transition.play(bloomOrigin); restartReveal($('worldHeading')); }
     bloomOrigin = null;
     renderMoveDock(item);
+    onScene(item.kind === 'diorama' ? { id: item.id, speakers: new Set(world.positions.filter(pos => pos.location_id === item.id && !pos.hidden).map(pos => pos.character_id)) } : null);
     if (isGM()) renderPanel(item);
     if (selectedLocal && ['settlement', 'star'].includes(item.kind)) {
       const selected = linksHere().find(link => link.id === selectedLocal);
@@ -721,7 +723,7 @@ export function initWorldUI(request, profile, activeCharacter) {
   });
   return {
     start() { current = 'star-map'; previousPosition = null; $('worldChrome').hidden = false; refresh(true).then(() => { if (myPosition()?.location_id) open(myPosition().location_id); }); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) refresh(); }, 1000); },
-    stop() { clearInterval(timer); clearTimeout(statusTimer); status(''); timer = null; world = null; renderedId = null; transition.finish(); dust.set(null); closeLocalDossier(); $('worldChrome').hidden = true; $('worldView').hidden = true; $('worldPanel').hidden = true; $('worldMoveDock').hidden = true; },
+    stop() { onScene(null); clearInterval(timer); clearTimeout(statusTimer); status(''); timer = null; world = null; renderedId = null; transition.finish(); dust.set(null); closeLocalDossier(); $('worldChrome').hidden = true; $('worldView').hidden = true; $('worldPanel').hidden = true; $('worldMoveDock').hidden = true; },
     characterChanged() { previousPosition = null; refresh(true).then(() => open(myPosition()?.location_id || 'star-map')); }
   };
 }

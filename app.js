@@ -5,6 +5,7 @@ import { initWorldUI } from './world-ui.js';
 import { initSidePanel } from './side-panel.js';
 import { initJukeboxUI } from './jukebox-ui.js';
 import { initStarChart } from './star-chart.js';
+import { initVistaDialog } from './vista-dialog.js';
 const $ = id => document.getElementById(id);
 $('mapStage').append(document.querySelector('.hud'));
 initStarChart();
@@ -21,14 +22,15 @@ const sidePanel = initSidePanel({
   canClose: confirmDiscard,
   onChange: tab => crewUI.setActive(tab === 'Crew')
 });
+const vistaDialog = initVistaDialog(() => state.profile);
 const chatUI = initChatUI(request, () => state.profile, () => {
   const id = state.selected?.id || (state.profile && localStorage.getItem(`active-character:${state.profile.id}`));
   return state.characters.find(item => item.id === id) || null;
-});
+}, vistaDialog.receive);
 const worldUI = initWorldUI(request, () => state.profile, () => {
   const id = state.selected?.id || (state.profile && localStorage.getItem(`active-character:${state.profile.id}`));
   return state.characters.find(item => item.id === id && item.kind === 'pc') || null;
-});
+}, vistaDialog.setScene);
 
 async function request(path, options = {}) {
   const response = await fetch(path, { credentials: 'same-origin', ...options });
@@ -56,6 +58,7 @@ function showApp(profile) {
   } else {
     chatUI.stop();
     worldUI.stop();
+    vistaDialog.reset();
     jukeboxUI.stop();
     state.characters = []; state.selected = null;
     characterDirty = false; showEditor(false); sidePanel.hide();
