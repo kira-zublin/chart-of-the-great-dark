@@ -14,10 +14,10 @@ const places = [
   ['warehouse-nine', 'diorama', 'aluminum-bay', 'Explorers Guild Warehouse 9', 'The Explorers Guild keeps vehicles, expedition gear and a pier in Aluminum Bay. Engineers and crews prepare battered shuttles and rovers here before departure; every missing part can delay an expedition.', 'Prepare a vessel, collect supplies or find the Guild engineers.', 'It will fly. I did not promise it would do so quietly.', 'Guild engineer', 'accessible'],
   ['warehouse-murk', 'delve', 'aluminum-bay', 'Warehouse Murk', 'The Bay’s immense storage hall disappears into shadow above stacked cargo and hanging cranes. The Loaders tend its shelves, and damaged-goods markets draw bargain hunters into aisles where a person can easily lose their way.', 'An enormous cargo hall with more shadows than records.', 'Keep the red hooks on your left if you want to find the exit.', 'Loader’s advice', 'accessible'],
   ['the-husk', 'poi', 'aluminum-bay', 'The Husk of the Amidana', 'Beyond the piers, aluminum dust gathers around the stripped remains of the former Greatship Amidana. Scavengers still search oxygenated pockets for rare parts, but its interior warrants a separate expedition map.', 'A dead Greatship waits beyond the harbor’s safe routes.', '', '', 'accessible'],
-  ['hull-town', 'poi', 'ship-city', 'Hull Town', 'The welded hulls of the original Diaspora fleet form an outer district of homes, workshops and chain walks. It is easy to hide here, and easier still to lose your way between pressurized modules.', 'The first ships became a neighborhood that keeps changing shape.', '', '', 'accessible'],
+  ['hull-town', 'settlement', 'ship-city', 'Hull Town', 'The hulls of the original Diaspora fleet extend from the asteroid like a metallic reef. Homes, workshops and hidden gathering places fill pressurized modules, joined by narrow chain walks and flickering navigation lights.', 'The first ships became a neighborhood that keeps changing shape.', 'Here, a wall can be someone’s old engine room.', 'Nadi, hull cutter', 'accessible'],
   ['cave-gardens', 'settlement', 'ship-city', 'Cave Gardens', 'A chain of cultivated caverns shelters orchards, purple meadows and working hydroponics. The Gardeners Guild tends the city’s food and living collections here; its generous public paths narrow toward carefully controlled growing rooms.', 'Follow the scent of herbs into the asteroid’s living heart.', 'Every leaf has a purpose here, even if we have forgotten it.', 'Preci, Gardener', 'accessible'],
   ['turbine-halls', 'settlement', 'ship-city', 'Turbine Halls', 'The Machinists’ factory city surrounds the Cherolab with vaulted machinery, intimate dwellings and angular murals. Maintenance crews keep Ship City alive while Gray Caps watch the passages leading deeper into the engine.', 'The engine of Ship City hums behind painted industrial walls.', 'Listen long enough and you can tell which machine needs us.', 'Rafi, Machinist', 'accessible'],
-  ['inner-sanctum', 'poi', 'ship-city', 'Inner Sanctum', 'The Coriolites dwell among old stone palaces and ceremonial plazas. Masked worshippers gather at the Ziggurat of the Nine Icons, while family elders make decisions behind guarded doors.', 'Incense and old power linger in the Coriolites’ cave.', '', '', 'accessible'],
+  ['inner-sanctum', 'settlement', 'ship-city', 'Inner Sanctum', 'Deep in Ship City, the Coriolites inhabit a vast dim cave of dust-coated palaces, plazas and ziggurat temples. Incense and old prayers mingle with family politics, guarded archives and the scurry of prana-rats.', 'Incense and old power linger in the Coriolites’ cave.', 'These stones remember a horizon none of us have seen.', 'Alamasy scholar', 'accessible'],
   ['inbetween', 'poi', 'ship-city', 'The Inbetween', 'Between the Prow, Cave Gardens and Maw, crooked alleys lead to antiquarians, small libraries and bookshops. Its maze can shelter a rare discovery or swallow a pursuer.', 'A district of books, hidden shops and difficult directions.', '', '', 'accessible'],
   ['serpentine', 'poi', 'ship-city', 'The Serpentine', 'This crowded rift is a bright tangle of balconies, food stalls, inns and music. Bargains and rumors change hands across the markets as quickly as the crowds change direction.', 'Follow the music through a rift that never seems to sleep.', '', '', 'accessible'],
   ['purple-meadows', 'diorama', 'cave-gardens', 'The Purple Meadows', 'Low purple flowering plants spread beneath the stone vault, with winding paths and benches among the beds. Gardeners, children and returning crews share this rare place to rest while tending lamps stand in for a sun.', 'A cultivated meadow gives the city room to breathe.', 'The flowers remember every hand that planted them.', 'Mira, meadow tender', 'accessible'],
@@ -25,7 +25,13 @@ const places = [
   ['seed-archive', 'diorama', 'cave-gardens', 'Seed Archive', 'Beyond a guarded greenhouse door, the Gardeners catalogue old and newly recovered seeds. Visitors can see the lamplit receiving room, but the climate-controlled vaults and experimental beds require Guild permission.', 'Rare living collections wait behind a controlled threshold.', 'A seed is a promise we may not be able to make twice.', 'Nema, archive keeper', 'inaccessible'],
   ['mosaicists-walk', 'diorama', 'turbine-halls', 'Mosaicists’ Walk', 'An inhabited passage through the Halls pairs small dwellings and repair shops with angular murals. The painted forms echo the rhythm of nearby machines; apprentices argue over colors as crews pass beneath them.', 'The Machinists turn a work route into a gallery.', 'If the pattern feels wrong, hear the turbine again.', 'Ishan, Mosaicist apprentice', 'accessible'],
   ['service-gallery', 'delve', 'turbine-halls', 'Service Gallery', 'Walkways and maintenance bays wind around immense turbine housings. An inspection route can become a tense search when a unit stalls, the lamps fail or a passage has to be sealed.', 'Trace a fault through a maze of working machinery.', 'Keep one hand on the rail when the vibration changes.', 'Lira, maintenance chief', 'accessible'],
-  ['cherolab-gate', 'diorama', 'turbine-halls', 'Cherolab Gate', 'Gray Caps hold a checkpoint before the inner Cherolab, where the Machinists’ most vital work continues beyond armored doors. Petitioners wait under a vaulted ceiling painted in angular color while guards inspect their permits.', 'The guarded threshold to the engine that sustains Ship City.', 'Everyone hears the engine. Few are invited to meet it.', 'Gray Cap sentry', 'inaccessible']
+  ['cherolab-gate', 'diorama', 'turbine-halls', 'Cherolab Gate', 'Gray Caps hold a checkpoint before the inner Cherolab, where the Machinists’ most vital work continues beyond armored doors. Petitioners wait under a vaulted ceiling painted in angular color while guards inspect their permits.', 'The guarded threshold to the engine that sustains Ship City.', 'Everyone hears the engine. Few are invited to meet it.', 'Gray Cap sentry', 'inaccessible'],
+  ['wreck-alley', 'diorama', 'hull-town', 'Wreck Alley', 'Beyond the Dome, old ship shells frame a crowded lane where repair crews work beside newer boutiques, cantinas and small nightspots. The district’s fresh polish has not displaced the scavengers who made it useful.', 'Old wrecks have become Hull Town’s liveliest lane.', 'The paint is new. The hull beneath it still leaks.', 'Ilo, salvage mechanic', 'accessible'],
+  ['rouzads-emporium', 'diorama', 'hull-town', 'Rouzad’s Emporium', 'Four floors of a repurposed ice hauler hold traders, mechanics and tiny cantinas. Crowds browse salvaged parts and curios while the aroma of spiced algae-meat rises from the lower deck.', 'Trade your way through four decks of an old hauler.', 'If Rouzad cannot find it, you are asking the wrong question.', 'Emporium trader', 'accessible'],
+  ['chain-walks', 'delve', 'hull-town', 'The Chain Walks', 'Narrow suspended passages connect old hull modules along Hull Town’s outer edge. Pressure hatches, cargo holds and maintenance pockets offer cover, but a failed lamp or cut tether can turn a short crossing into a dangerous search.', 'Pick a route through the welded fleet’s outer edge.', 'Count the lights on your way out. Count again on your way back.', 'Hull Town resident', 'accessible'],
+  ['ziggurat-nine-icons', 'diorama', 'inner-sanctum', 'Ziggurat of the Nine Icons', 'Masked Coriolites climb the dark stone tiers, pausing at small shrines for each of the Nine Icons. Candles, offerings and murmured prayers make this the Inner Sanctum’s most public ceremonial heart.', 'Climb the shrines beneath the cavern roof.', 'There is a prayer for every turning. Choose yours carefully.', 'Coriolite pilgrim', 'accessible'],
+  ['palace-daars', 'diorama', 'inner-sanctum', 'Palace of the Daars', 'Faded murals of the Old Horizon cover the grandest Coriolite palace. In its amber-lit central hall, a long stone table waits for rare conclaves of the five families’ elders; visitors remain in the outer court unless invited.', 'Old family power gathers behind faded walls.', 'A seat at that table weighs more than a ship.', 'Sanctum attendant', 'inaccessible'],
+  ['marakanda-tower', 'diorama', 'inner-sanctum', 'Marakanda Tower', 'The Alamasy family’s Scriptorium of the Seeker preserves books, info cubes, emerald discs and artifacts from the Old Horizon. Scholars receive visitors by permit while the deepest collections remain closely supervised.', 'Seek the Old Horizon in a guarded scholar’s tower.', 'A record may be lost for centuries and still arrive too soon.', 'Alamasy archivist', 'inaccessible']
 ];
 
 const markers = [
@@ -41,7 +47,11 @@ const markers = [
   ['gardens-meadows', 'cave-gardens', 'purple-meadows', 24, 42], ['gardens-hydroponics', 'cave-gardens', 'hydroponic-terraces', 66, 48],
   ['gardens-archive', 'cave-gardens', 'seed-archive', 76, 20],
   ['turbines-mosaics', 'turbine-halls', 'mosaicists-walk', 25, 37], ['turbines-gallery', 'turbine-halls', 'service-gallery', 55, 70],
-  ['turbines-cherolab', 'turbine-halls', 'cherolab-gate', 79, 28]
+  ['turbines-cherolab', 'turbine-halls', 'cherolab-gate', 79, 28],
+  ['hull-wreck', 'hull-town', 'wreck-alley', 24, 36], ['hull-rouzad', 'hull-town', 'rouzads-emporium', 72, 46],
+  ['hull-chain-walks', 'hull-town', 'chain-walks', 48, 76],
+  ['sanctum-ziggurat', 'inner-sanctum', 'ziggurat-nine-icons', 48, 38], ['sanctum-palace', 'inner-sanctum', 'palace-daars', 20, 64],
+  ['sanctum-marakanda', 'inner-sanctum', 'marakanda-tower', 79, 62]
 ];
 
 const murkGrid = JSON.stringify({ width: 12, height: 8, entry: [1, 3], blocked: [
@@ -60,15 +70,24 @@ const serviceGrid = JSON.stringify({ width: 12, height: 8, entry: [0, 4], blocke
   { id: 'controls', name: 'Control gallery', squares: Array.from({ length: 8 }, (_, y) => Array.from({ length: 4 }, (_, x) => [x + 8, y])).flat() }
 ] });
 
+const chainGrid = JSON.stringify({ width: 12, height: 8, entry: [1, 4], blocked: [
+  ...[0, 1, 6, 7].flatMap(y => [3, 4, 5, 6, 7, 8].map(x => [x, y])),
+  ...[3, 4].flatMap(y => [3, 4, 6, 7, 8].map(x => [x, y]))
+], rooms: [
+  { id: 'freighter', name: 'Old freighter', squares: Array.from({ length: 8 }, (_, y) => Array.from({ length: 4 }, (_, x) => [x, y])).flat() },
+  { id: 'crossing', name: 'Chain crossing', squares: Array.from({ length: 8 }, (_, y) => Array.from({ length: 4 }, (_, x) => [x + 4, y])).flat() },
+  { id: 'outer-hull', name: 'Outer hull', squares: Array.from({ length: 8 }, (_, y) => Array.from({ length: 4 }, (_, x) => [x + 8, y])).flat() }
+] });
+
 export async function seedShipCitySlice(sql = db()) {
   // Retire only original sample city markers; do not remove the locations or any character positions.
   await sql.query("DELETE FROM location_links WHERE id IN ('city-dock', 'city-choir') AND from_id = 'ship-city'");
   for (const [id, kind, parent, title, description, teaser, quote, speaker, access] of places) {
     await sql.query('INSERT OR IGNORE INTO locations (id, kind, parent_id, title, description, teaser, quote, quote_speaker, access_level, grid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, kind, parent, title, description, teaser, quote, speaker, access, id === 'warehouse-murk' ? murkGrid : id === 'service-gallery' ? serviceGrid : '{}']);
+      [id, kind, parent, title, description, teaser, quote, speaker, access, id === 'warehouse-murk' ? murkGrid : id === 'service-gallery' ? serviceGrid : id === 'chain-walks' ? chainGrid : '{}']);
   }
   // These were Points of Interest in the first local slice; make repeated preview seeds upgrade them in place.
-  for (const id of ['cave-gardens', 'turbine-halls']) {
+  for (const id of ['cave-gardens', 'turbine-halls', 'hull-town', 'inner-sanctum']) {
     await sql.query("UPDATE locations SET kind = 'settlement' WHERE id = ? AND parent_id = 'ship-city' AND kind = 'poi'", [id]);
   }
   await sql.query("UPDATE locations SET description = 'Built around and through an asteroid, Ship City is the Diaspora’s crowded capital: a city of welded ships, deep caverns, Guild halls and working harbors. Choose a district to explore.' WHERE id = 'ship-city' AND description = 'The expedition begins among the docks and guild halls.'");
