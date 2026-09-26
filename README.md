@@ -88,9 +88,13 @@ Migration `scripts/migrate-015.js` adds the `is_instance`, `instance_of`, and `i
 
 ## Jukebox
 
-The GM uploads licensed MP3 tracks (up to 15 MB each) in the Music tab and plays one at a time for every signed-in profile. Audio files live in Vercel Blob; Turso stores track titles and the shared playback state. Uploads require `BLOB_READ_WRITE_TOKEN`, which Vercel adds when a Blob store is connected to the project; pull it into `.env.local` with `npx vercel env pull .env.local`. `npm run dev:local` reads only that token from `.env.local`, so local uploads go to the real Blob store while the database stays in memory. Without the token the Music tab explains that uploads are unavailable.
+The GM uploads licensed MP3 tracks (up to 50 MB each) in the Music tab and plays one at a time for every signed-in profile. Audio files live in Vercel Blob; Turso stores track titles and the shared playback state. Uploads require `BLOB_READ_WRITE_TOKEN`, which Vercel adds when a Blob store is connected to the project; pull it into `.env.local` with `npx vercel env pull .env.local`. `npm run dev:local` reads only that token from `.env.local`, so local uploads go to the real Blob store while the database stays in memory. Without the token the Music tab explains that uploads are unavailable.
 
 Migration `scripts/migrate-010.js` adds the `jukebox_tracks` and `jukebox_state` tables and is safe to rerun. Preview builds apply it automatically; back up Production and run `node --env-file=.env.production-migration.local scripts/migrate-010.js` before merging the jukebox.
+
+The Music tab's **Volume for everyone** slider sets a shared level that multiplies with each player's own Sound volume, so the GM can even out tracks recorded at different loudness. It applies to whatever is playing and reaches players within a poll (about two seconds) without restarting the track. Migration `scripts/migrate-016.js` adds the `volume` column to `jukebox_state` and is safe to rerun. Preview builds and `npm run dev:local` apply it automatically. Back up Production and run `node --env-file=.env.production-migration.local scripts/migrate-016.js` **before merging**, because the jukebox API reads the new column.
+
+At 50 MB per track, the Hobby plan's 1 GB of Blob storage holds about twenty large tracks, and every listener downloads a track the first time it plays (a 50 MB track for five players is 250 MB of the 10 GB monthly transfer).
 
 The browser upload helper is a committed bundle at `vendor/blob-client.js`, because the app loads browser modules without a bundler. After upgrading `@vercel/blob`, run `npm run build:vendor` and commit the result.
 

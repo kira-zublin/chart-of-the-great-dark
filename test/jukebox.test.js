@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { db, digest } from '../lib/server.js';
 import { applyInitialSchema } from '../scripts/migrate.js';
 import { applyJukeboxSchema } from '../scripts/migrate-010.js';
+import { applyJukeboxVolume } from '../scripts/migrate-016.js';
 import { blobStore, maxTrackBytes } from '../lib/jukebox-blob.js';
 import { DELETE, GET, POST } from '../api/jukebox.js';
 
@@ -15,7 +16,7 @@ const request = (path, method = 'GET', data, token) => new Request(base + path, 
 test('jukebox: GM-only control, verified uploads, shared playback state, and cleanup', async () => {
   process.env.TURSO_DATABASE_URL = 'file::memory:';
   const sql = db();
-  await applyInitialSchema(sql); await applyJukeboxSchema(sql); await applyJukeboxSchema(sql);
+  await applyInitialSchema(sql); await applyJukeboxSchema(sql); await applyJukeboxSchema(sql); await applyJukeboxVolume(sql); await applyJukeboxVolume(sql);
   const gm = 'a'.repeat(64), player = 'b'.repeat(64);
   await sql`INSERT INTO profiles (id, name, role, password_salt, password_hash) VALUES ('g1', 'Keeper', 'gm', 'x', 'x'), ('p1', 'Explorer', 'player', 'x', 'x')`;
   await sql`INSERT INTO sessions (token_hash, profile_id, expires_at) VALUES (${digest(gm)}, 'g1', unixepoch() + 3600), (${digest(player)}, 'p1', unixepoch() + 3600)`;
@@ -86,6 +87,14 @@ test('jukebox: GM-only control, verified uploads, shared playback state, and cle
   const unlooped = await (await POST(request('', 'POST', { action: 'loop', loop: false }, gm))).json();
   assert.equal(unlooped.state.loop, false); assert.ok(unlooped.state.revision > resumed.state.revision);
   assert.equal((await POST(request('', 'POST', { action: 'loop', loop: 'yes' }, gm))).status, 400);
+
+  // The GM's volume reaches every listener without re-seeking the track
+  assert.equal(heard.state.volume, 1);
+  assert.equal((await POST(request('', 'POST', { action: 'volume', volume: 0.5 }, player))).status, 403);
+  for (const volume of [1.2, -0.1, '0.5', null]) assert.equal((await POST(request('', 'POST', { action: 'volume', volume }, gm))).status, 400);
+  const quieter = await (await POST(request('', 'POST', { action: 'volume', volume: 0.456 }, gm))).json();
+  assert.equal(quieter.state.volume, 0.46); assert.equal(quieter.state.revision, unlooped.state.revision);
+  assert.equal((await (await GET(request('', 'GET', null, player))).json()).state.volume, 0.46);
   const stopped = await (await POST(request('', 'POST', { action: 'stop' }, gm))).json();
   assert.equal(stopped.state.status, 'stopped');
 

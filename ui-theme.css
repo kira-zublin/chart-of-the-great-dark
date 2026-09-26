@@ -217,3 +217,9 @@ button.primary-button:not(:disabled):hover, button.primary-button:focus-visible 
 .roll-result b { font-family: var(--display); font-weight: 400; font-size: 18px; letter-spacing: .05em; color: #f4e6c1; }
 .roll-result b.none { color: #b5a98c; }
 .roll-cost { font-size: 12px; color: #d98a68; }
+
+/* Jukebox: the GM's volume for everyone, under the Now playing controls. */
+.jukebox-volume { display: flex; align-items: center; gap: 10px; margin-top: 4px; font-size: 12px; color: #cdb887; }
+.jukebox-volume label { white-space: nowrap; }
+.jukebox-volume input[type="range"] { flex: 1; min-width: 0; min-height: 0; padding: 0; border: 0; background: none; accent-color: #c9a862; }
+.jukebox-volume-value { min-width: 3em; text-align: right; font-variant-numeric: tabular-nums; color: #f1e3bd; }
