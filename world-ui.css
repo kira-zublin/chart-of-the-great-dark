@@ -271,7 +271,17 @@ svg.map .unavailable text { fill: #b7b7b5; }
 .world-scale-control input[type="range"] { width: 130px; min-height: 0; padding: 0; border: 0; background: none; accent-color: #c9a862; }
 .world-scale-value { min-width: 3.2em; font-size: 12px; font-variant-numeric: tabular-nums; color: #f1e3bd; text-align: right; }
 .world-scale-control .text-button { min-height: 26px; padding: 2px 4px; font-size: 12px; }
+.world-scale-control .world-flip { padding-left: 12px; border-left: 1px solid rgba(205, 184, 125, .3); }
+.world-scale-control .world-flip[aria-pressed="true"] { color: #f1e3bd; }
+.world-suit-toggle { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 12px; color: #e1d3ac; white-space: nowrap; cursor: pointer; }
+.world-suit-toggle input { min-height: 0; margin: 0; accent-color: #c9a862; }
+.world-suit-toggle:has(input:disabled) { opacity: .5; cursor: default; }
+/* Uses the separate scale property so the mirror survives the drag ghost's transform reset. It mirrors around the
+   stand-up's anchor (the untranslated box's left edge), which the translate(-50%, -100%) centres the figure on. */
+.world-standup.flipped { scale: -1 1; transform-origin: 0 50%; }
+.world-standup.flipped.world-drag-ghost { transform-origin: 50% 50%; }
 @media (max-width: 800px) {
-  .world-scale-control { left: 12px; right: 12px; bottom: calc(var(--chat-offset, 50px) + 66px); }
+  .world-scale-control { left: 12px; right: 12px; bottom: calc(var(--chat-offset, 50px) + 66px); flex-wrap: wrap; }
   .world-scale-control input[type="range"] { flex: 1; width: auto; }
+  .world-scale-control .world-flip { padding-left: 4px; border-left: 0; }
 }

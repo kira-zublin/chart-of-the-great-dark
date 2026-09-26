@@ -7,6 +7,13 @@ const simpleGrid = () => ({ width: 10, height: 8, entry: [1, 1], blocked: [], ro
 const locate = async (sql, id) => (await sql`SELECT * FROM locations WHERE id = ${id} LIMIT 1`)[0];
 const conflict = cause => String(cause?.code || '').startsWith('SQLITE_CONSTRAINT');
 
+// A placed player character whose stand-up this profile may change: its owner, or the GM.
+async function standupOwner(sql, profile, characterId) {
+  const character = (await sql`SELECT id, owner_id, kind FROM characters WHERE id = ${characterId}`)[0];
+  const position = (await sql`SELECT location_id FROM character_positions WHERE character_id = ${characterId}`)[0];
+  return character && character.kind === 'pc' && position && (profile.role === 'gm' || character.owner_id === profile.id) ? character : null;
+}
+
 async function moveCharacter(sql, character, location, preferred, exact = false) {
   const grid = gridOf(location);
   if (grid && !validGrid(grid)) return error('This Explorable has an invalid grid', 409);
@@ -45,9 +52,10 @@ export async function GET(req) {
     const locations = gm ? await sql.query('SELECT * FROM locations ORDER BY created_at, title') : await sql.query("SELECT * FROM locations WHERE access_level != 'invisible' ORDER BY created_at, title");
     const allowed = new Set(locations.map(item => item.id));
     const links = (await sql.query('SELECT * FROM location_links')).filter(link => allowed.has(link.from_id) && allowed.has(link.to_id) && (gm || locations.find(item => item.id === link.from_id)?.access_level === 'accessible'));
-    const rows = await sql.query(`SELECT c.id AS character_id, c.name, c.kind, c.owner_id, c.id AS image_id, COALESCE(p.location_id, 'star-map') AS location_id, p.x, p.y, p.changed_at, COALESCE(p.standup_scale, 1) AS standup_scale,
+    const rows = await sql.query(`SELECT c.id AS character_id, c.name, c.kind, c.owner_id, c.id AS image_id, COALESCE(p.location_id, 'star-map') AS location_id, p.x, p.y, p.changed_at, COALESCE(p.standup_scale, 1) AS standup_scale, COALESCE(p.standup_flipped, 0) AS standup_flipped, COALESCE(p.delve_suit, 0) AS delve_suit,
       EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'portrait') AS has_portrait,
-      EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'standup') AS has_standup
+      EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'standup') AS has_standup,
+      EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'delve_suit') AS has_delve_suit
       FROM characters c LEFT JOIN character_positions p ON p.character_id = c.id WHERE c.kind = 'pc'`);
     const overrides = await sql.query('SELECT * FROM room_overrides');
     const visibleRoom = (location, roomId) => {
@@ -106,12 +114,21 @@ export async function POST(req) {
     }
     if (data.action === 'scale') {
       if (!uuid(data.characterId) || !standupScale(data.scale)) return error('Choose a size between half and one and a half times');
-      const character = (await sql`SELECT id, owner_id, kind FROM characters WHERE id = ${data.characterId}`)[0];
-      const position = (await sql`SELECT location_id FROM character_positions WHERE character_id = ${data.characterId}`)[0];
-      if (!character || character.kind !== 'pc' || !position || (profile.role !== 'gm' && character.owner_id !== profile.id)) return error('Character unavailable', 403);
+      const character = await standupOwner(sql, profile, data.characterId);
+      if (!character) return error('Character unavailable', 403);
       const scale = Math.round(data.scale * 100) / 100;
       await sql`UPDATE character_positions SET standup_scale = ${scale} WHERE character_id = ${character.id}`;
       return json({ scale });
+    }
+    if (data.action === 'standup') {
+      const flipped = data.flipped, delveSuit = data.delveSuit;
+      if (!uuid(data.characterId) || (flipped === undefined && delveSuit === undefined) || ![flipped, delveSuit].every(value => value === undefined || typeof value === 'boolean')) return error('Invalid stand-up setting');
+      const character = await standupOwner(sql, profile, data.characterId);
+      if (!character) return error('Character unavailable', 403);
+      if (delveSuit && !(await sql`SELECT 1 FROM character_images WHERE character_id = ${character.id} AND slot = 'delve_suit'`).length) return error('Upload a delve-suit stand-up for this character first');
+      if (flipped !== undefined) await sql`UPDATE character_positions SET standup_flipped = ${Number(flipped)} WHERE character_id = ${character.id}`;
+      if (delveSuit !== undefined) await sql`UPDATE character_positions SET delve_suit = ${Number(delveSuit)} WHERE character_id = ${character.id}`;
+      return json({ ok: true });
     }
     if (profile.role !== 'gm') return error('Only the GM can edit the world', 403);
     if (data.action === 'create') {

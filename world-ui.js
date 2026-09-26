@@ -463,13 +463,19 @@ export function initWorldUI(request, profile, activeCharacter) {
     scene.append(board);
   }
 
+  // The delve suit when it is on and uploaded, else the stand-up, else the portrait.
+  function standupSource(pos) {
+    const slot = pos.delve_suit && pos.has_delve_suit ? 'delve_suit' : pos.has_standup ? 'standup' : pos.has_portrait ? 'portrait' : null;
+    return slot ? `/api/image?id=${encodeURIComponent(pos.character_id)}&slot=${slot}` : 'assets/characters/anonymous-explorer.png';
+  }
+
   function renderDiorama(scene, item) {
     const layer = node('div', 'world-standups'); scene.append(layer);
     for (const pos of world.positions.filter(row => row.location_id === item.id && !row.hidden)) {
-      const img = node('img', 'world-standup' + (pos.character_id === active()?.id ? ' own' : ''));
+      const img = node('img', 'world-standup' + (pos.character_id === active()?.id ? ' own' : '') + (pos.standup_flipped ? ' flipped' : ''));
       img.draggable = false;
       img.alt = pos.name; img.title = pos.name;
-      img.src = pos.has_standup ? `/api/image?id=${encodeURIComponent(pos.character_id)}&slot=standup` : pos.has_portrait ? `/api/image?id=${encodeURIComponent(pos.character_id)}&slot=portrait` : 'assets/characters/anonymous-explorer.png';
+      img.src = standupSource(pos);
       img.addEventListener('error', () => { img.src = 'assets/characters/anonymous-explorer.png'; }, { once: true });
       img.style.left = `${(pos.x ?? 500) / 10}%`; img.style.top = `${(pos.y ?? 800) / 10}%`;
       img.style.setProperty('--standup-scale', pos.standup_scale ?? 1);
@@ -480,11 +486,11 @@ export function initWorldUI(request, profile, activeCharacter) {
       });
       layer.append(img);
     }
-    renderScaleControl(scene, item);
+    renderStandupControls(scene, item);
   }
 
-  // Lets a player resize their own stand-up to match the scene's perspective. The size is shared with everyone.
-  function renderScaleControl(scene, item) {
+  // Lets a player resize, mirror, and suit up their own stand-up to suit the scene. Every setting is shared with everyone.
+  function renderStandupControls(scene, item) {
     const mine = world.positions.find(pos => pos.character_id === active()?.id && pos.location_id === item.id && !pos.hidden);
     if (!mine) return;
     const box = node('div', 'world-scale-control');
@@ -502,7 +508,21 @@ export function initWorldUI(request, profile, activeCharacter) {
     const reset = button('Reset', () => { input.value = '1'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new Event('change')); }, 'text-button');
     const label = node('label', 'world-scale-label', 'Stand-up size'); label.htmlFor = input.id;
     show();
-    box.append(label, input, value, reset);
+    const setStandup = async (setting, apply) => {
+      apply();
+      try { await send('standup', { characterId: mine.character_id, ...setting }); await refresh(true); }
+      catch (cause) { status(cause.message); await refresh(true); }
+    };
+    const flip = button('Flip', () => setStandup({ flipped: !mine.standup_flipped }, () => figure()?.classList.toggle('flipped')), 'text-button world-flip');
+    flip.setAttribute('aria-pressed', String(Boolean(mine.standup_flipped)));
+    flip.title = 'Face the other way';
+    const suitLabel = node('label', 'world-suit-toggle');
+    const suit = node('input'); suit.type = 'checkbox'; suit.checked = Boolean(mine.delve_suit && mine.has_delve_suit); suit.disabled = !mine.has_delve_suit;
+    suitLabel.title = mine.has_delve_suit ? 'Show the delve-suit stand-up' : 'Upload a delve-suit stand-up in the Characters tab first';
+    // Blur first: refresh skips re-rendering while an input has focus.
+    suit.addEventListener('change', () => { suit.blur(); setStandup({ delveSuit: suit.checked }, () => { const img = figure(); if (img) img.src = standupSource({ ...mine, delve_suit: suit.checked }); }); });
+    suitLabel.append(suit, document.createTextNode('Delve suit'));
+    box.append(label, input, value, reset, flip, suitLabel);
     scene.append(box);
   }
 

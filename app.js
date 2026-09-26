@@ -154,9 +154,11 @@ async function deleteCharacter(character) {
   } catch (cause) { alert(cause.message); }
 }
 function imageUrl(id, slot) { return `/api/image?id=${encodeURIComponent(id)}&slot=${slot}&v=${Date.now()}`; }
+// Each character image slot with its file input and preview element.
+const imageSlots = { portrait: { input: 'characterPortrait', preview: 'portraitPreview' }, standup: { input: 'characterStandup', preview: 'standupPreview' }, delve_suit: { input: 'characterDelveSuit', preview: 'delveSuitPreview' } };
 function showPreview(slot, character) {
-  const img = $(slot === 'portrait' ? 'portraitPreview' : 'standupPreview');
-  const has = character && (slot === 'portrait' ? character.has_portrait : character.has_standup);
+  const img = $(imageSlots[slot].preview);
+  const has = character?.[`has_${slot}`];
   img.hidden = !has; img.src = has ? imageUrl(character.id, slot) : '';
 }
 // The Characters tab shows either the editor (an existing or new character) or an empty state.
@@ -193,8 +195,7 @@ function fillCharacter(character) {
   }
   for (const stat of stats) $(`stat${stat[0].toUpperCase()}${stat.slice(1)}`).value = character?.attributes?.[stat] ?? 4;
   renderSheet(character?.sheet, character?.attributes);
-  $('characterPortrait').value = ''; $('characterStandup').value = '';
-  showPreview('portrait', character); showPreview('standup', character);
+  for (const slot of Object.keys(imageSlots)) { $(imageSlots[slot].input).value = ''; showPreview(slot, character); }
   characterDirty = false;
 }
 $('createCharacter').addEventListener('click', () => editCharacter());
@@ -202,12 +203,12 @@ $('panelCreateCharacter').addEventListener('click', () => editCharacter());
 $('cancelCharacter').addEventListener('click', () => sidePanel.close());
 $('openCrew').addEventListener('click', () => { if (state.profile) sidePanel.toggle('Crew'); });
 $('openGMTools').addEventListener('click', () => { if (state.profile?.role === 'gm') sidePanel.toggle('Mapping'); });
-for (const slot of ['portrait', 'standup']) {
-  const input = $(slot === 'portrait' ? 'characterPortrait' : 'characterStandup');
+for (const slot of Object.keys(imageSlots)) {
+  const input = $(imageSlots[slot].input);
   input.addEventListener('change', () => {
     const file = input.files[0]; if (!file) return;
     if (file.size > 2 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { setError('characterMessage', 'Use a JPEG, PNG, or WebP image under 2 MB.'); input.value = ''; return; }
-    const img = $(slot === 'portrait' ? 'portraitPreview' : 'standupPreview');
+    const img = $(imageSlots[slot].preview);
     img.src = URL.createObjectURL(file); img.hidden = false;
   });
 }
@@ -222,8 +223,8 @@ $('characterForm').addEventListener('submit', async event => {
     const method = state.selected ? 'PUT' : 'POST';
     const saved = await request('/api/characters', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const id = payload.id || saved.id;
-    for (const [slot, inputId] of [['portrait', 'characterPortrait'], ['standup', 'characterStandup']]) {
-      const file = $(inputId).files[0]; if (!file) continue;
+    for (const [slot, { input }] of Object.entries(imageSlots)) {
+      const file = $(input).files[0]; if (!file) continue;
       await request(`/api/image?id=${encodeURIComponent(id)}&slot=${slot}`, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
     }
     await loadCharacters();

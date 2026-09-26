@@ -74,6 +74,10 @@ The Dockside Exchange was a test Vista inside Ship City. Migration `scripts/migr
 
 In a Vista, players can resize their own character's stand-up from 50% to 150% with the Stand-up size slider, and the GM can resize any character. The size is saved with the character's position, so everyone sees the same scene. Migration `scripts/migrate-012.js` adds the `standup_scale` column and is safe to rerun. Preview builds and `npm run dev:local` apply it automatically. Back up Production and run `node --env-file=.env.production-migration.local scripts/migrate-012.js` before merging.
 
+## Stand-up flip and delve suit
+
+Next to the size slider, **Flip** mirrors a character's stand-up so it faces the other way. The **Delve suit** checkbox swaps in the optional delve-suit stand-up uploaded in the Characters tab; it stays on across locations until the player unchecks it. Like the size, both settings are saved with the character's position and shared with every viewer, and the GM can change them for any character. Migration `scripts/migrate-014.js` adds the `standup_flipped` and `delve_suit` columns and a `delve_suit` image slot. The slot needs `character_images` rebuilt, which the migration does in a single write batch that copies every existing image. It is safe to rerun. Preview builds and `npm run dev:local` apply it automatically. Back up Production and run `node --env-file=.env.production-migration.local scripts/migrate-014.js` **before merging**, because the new map API reads the new columns.
+
 ## Jukebox
 
 The GM uploads licensed MP3 tracks (up to 15 MB each) in the Music tab and plays one at a time for every signed-in profile. Audio files live in Vercel Blob; Turso stores track titles and the shared playback state. Uploads require `BLOB_READ_WRITE_TOKEN`, which Vercel adds when a Blob store is connected to the project; pull it into `.env.local` with `npx vercel env pull .env.local`. `npm run dev:local` reads only that token from `.env.local`, so local uploads go to the real Blob store while the database stays in memory. Without the token the Music tab explains that uploads are unavailable.

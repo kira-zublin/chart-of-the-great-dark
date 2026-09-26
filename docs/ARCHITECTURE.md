@@ -47,7 +47,7 @@ Chat renders each roll as a dice card (`chat-ui.js`, styled in `ui-theme.css`). 
 
 The browser polls `/api/world` every second while visible. A GM pull changes a PC's position immediately on the server; the player's view follows on its next poll. A push transport would be needed for truly instantaneous updates. The server controls visibility, edits, and character moves; a unique partial index prevents two PCs from occupying one Delve square. For automatic fog, a room is visible if at least one PC occupies it. Manual Show/Hide overrides that result. Unassigned squares form one implicit room. The GM can view the world independently and pull selected PCs. Map backgrounds are limited to 6 MB and stored in Turso for this prototype; review object storage before uploading a large map collection. Room art is visually covered by fog in the client, but the current single-image upload is not a security boundary against a player inspecting network data. If secret map artwork matters, tile or separate room art must be served according to visibility.
 
-Any signed-in campaign member can read PC portraits and stand-ups so tokens render for other players. NPC images retain the earlier owner/GM/chat visibility rule.
+Any signed-in campaign member can read PC portraits, stand-ups, and delve-suit stand-ups so tokens render for other players. NPC images retain the earlier owner/GM/chat visibility rule.
 
 ## Jukebox
 

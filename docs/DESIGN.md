@@ -4,7 +4,7 @@ The application opens at a sign-in page. A new player or GM enters a profile nam
 
 After sign-in the existing star map appears. The profile menu in the upper left shows the name and role and offers logout. The upper-right character menu replaces Reset Chart. It offers a list, character creation, and a confirmation before permanent deletion. Player lists show only their own PCs. GM lists show every PC and NPC, with a filter by type. GMs may edit PCs and create and edit NPCs.
 
-The first character panel contains name, profession, origin, faction, appearance, motivation, freeform description, and the six Explorer Sheet attributes: Strength, Agility, Logic, Insight, Perception, and Empathy. It also accepts a portrait and a full stand-up image. This first pass records values without enforcing character-creation point budgets or game rule calculations; those belong to a later rules-specific iteration.
+The first character panel contains name, profession, origin, faction, appearance, motivation, freeform description, and the six Explorer Sheet attributes: Strength, Agility, Logic, Insight, Perception, and Empathy. It also accepts a portrait, a full stand-up image, and an optional delve-suit stand-up that players can switch to in Vistas. This first pass records values without enforcing character-creation point budgets or game rule calculations; those belong to a later rules-specific iteration.
 
 The map's existing panning, zooming, markers, dossier, and assets remain intact. Character edits save to the server. The browser remembers the selected character locally for convenience, while its fields and images are loaded from persistent storage.
 
