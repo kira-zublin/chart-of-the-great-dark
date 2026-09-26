@@ -5,6 +5,32 @@ const field = (label, input) => { const wrapper = node('label'); wrapper.append(
 const kindName = kind => ({ star: 'Star Chart', settlement: 'Hub', delve: 'Explorable', diorama: 'Vista', poi: 'Point of interest' })[kind] || kind;
 const sampleArt = {
   'ship-city': 'assets/ship-city-map.jpg',
+  chasm: 'assets/chasm-map-v3.png',
+  'aluminum-bay': 'assets/aluminum-bay-map-v3.png',
+  'bazaar-bizarre': 'assets/bazaar-bizarre-scene-v3.png',
+  'bird-market': 'assets/bird-market-scene-v3.png',
+  'vermilion-house': 'assets/vermilion-house-scene-v3.png',
+  'lost-garuda': 'assets/lost-garuda-scene-v3.png',
+  'lotus-ring': 'assets/lotus-ring-scene-v3.png',
+  'warehouse-nine': 'assets/warehouse-nine-scene-v3.png',
+  'astrolaab-tower': 'assets/astrolaab-tower-scene-v3.png',
+  'warehouse-murk': 'assets/warehouse-murk-map-v3.png',
+  'cave-gardens': 'assets/cave-gardens-map.png',
+  'purple-meadows': 'assets/purple-meadows-scene.png',
+  'hydroponic-terraces': 'assets/hydroponic-terraces-scene.png',
+  'seed-archive': 'assets/seed-archive-scene.png',
+  'turbine-halls': 'assets/turbine-halls-map.png',
+  'mosaicists-walk': 'assets/mosaicists-walk-scene.png',
+  'service-gallery': 'assets/service-gallery-map.png',
+  'cherolab-gate': 'assets/cherolab-gate-scene.png',
+  'hull-town': 'assets/hull-town-map.png',
+  'wreck-alley': 'assets/wreck-alley-scene.png',
+  'rouzads-emporium': 'assets/rouzads-emporium-scene.png',
+  'chain-walks': 'assets/chain-walks-map.png',
+  'inner-sanctum': 'assets/inner-sanctum-map.png',
+  'ziggurat-nine-icons': 'assets/ziggurat-nine-icons-scene.png',
+  'palace-daars': 'assets/palace-daars-scene.png',
+  'marakanda-tower': 'assets/marakanda-tower-scene.png',
   dockside: 'assets/dio-marketplace.png',
   choir: 'assets/choir-below-map.png',
   'choir-depths': 'assets/choir-depths-map.png'
@@ -13,6 +39,15 @@ const locationArt = item => item.has_image
   ? `/api/location-image?id=${encodeURIComponent(item.id)}&v=${item.image_version}`
   : sampleArt[item.id] || null;
 
+export function sceneDropPosition(pointer, drag, bounds) {
+  const x = pointer.x - drag.offsetX + drag.width / 2;
+  const y = pointer.y - drag.offsetY + drag.height;
+  return [
+    Math.max(0, Math.min(1000, Math.round((x - bounds.left) / bounds.width * 1000))),
+    Math.max(0, Math.min(1000, Math.round((y - bounds.top) / bounds.height * 1000)))
+  ];
+}
+
 export function initWorldUI(request, profile, activeCharacter) {
   let world = null, current = 'star-map', incomingLink = null, selectedStar = null, selectedLocal = null, timer = null, previousPosition = null, signature = '', draggingToken = false;
   let editingLinkId = null, editExpanded = false, draggingMarker = false;
@@ -20,11 +55,16 @@ export function initWorldUI(request, profile, activeCharacter) {
   const isGM = () => profile()?.role === 'gm';
   const location = id => world?.locations.find(item => item.id === id);
   const canEnter = item => item && item.kind !== 'poi' && (isGM() || item.access_level === 'accessible');
-  const accessName = item => item.access_level === 'invisible' ? 'Invisible' : item.access_level === 'inaccessible' ? 'Inaccessible' : 'Accessible';
+  const accessName = item => item.access_level === 'invisible' ? 'Invisible' : item.access_level === 'inaccessible' ? 'Restricted' : 'Accessible';
   const active = () => activeCharacter();
   const myPosition = () => world?.positions.find(item => item.character_id === active()?.id);
   const linksHere = () => world?.links.filter(item => item.from_id === current) || [];
-  const status = message => { $('worldStatus').textContent = message || ''; };
+  let statusTimer;
+  const status = message => {
+    clearTimeout(statusTimer);
+    $('worldStatus').textContent = message || '';
+    if (message) statusTimer = setTimeout(() => { $('worldStatus').textContent = ''; }, 5000);
+  };
   const send = (action, values = {}) => request('/api/world', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ...values }) });
 
   async function refresh(force = false) {
@@ -70,12 +110,23 @@ export function initWorldUI(request, profile, activeCharacter) {
     const destination = location(link.to_id); if (!destination) return;
     selectedLocal = link.id;
     document.querySelectorAll('.settlement-marker').forEach(marker => marker.classList.toggle('selected', marker.dataset.linkId === link.id));
-    $('worldLocationKind').textContent = `${kindName(destination.kind)} · ${accessName(destination)}`;
+    $('worldLocationKind').textContent = `${kindName(destination.kind)} · ${destination.kind === 'poi' ? location(destination.parent_id)?.title || 'Ship City' : accessName(destination)}`;
     $('worldLocationTitle').textContent = destination.title;
+    $('worldLocationTeaser').textContent = destination.teaser || '';
+    $('worldLocationTeaser').hidden = !destination.teaser;
     $('worldLocationDescription').textContent = destination.description || 'No description has been recorded yet.';
+    $('worldLocationQuote').textContent = destination.quote ? `“${destination.quote}”` : '';
+    $('worldLocationSpeaker').textContent = destination.quote_speaker ? `— ${destination.quote_speaker}` : '';
+    $('worldLocationQuoteBlock').hidden = !destination.quote;
+    const ownArt = destination.has_card_image ? `/api/location-image?id=${encodeURIComponent(destination.id)}&slot=card&v=${destination.card_image_version}` : locationArt(destination);
+    const cardArt = ownArt || locationArt(location(link.from_id));
+    const artPanel = $('worldLocationArt');
+    artPanel.style.backgroundImage = cardArt ? `url("${cardArt}")` : '';
+    artPanel.style.backgroundPosition = cardArt && !ownArt ? `${link.x}% ${link.y}%` : 'center';
+    artPanel.style.backgroundSize = cardArt && !ownArt ? '400% auto' : 'cover';
     const actions = $('worldLocationActions'); actions.replaceChildren();
     if (destination.kind !== 'poi') {
-      const enter = button(canEnter(destination) ? 'Enter location' : 'Entry unavailable', () => open(destination.id, link.id), 'primary-button');
+      const enter = button(canEnter(destination) ? 'Enter location' : 'Entry restricted', () => open(destination.id, link.id), 'primary-button');
       enter.disabled = !canEnter(destination);
       if (enter.disabled) enter.title = 'The GM has not opened this location for entry.';
       actions.append(enter);
@@ -127,11 +178,8 @@ export function initWorldUI(request, profile, activeCharacter) {
     $('worldHeadingTitle').textContent = item.title;
     $('worldHeadingDescription').textContent = item.description;
     if (!['settlement', 'star'].includes(item.kind) && selectedLocal) closeLocalDossier();
-    $('worldView').hidden = star; $('worldNav').hidden = false; $('worldPanel').hidden = !isGM();
+    $('worldView').hidden = star; $('worldChrome').hidden = false; $('worldPanel').hidden = !isGM();
     $('worldBack').disabled = !canEnter(location(item.parent_id));
-    const positioned = myPosition();
-    const actual = location(positioned?.location_id || 'star-map');
-    $('worldWhere').textContent = `Viewing: ${item.title} · ${active() ? `${active().name}: ${actual?.title || 'Star Map'}` : 'No character selected'}`;
     renderStarMarkers();
     if (!star) renderLocal(item);
     renderMoveDock(item);
@@ -351,7 +399,7 @@ export function initWorldUI(request, profile, activeCharacter) {
       const finish = async up => {
         const target = document.elementFromPoint(up.clientX, up.clientY);
         cleanup();
-        if (target && moved) await onDrop(target, up);
+        if (target && moved) await onDrop(target, up, { offsetX, offsetY, width: bounds.width, height: bounds.height });
         else refresh(true);
       };
       const cancel = () => { cleanup(); refresh(true); };
@@ -385,7 +433,7 @@ export function initWorldUI(request, profile, activeCharacter) {
         token.addEventListener('error', () => { token.src = 'assets/characters/anonymous-explorer.png'; }, { once: true });
         if (pos.character_id === active()?.id || isGM()) startDrag(token, async target => {
           const destination = target.closest('.world-cell'); if (!destination || destination.classList.contains('blocked')) return;
-          try { await send('position', { characterId: pos.character_id, x: Number(destination.dataset.x), y: Number(destination.dataset.y) }); status('Token moved.'); await refresh(true); }
+          try { await send('position', { characterId: pos.character_id, x: Number(destination.dataset.x), y: Number(destination.dataset.y) }); status(''); await refresh(true); }
           catch (cause) { status(cause.message); await refresh(true); }
         });
         cell.append(token);
@@ -404,9 +452,8 @@ export function initWorldUI(request, profile, activeCharacter) {
       img.src = pos.has_standup ? `/api/image?id=${encodeURIComponent(pos.character_id)}&slot=standup` : pos.has_portrait ? `/api/image?id=${encodeURIComponent(pos.character_id)}&slot=portrait` : 'assets/characters/anonymous-explorer.png';
       img.addEventListener('error', () => { img.src = 'assets/characters/anonymous-explorer.png'; }, { once: true });
       img.style.left = `${(pos.x ?? 500) / 10}%`; img.style.top = `${(pos.y ?? 800) / 10}%`;
-      if (pos.character_id === active()?.id || isGM()) startDrag(img, async (target, up) => {
-        const bounds = scene.getBoundingClientRect(); const x = Math.max(0, Math.min(1000, Math.round((up.clientX - bounds.left) / bounds.width * 1000)));
-        const y = Math.max(0, Math.min(1000, Math.round((up.clientY - bounds.top) / bounds.height * 1000)));
+      if (pos.character_id === active()?.id || isGM()) startDrag(img, async (target, up, drag) => {
+        const [x, y] = sceneDropPosition({ x: up.clientX, y: up.clientY }, drag, layer.getBoundingClientRect());
         try { await send('position', { characterId: pos.character_id, x, y }); await refresh(true); } catch (cause) { status(cause.message); }
       });
       layer.append(img);
@@ -472,12 +519,16 @@ export function initWorldUI(request, profile, activeCharacter) {
       targetSelect.addEventListener('change', () => { editingLinkId = targetSelect.value === 'self' ? null : targetSelect.value; editExpanded = true; renderPanel(item); });
       const title = node('input'); title.value = choice.target.title;
       const description = node('textarea'); description.value = choice.target.description;
+      const teaser = node('input'); teaser.value = choice.target.teaser || ''; teaser.maxLength = 220;
+      const quote = node('textarea'); quote.value = choice.target.quote || ''; quote.maxLength = 280;
+      const quoteSpeaker = node('input'); quoteSpeaker.value = choice.target.quote_speaker || ''; quoteSpeaker.maxLength = 100;
       const access = node('select');
       for (const value of ['invisible', 'inaccessible', 'accessible']) {
         const option = node('option', '', value[0].toUpperCase() + value.slice(1)); option.value = value; option.selected = value === choice.target.access_level; access.append(option);
       }
       const image = node('input'); image.type = 'file'; image.accept = 'image/png,image/jpeg,image/webp';
-      edit.append(field('Location', targetSelect), field('Title', title), field('Description', description), field('Party access', access));
+      const cardImage = node('input'); cardImage.type = 'file'; cardImage.accept = image.accept;
+      edit.append(field('Location', targetSelect), field('Title', title), field('One-line impression (optional)', teaser), field('Description', description), field('In-world quote (optional)', quote), field('Quote speaker (optional)', quoteSpeaker), field('Party access', access));
       const positionable = choice.link && !['star-choir', 'star-ship-city'].includes(choice.link.id);
       let x, y;
       if (positionable) {
@@ -487,10 +538,11 @@ export function initWorldUI(request, profile, activeCharacter) {
         edit.append(field(item.kind === 'star' ? 'Chart X (0–900)' : 'Marker X (0–100%)', x), field(item.kind === 'star' ? 'Chart Y (0–600)' : 'Marker Y (0–100%)', y));
         if (item.kind === 'settlement') edit.append(node('p', 'world-edit-hint', 'Drag this marker on the map to reposition it.'));
       }
-      edit.append(field('Replace background image (up to 6 MB)', image), button('Save changes', async () => {
+      edit.append(field('Replace background image (up to 6 MB)', image), field('Card illustration (optional)', cardImage), button('Save changes', async () => {
         try {
-          await send('edit', { locationId: choice.target.id, title: title.value, description: description.value, accessLevel: access.value, ...(positionable ? { linkId: choice.link.id, x: Number(x.value), y: Number(y.value) } : {}) });
+          await send('edit', { locationId: choice.target.id, title: title.value, teaser: teaser.value, description: description.value, quote: quote.value, quoteSpeaker: quoteSpeaker.value, accessLevel: access.value, ...(positionable ? { linkId: choice.link.id, x: Number(x.value), y: Number(y.value) } : {}) });
           if (image.files[0]) await upload(choice.target.id, image.files[0]);
+          if (cardImage.files[0]) await upload(choice.target.id, cardImage.files[0], 'card');
           status('Location saved.'); await refresh(true);
         } catch (cause) { status(cause.message); }
       }));
@@ -498,14 +550,17 @@ export function initWorldUI(request, profile, activeCharacter) {
     }
     if (['star', 'settlement'].includes(item.kind)) {
       const create = node('details'); create.append(node('summary', '', 'Create location'));
-      const title = node('input'), description = node('textarea'), kind = node('select'), image = node('input');
+      const title = node('input'), description = node('textarea'), teaser = node('input'), quote = node('textarea'), quoteSpeaker = node('input'), kind = node('select'), image = node('input'), cardImage = node('input');
+      teaser.maxLength = 220; quote.maxLength = 280; quoteSpeaker.maxLength = 100;
       for (const value of ['settlement', 'delve', 'diorama', 'poi']) { const option = node('option', '', kindName(value)); option.value = value; kind.append(option); }
       image.type = 'file'; image.accept = 'image/png,image/jpeg,image/webp';
+      cardImage.type = 'file'; cardImage.accept = image.accept;
       const x = node('input'), y = node('input'); x.type = y.type = 'number'; x.value = item.kind === 'star' ? '450' : '50'; y.value = item.kind === 'star' ? '300' : '50';
-      create.append(field('Title', title), field('Type', kind), field('Description', description), field(item.kind === 'star' ? 'Chart X (0–900)' : 'Marker X (0–100%)', x), field(item.kind === 'star' ? 'Chart Y (0–600)' : 'Marker Y (0–100%)', y), field('Background image (up to 6 MB)', image), button('Create', async () => {
+      create.append(field('Title', title), field('Type', kind), field('One-line impression (optional)', teaser), field('Description', description), field('In-world quote (optional)', quote), field('Quote speaker (optional)', quoteSpeaker), field(item.kind === 'star' ? 'Chart X (0–900)' : 'Marker X (0–100%)', x), field(item.kind === 'star' ? 'Chart Y (0–600)' : 'Marker Y (0–100%)', y), field('Background image (up to 6 MB)', image), field('Card illustration (optional)', cardImage), button('Create', async () => {
         try {
-          const created = await send('create', { parentId: item.id, title: title.value, kind: kind.value, description: description.value, x: Number(x.value), y: Number(y.value) });
+          const created = await send('create', { parentId: item.id, title: title.value, kind: kind.value, teaser: teaser.value, description: description.value, quote: quote.value, quoteSpeaker: quoteSpeaker.value, x: Number(x.value), y: Number(y.value) });
           if (image.files[0]) await upload(created.id, image.files[0]);
+          if (cardImage.files[0]) await upload(created.id, cardImage.files[0], 'card');
           editingLinkId = created.linkId; editExpanded = true;
           await refresh(true); status('Location created. Select its marker to inspect it, or drag it into place.');
         } catch (cause) { status(cause.message); }
@@ -513,9 +568,9 @@ export function initWorldUI(request, profile, activeCharacter) {
     }
   }
 
-  async function upload(id, file) {
+  async function upload(id, file, slot = 'map') {
     if (file.size > 6 * 1024 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) throw new Error('Use a JPEG, PNG, or WebP image under 6 MB.');
-    await request(`/api/location-image?id=${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+    await request(`/api/location-image?id=${encodeURIComponent(id)}${slot === 'card' ? '&slot=card' : ''}`, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
   }
 
   $('worldBack').addEventListener('click', () => { const parent = location(current)?.parent_id; if (parent) open(parent); });
@@ -523,6 +578,7 @@ export function initWorldUI(request, profile, activeCharacter) {
   $('worldLocationClose').addEventListener('click', closeLocalDossier);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeLocalDossier(); });
   new ResizeObserver(() => document.documentElement.style.setProperty('--chat-offset', `${$('chatDock').getBoundingClientRect().height + 12}px`)).observe($('chatDock'));
+  new ResizeObserver(() => document.documentElement.style.setProperty('--world-chrome-bottom', `${$('worldChrome').getBoundingClientRect().bottom}px`)).observe($('worldChrome'));
   $('worldOpenSelected').addEventListener('click', () => { if (canEnter(location(selectedStar))) open(selectedStar, world?.links.find(link => link.from_id === 'star-map' && link.to_id === selectedStar)?.id); });
   document.addEventListener('chart-marker', event => {
     closeLocalDossier();
@@ -536,8 +592,8 @@ export function initWorldUI(request, profile, activeCharacter) {
     signature = ''; if (location('star-map') && isGM()) renderPanel(location('star-map'));
   });
   return {
-    start() { current = 'star-map'; previousPosition = null; $('worldNav').hidden = false; refresh(true).then(() => { if (myPosition()?.location_id) open(myPosition().location_id); }); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) refresh(); }, 1000); },
-    stop() { clearInterval(timer); timer = null; world = null; closeLocalDossier(); $('worldNav').hidden = true; $('worldView').hidden = true; $('worldPanel').hidden = true; $('worldMoveDock').hidden = true; },
+    start() { current = 'star-map'; previousPosition = null; $('worldChrome').hidden = false; refresh(true).then(() => { if (myPosition()?.location_id) open(myPosition().location_id); }); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) refresh(); }, 1000); },
+    stop() { clearInterval(timer); clearTimeout(statusTimer); status(''); timer = null; world = null; closeLocalDossier(); $('worldChrome').hidden = true; $('worldView').hidden = true; $('worldPanel').hidden = true; $('worldMoveDock').hidden = true; },
     characterChanged() { previousPosition = null; refresh(true).then(() => open(myPosition()?.location_id || 'star-map')); }
   };
 }

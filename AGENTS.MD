@@ -362,6 +362,8 @@ Use original assets and original interpretations of the project's visual directi
 
 When exact visual rules have been established, `docs/UI-GUIDE.md` takes precedence over this general description.
 
+For new Coriolis location maps, Vista scenes, and card illustrations, use the reusable prompt language and review criteria in `docs/ART-DIRECTION.md`. In Ship City, depict human inhabitants unless the specific source location calls for a creature; Garuda are birds. Check generated images at their intended UI size before using them.
+
 ---
 
 # 9. Generated Assets
