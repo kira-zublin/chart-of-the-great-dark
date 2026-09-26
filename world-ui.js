@@ -1,4 +1,5 @@
 import { createSceneDust, createSceneTransition } from './scene-effects.js';
+import { KIND_ICON, chartMarker } from './star-chart.js';
 
 const $ = id => document.getElementById(id);
 const node = (tag, className = '', content = '') => { const el = document.createElement(tag); if (className) el.className = className; if (content) el.textContent = content; return el; };
@@ -59,7 +60,7 @@ export function initWorldUI(request, profile, activeCharacter) {
   // The ink bloom starts from the marker that was used to travel, when it is on screen.
   const originFor = linkId => {
     const marker = linkId ? document.querySelector(`[data-link-id="${CSS.escape(linkId)}"]`) : null;
-    const target = marker?.querySelector('.marker-sigil') || marker || document.querySelector('#map .landmark.selected, #map .system.selected');
+    const target = marker?.querySelector('.marker-sigil, .star-sym') || marker || document.querySelector('#map .star-item.selected .star-sym');
     const box = target?.getBoundingClientRect();
     return box?.width ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : null;
   };
@@ -153,29 +154,27 @@ export function initWorldUI(request, profile, activeCharacter) {
   }
 
   function renderStarMarkers() {
-    for (const [key, id] of [['choir', 'choir'], ['shipcity', 'ship-city']]) {
-      const marker = document.querySelector(`[data-key="${key}"]`);
-      if (marker) {
-        const destination = location(id);
-        marker.style.display = destination ? '' : 'none';
-        marker.classList.toggle('unavailable', Boolean(destination && destination.access_level !== 'accessible'));
-        if (destination) marker.setAttribute('aria-label', `${destination.title}${destination.access_level !== 'accessible' ? `, ${accessName(destination).toLowerCase()}` : ''}`);
-      }
+    // Ship City is part of the drawn Jumuah chart; it only needs its world state.
+    const city = document.querySelector('#map [data-key="shipcity"]');
+    if (city) {
+      const destination = location('ship-city');
+      city.parentElement.style.display = destination ? '' : 'none';
+      city.classList.toggle('unavailable', Boolean(destination && destination.access_level !== 'accessible'));
+      if (destination) city.setAttribute('aria-label', `${destination.title}${destination.access_level !== 'accessible' ? `, ${accessName(destination).toLowerCase()}` : ''}`);
     }
-    const svg = $('map');
-    svg.querySelectorAll('.world-marker-svg').forEach(item => item.remove());
-    for (const link of world.links.filter(item => item.from_id === 'star-map' && !['choir', 'ship-city'].includes(item.to_id))) {
+    // Other locations linked from the star map use the chart's icon family, in the same 900 x 600 chart space.
+    const layer = $('chartMarkers');
+    layer.querySelectorAll('.world-marker-svg').forEach(item => item.remove());
+    for (const link of world.links.filter(item => item.from_id === 'star-map' && item.to_id !== 'ship-city')) {
       const to = location(link.to_id); if (!to) continue;
-      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      group.setAttribute('class', 'world-marker-svg'); group.setAttribute('role', 'button'); group.setAttribute('tabindex', '0'); group.dataset.linkId = link.id;
-      group.setAttribute('aria-label', `Inspect ${to.title}${to.access_level !== 'accessible' ? `, ${accessName(to).toLowerCase()}` : ''}`); group.setAttribute('transform', `translate(${link.x} ${link.y})`);
-      group.classList.toggle('unavailable', to.access_level !== 'accessible');
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); circle.setAttribute('r', '13');
-      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text'); label.setAttribute('x', '19'); label.setAttribute('y', '4'); label.textContent = `${to.title}${to.access_level === 'accessible' ? '' : ` · ${accessName(to)}`}`;
-      group.append(circle, label);
+      const restricted = to.access_level !== 'accessible';
+      const marker = chartMarker({ x: link.x, y: link.y, icon: KIND_ICON[to.kind] || 'poi', name: to.title, sub: `${kindName(to.kind)}${restricted ? ` · ${accessName(to)}` : ''}`, rumored: to.access_level === 'invisible', className: 'world-marker-svg', label: `Inspect ${to.title}${restricted ? `, ${accessName(to).toLowerCase()}` : ''}` });
+      marker.dataset.linkId = link.id;
+      marker.starItem.classList.toggle('unavailable', to.access_level === 'inaccessible');
       const go = () => { $('dossier').classList.remove('open'); $('worldOpenSelected').hidden = true; selectedStar = null; inspectLocation(link); };
-      group.addEventListener('click', go); group.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); go(); } });
-      svg.append(group);
+      marker.starItem.addEventListener('click', event => { event.stopPropagation(); go(); });
+      marker.starItem.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); go(); } });
+      layer.append(marker);
     }
     const selected = location(selectedStar);
     const visit = $('worldOpenSelected');
@@ -550,7 +549,7 @@ export function initWorldUI(request, profile, activeCharacter) {
       const image = node('input'); image.type = 'file'; image.accept = 'image/png,image/jpeg,image/webp';
       const cardImage = node('input'); cardImage.type = 'file'; cardImage.accept = image.accept;
       edit.append(field('Location', targetSelect), field('Title', title), field('One-line impression (optional)', teaser), field('Description', description), field('In-world quote (optional)', quote), field('Quote speaker (optional)', quoteSpeaker), field('Party access', access));
-      const positionable = choice.link && !['star-choir', 'star-ship-city'].includes(choice.link.id);
+      const positionable = choice.link && choice.link.id !== 'star-ship-city';
       let x, y;
       if (positionable) {
         x = node('input'); y = node('input'); x.type = y.type = 'number'; x.step = y.step = '0.1';
@@ -603,7 +602,7 @@ export function initWorldUI(request, profile, activeCharacter) {
   $('worldOpenSelected').addEventListener('click', () => { if (canEnter(location(selectedStar))) open(selectedStar, world?.links.find(link => link.from_id === 'star-map' && link.to_id === selectedStar)?.id); });
   document.addEventListener('chart-marker', event => {
     closeLocalDossier();
-    selectedStar = ({ choir: 'choir', shipcity: 'ship-city' })[event.detail.key] || null;
+    selectedStar = event.detail.key === 'shipcity' ? 'ship-city' : null;
     const selected = location(selectedStar), visit = $('worldOpenSelected');
     visit.hidden = !selected;
     visit.disabled = Boolean(selected && !canEnter(selected));

@@ -28,7 +28,6 @@
   font-family: var(--display); font-weight: 400; letter-spacing: .05em;
 }
 .login-card h1 { letter-spacing: .08em; }
-.system text, .landmark text, .world-marker-svg text { font-family: var(--display); }
 
 /* Book divider: a fading line broken by circles and a ringed dot on each side of the label. */
 .rule { gap: 10px; color: #bfae84; }
@@ -159,13 +158,13 @@ button.primary-button:not(:disabled):hover, button.primary-button:focus-visible 
 @keyframes ui-bleed { from { opacity: 0; transform: scale(1.04); } }
 .motion .world-location-dossier.revealing .dossier-art { animation: ui-bleed 1s cubic-bezier(.3, .5, .2, 1) both; }
 .motion .world-location-dossier.revealing .dossier-body > * { animation: ui-rise .7s cubic-bezier(.2, .7, .2, 1) both; }
-.motion .dossier.open > :is(.chapter, h2, .chips, .lede, #delveDetails, #landmarkDetails, .world-visit) { animation: ui-rise .7s cubic-bezier(.2, .7, .2, 1) both; }
+.motion .dossier.open > :is(.chapter, h2, .chips, .lede, #chartDetails, .world-visit) { animation: ui-rise .7s cubic-bezier(.2, .7, .2, 1) both; }
 .motion .world-heading.revealing > * { animation: ui-rise .7s cubic-bezier(.2, .7, .2, 1) both; }
 .world-location-dossier .dossier-body > :nth-child(1), .dossier.open > .chapter, .world-heading > :nth-child(1) { animation-delay: .12s; }
 .world-location-dossier .dossier-body > :nth-child(2), .dossier.open > h2, .world-heading > :nth-child(2) { animation-delay: .22s; }
 .world-location-dossier .dossier-body > :nth-child(3), .dossier.open > .chips { animation-delay: .32s; }
 .world-location-dossier .dossier-body > :nth-child(4), .dossier.open > .lede { animation-delay: .42s; }
-.world-location-dossier .dossier-body > :nth-child(5), .dossier.open > :is(#delveDetails, #landmarkDetails) { animation-delay: .52s; }
+.world-location-dossier .dossier-body > :nth-child(5), .dossier.open > #chartDetails { animation-delay: .52s; }
 .world-location-dossier .dossier-body > :nth-child(6), .dossier.open > .world-visit { animation-delay: .62s; }
 
 /* Ink-bloom location transition (scene-effects.js). */

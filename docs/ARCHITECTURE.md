@@ -59,4 +59,4 @@ MP3 files are stored in Vercel Blob, not Turso: tracks are larger than the 4.5 M
 
 ## Visual layer
 
-`ui-theme.css` holds the shared visual language (display typeface, surfaces, dividers, controls and dice cards) on top of the base styles. `scene-effects.js` provides the ink-bloom transition and scene dust; `world-ui.js` calls it only when the viewed location changes. Both effects are presentation only and are skipped when reduced motion is requested. See `docs/UI-GUIDE.md`.
+`ui-theme.css` holds the shared visual language (display typeface, surfaces, dividers, controls and dice cards) on top of the base styles. `scene-effects.js` provides the ink-bloom transition and scene dust; `world-ui.js` calls it only when the viewed location changes. `star-chart.js` draws the star map as a chart of the Jumuah system. The book content on it is static presentation data. Star-map world locations keep their stored 0–900 × 0–600 coordinates and are drawn by `world-ui.js` with the chart's `chartMarker`. Both effects are presentation only and are skipped when reduced motion is requested. See `docs/UI-GUIDE.md`.

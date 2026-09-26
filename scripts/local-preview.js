@@ -39,8 +39,8 @@ await seedShipCitySlice(sql);
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number(process.env.LOCAL_PREVIEW_PORT || 3000);
-const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.woff2': 'font/woff2' };
-const publicFiles = new Set(['index.html', 'world-ui.css', 'ui-theme.css', 'scene-effects.js', 'app.js', 'world-ui.js', 'chat-ui.js', 'sheet-ui.js', 'crew-ui.js', 'side-panel.js', 'jukebox-ui.js', 'vendor/blob-client.js']);
+const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
+const publicFiles = new Set(['index.html', 'world-ui.css', 'ui-theme.css', 'star-chart.css', 'scene-effects.js', 'star-chart.js', 'app.js', 'world-ui.js', 'chat-ui.js', 'sheet-ui.js', 'crew-ui.js', 'side-panel.js', 'jukebox-ui.js', 'vendor/blob-client.js']);
 const api = { auth: '../api/auth.js', characters: '../api/characters.js', image: '../api/image.js', crew: '../api/crew.js', 'crew-image': '../api/crew-image.js', chat: '../api/chat.js', world: '../api/world.js', 'location-image': '../api/location-image.js', jukebox: '../api/jukebox.js' };
 const server = createServer(async (incoming, outgoing) => {
   try {
@@ -57,7 +57,7 @@ const server = createServer(async (incoming, outgoing) => {
       response = await method(request);
     } else {
       const pathname = decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname);
-      if (!publicFiles.has(pathname.slice(1)) && !/^\/assets\/[a-zA-Z0-9/_-]+\.(png|jpg|jpeg|webp|woff2)$/.test(pathname)) { outgoing.writeHead(404); outgoing.end(); return; }
+      if (!publicFiles.has(pathname.slice(1)) && !/^\/assets\/[a-zA-Z0-9/_-]+\.(png|jpg|jpeg|webp|woff2|svg)$/.test(pathname)) { outgoing.writeHead(404); outgoing.end(); return; }
       const filename = resolve(root, '.' + pathname);
       if (filename !== root && !filename.startsWith(root + sep)) { outgoing.writeHead(403); outgoing.end(); return; }
       try { response = new Response(await readFile(filename), { headers: { 'Content-Type': mime[extname(filename)] || 'application/octet-stream' } }); }

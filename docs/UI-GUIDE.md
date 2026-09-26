@@ -12,6 +12,7 @@ Readability comes first. Decoration must never hide interaction state, and every
 | `world-ui.css` | Location views: headings, markers, grids, standups, the location card. |
 | `ui-theme.css` | The visual-language layer: typeface, surfaces, dividers, buttons, tabs, fields, reveals, scene transitions and dice cards. Loaded last. |
 | `scene-effects.js` | The ink-bloom transition between locations and drifting dust in scenes. |
+| `star-chart.js`, `star-chart.css` | The star map: the engraved chart of the Jumuah system, its book content, and the markers for star-map locations. |
 
 Put new visual-language rules in `ui-theme.css` rather than restyling components one by one.
 
@@ -64,6 +65,30 @@ Hub map markers use the same pattern as the star chart. The core icon is an imag
 
 The icons are 256×256 transparent PNGs, each with a brass medallion centred in the frame. A replacement, such as a painted version, must keep the same size and centring, because the glow and ring are centred on the image. On hover, focus or selection, the glow brightens, the ring sharpens and the name is underlined. Restricted and invisible locations turn the icon grey.
 
+## Star chart
+
+The star map is a chart of the Jumuah system, drawn the way the rulebook draws its charts: gold line engraving over a dark watercolor wash (`assets/star-wash.jpg`).
+
+- **Content:** Every body, station, ruin and hazard comes from the Core Rules, chapter 10 (Jumuah & the Charted Sphere). Book content is static data in `star-chart.js`. Ship City is drawn by the chart and opens its world location.
+- **Geometry:** Orbits are centred on Jumuah at (450, 300) in the 900 × 600 chart space that star-map world locations already use. Their radius is proportional to the square root of the book's distance in AD. Positions around an orbit are chosen for legibility.
+- **Lines:** Every line connects or encloses something. Orbits are dashed, and routes are dotted: ore traffic, Guild routes and the three Slipstream tributaries. Region arcs carry lettering (the Core, the Rim, the Memosan Gulf, the White Fields of Albary, the Outer Fields, the Great Dark).
+- **Levels of detail:** Region names show when zoomed out. Moons, outposts and minor sites appear when zoomed in. Icons and labels stay the same size on screen while bodies and geography scale with the chart.
+- **Frame:** A double hairline border with bearing ticks, cardinal points, corner brackets, a compass rose and a scale note. It stays fixed while the chart moves.
+- **Parallax:** The wash moves at 60% of the chart's speed and the dust at 120%.
+
+### Chart icons
+
+Each icon is an image in `assets/icons/chart/`. The chart draws the frame around it, so the frame can turn, dash or fade.
+
+| Frame | Category | Icons |
+| --- | --- | --- |
+| Plain ring | Places people run | `station`, `lighthouse`, `outpost`, `mine`, `poi`, `slipstream` |
+| Serrated seal | Builder ruins, in Master Moska's four classes | `structure`, `garden`, `shallows`, `vault`, plus `portal` |
+| None, drawn in rust | Hazards | `rift-storm`, `meteor`, `gas-wights`, `wreckers` |
+| Own emblem | Ship City | `ship-city` |
+
+A dashed frame means rumored, and a faded icon means abandoned. World locations on the star map pick an icon by kind: a Hub is an outpost, an Explorable is shallows, and a Vista or point of interest is a point of interest. A location that is Invisible to players shows a dashed frame, and a Restricted one is faded.
+
 ## Motion
 
 Motion runs only when `#app` has the `motion` class, which is set unless the device asks for reduced motion. `index.html` also disables all CSS animation and transitions under `prefers-reduced-motion`. Every effect must still read correctly without motion.
@@ -76,6 +101,8 @@ Motion runs only when `#app` has the `motion` class, which is set unless the dev
 | Location card art | Bleeds in, framed by a frayed watercolor edge (`assets/ui/watercolor-edge-mask.png`) | 1s |
 | Hubs and Vistas | Up to 48 warm dust motes drift upward; they stop while the tab is hidden and never appear on Explorable grids | Continuous |
 | New dice rolls in chat | Dice tumble in and settle on the server's result; sixes catch the light | ~0.6–1s |
+| First view of the star chart | Orbits and arcs draw themselves in, then routes, symbols and labels settle | ~2.5s, once per page load |
+| Star chart hover and selection | A survey ring draws around the item; on selection a circle sweeps outward once, ruin seals turn and the route flows | ~1–1.5s |
 
 Animate only `transform`, `opacity` and masks. Transitions run only when the viewed location changes, never on the one-second world refresh.
 
