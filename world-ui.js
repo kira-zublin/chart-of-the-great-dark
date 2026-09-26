@@ -461,7 +461,7 @@ export function initWorldUI(request, profile, activeCharacter) {
   }
 
   function renderPanel(item) {
-    const panel = $('worldPanel'); panel.replaceChildren(); panel.append(node('h3', '', 'GM controls'));
+    const panel = $('worldPanel'); panel.replaceChildren();
     renderGMControls(panel, item);
   }
 

@@ -32,7 +32,7 @@ await seedShipCitySlice(sql);
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number(process.env.LOCAL_PREVIEW_PORT || 3000);
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp' };
-const publicFiles = new Set(['index.html', 'world-ui.css', 'app.js', 'world-ui.js', 'chat-ui.js', 'sheet-ui.js', 'crew-ui.js']);
+const publicFiles = new Set(['index.html', 'world-ui.css', 'app.js', 'world-ui.js', 'chat-ui.js', 'sheet-ui.js', 'crew-ui.js', 'side-panel.js']);
 const api = { auth: '../api/auth.js', characters: '../api/characters.js', image: '../api/image.js', crew: '../api/crew.js', 'crew-image': '../api/crew-image.js', chat: '../api/chat.js', world: '../api/world.js', 'location-image': '../api/location-image.js' };
 const server = createServer(async (incoming, outgoing) => {
   try {

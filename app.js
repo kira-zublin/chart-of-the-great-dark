@@ -2,6 +2,7 @@ import { collectSheet, renderSheet, setSheetDirtyHandler, setSheetTab } from './
 import { initCrewUI } from './crew-ui.js';
 import { initChatUI } from './chat-ui.js';
 import { initWorldUI } from './world-ui.js';
+import { initSidePanel } from './side-panel.js';
 const $ = id => document.getElementById(id);
 $('mapStage').append(document.querySelector('.hud'));
 const state = { profile: null, characters: [], selected: null, registering: false };
@@ -10,9 +11,11 @@ let characterDirty = false;
 setSheetDirtyHandler(() => { characterDirty = true; });
 $('characterForm').addEventListener('input', () => { characterDirty = true; });
 $('characterForm').addEventListener('change', () => { characterDirty = true; });
-const crewUI = initCrewUI(request, () => state.profile, () => {
-  if (characterDirty && !confirm('Discard unsaved character changes?')) return false;
-  characterDirty = false; return true;
+const crewUI = initCrewUI(request, () => state.profile);
+const sidePanel = initSidePanel({
+  isGM: () => state.profile?.role === 'gm',
+  canClose: confirmDiscard,
+  onChange: tab => crewUI.setActive(tab === 'Crew')
 });
 const chatUI = initChatUI(request, () => state.profile, () => {
   const id = state.selected?.id || (state.profile && localStorage.getItem(`active-character:${state.profile.id}`));
@@ -41,6 +44,7 @@ function showApp(profile) {
     $('accountRole').textContent = profile.role === 'gm' ? 'Game Master' : 'Player';
     $('filterRow').hidden = profile.role !== 'gm';
     $('characterKindRow').hidden = profile.role !== 'gm';
+    sidePanel.setRole();
     loadCharacters();
     chatUI.start();
     worldUI.start();
@@ -48,10 +52,9 @@ function showApp(profile) {
     chatUI.stop();
     worldUI.stop();
     state.characters = []; state.selected = null;
-    $('characterPanel').hidden = true;
+    characterDirty = false; showEditor(false); sidePanel.hide();
     $('accountMenu').hidden = true;
     $('characterMenu').hidden = true;
-    crewUI.close();
   }
 }
 function toggleMenu(button, menu) {
@@ -110,10 +113,10 @@ function renderList() {
   const list = $('characterList'); list.replaceChildren();
   const none = document.createElement('button'); none.type = 'button'; none.textContent = 'No active character';
   none.addEventListener('click', () => {
-    if (characterDirty && !confirm('Discard unsaved character changes?')) return;
-    characterDirty = false; state.selected = null;
+    if (!confirmDiscard()) return;
+    state.selected = null; showEditor(false);
     localStorage.removeItem(`active-character:${state.profile.id}`);
-    $('characterPanel').hidden = true; $('characterMenu').hidden = true;
+    $('characterMenu').hidden = true;
     $('characterButton').textContent = 'Select character'; chatUI.refreshIdentity();
     worldUI.characterChanged();
   });
@@ -139,8 +142,7 @@ async function deleteCharacter(character) {
   try {
     await request(`/api/characters?id=${encodeURIComponent(character.id)}`, { method: 'DELETE' });
     if (localStorage.getItem(`active-character:${state.profile.id}`) === character.id) localStorage.removeItem(`active-character:${state.profile.id}`);
-    if (state.selected?.id === character.id) closeCharacter();
-    if (state.selected?.id === character.id) state.selected = null;
+    if (state.selected?.id === character.id) { state.selected = null; showEditor(false); }
     $('characterButton').textContent = 'Select character';
     await loadCharacters();
   } catch (cause) { alert(cause.message); }
@@ -151,16 +153,31 @@ function showPreview(slot, character) {
   const has = character && (slot === 'portrait' ? character.has_portrait : character.has_standup);
   img.hidden = !has; img.src = has ? imageUrl(character.id, slot) : '';
 }
+// The Characters tab shows either the editor (an existing or new character) or an empty state.
+function showEditor(on) {
+  $('characterEditor').hidden = !on; $('characterEmpty').hidden = on;
+  if (!on) $('characterHeading').textContent = 'No character open';
+}
+function confirmDiscard() {
+  if (!characterDirty) return true;
+  if (!confirm('Discard unsaved character changes?')) return false;
+  characterDirty = false;
+  if (state.selected) fillCharacter(state.selected); else showEditor(false);
+  return true;
+}
 function editCharacter(character = null) {
-  if (characterDirty && !$('characterPanel').hidden && !confirm('Discard unsaved character changes?')) return;
-  crewUI.close();
+  if (!confirmDiscard()) return;
   state.selected = character;
   if (character) localStorage.setItem(`active-character:${state.profile.id}`, character.id);
   chatUI.refreshIdentity();
   worldUI.characterChanged();
   $('characterMenu').hidden = true;
   $('characterButton').setAttribute('aria-expanded', 'false');
-  $('characterPanel').hidden = false;
+  showEditor(true); fillCharacter(character);
+  sidePanel.open('Characters');
+  setError('characterMessage'); $('characterName').focus();
+}
+function fillCharacter(character) {
   $('characterHeading').textContent = character ? character.name : 'New character';
   $('characterButton').textContent = character ? character.name : 'Select character';
   $('characterName').value = character?.name || '';
@@ -173,15 +190,12 @@ function editCharacter(character = null) {
   $('characterPortrait').value = ''; $('characterStandup').value = '';
   showPreview('portrait', character); showPreview('standup', character);
   characterDirty = false;
-  setError('characterMessage'); $('characterName').focus();
-}
-function closeCharacter() {
-  if (characterDirty && !confirm('Discard unsaved character changes?')) return;
-  characterDirty = false; $('characterPanel').hidden = true;
 }
 $('createCharacter').addEventListener('click', () => editCharacter());
-$('closeCharacter').addEventListener('click', closeCharacter);
-$('cancelCharacter').addEventListener('click', closeCharacter);
+$('panelCreateCharacter').addEventListener('click', () => editCharacter());
+$('cancelCharacter').addEventListener('click', () => sidePanel.close());
+$('openCrew').addEventListener('click', () => { if (state.profile) sidePanel.toggle('Crew'); });
+$('openGMTools').addEventListener('click', () => { if (state.profile?.role === 'gm') sidePanel.toggle('Mapping'); });
 for (const slot of ['portrait', 'standup']) {
   const input = $(slot === 'portrait' ? 'characterPortrait' : 'characterStandup');
   input.addEventListener('change', () => {

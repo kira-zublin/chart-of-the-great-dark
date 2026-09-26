@@ -10,17 +10,17 @@ const entryTypes = {
 let markDirty = () => {};
 export function setSheetDirtyHandler(handler) { markDirty = handler; }
 export function setSheetTab(name, focus = false) {
-  for (const button of document.querySelectorAll('.sheet-tabs [role="tab"]')) {
+  for (const button of document.querySelectorAll('#characterTabs [role="tab"]')) {
     const active = button.dataset.tab === name;
     button.setAttribute('aria-selected', String(active)); button.tabIndex = active ? 0 : -1;
     $(button.getAttribute('aria-controls')).hidden = !active;
     if (active && focus) button.focus();
   }
 }
-for (const button of document.querySelectorAll('.sheet-tabs [role="tab"]')) {
+for (const button of document.querySelectorAll('#characterTabs [role="tab"]')) {
   button.addEventListener('click', () => setSheetTab(button.dataset.tab));
   button.addEventListener('keydown', event => {
-    const tabs = [...document.querySelectorAll('.sheet-tabs [role="tab"]')];
+    const tabs = [...document.querySelectorAll('#characterTabs [role="tab"]')];
     const index = tabs.indexOf(button);
     const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length : -1;
     if (next >= 0) { event.preventDefault(); setSheetTab(tabs[next].dataset.tab, true); }
