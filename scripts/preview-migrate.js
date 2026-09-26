@@ -7,6 +7,7 @@ import { applyLocationCards } from './migrate-009.js';
 import { applyJukeboxSchema } from './migrate-010.js';
 import { retireChoirPrototype } from './migrate-011.js';
 import { applyStandupScale } from './migrate-012.js';
+import { retireDocksidePrototype } from './migrate-013.js';
 
 if (process.env.VERCEL_ENV === 'preview') {
   await applyChatSchema();
@@ -18,6 +19,7 @@ if (process.env.VERCEL_ENV === 'preview') {
   await applyJukeboxSchema();
   await retireChoirPrototype();
   await applyStandupScale();
+  await retireDocksidePrototype();
   console.log('Preview chat, world, and jukebox schemas applied.');
 } else {
   console.log('Preview migration skipped outside Vercel Preview.');

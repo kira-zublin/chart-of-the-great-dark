@@ -66,6 +66,10 @@ Location cards add an optional one-line impression, an optional attributed quote
 
 The Choir Below and the Choir Depths were test delves and are no longer part of the campaign. Migration `scripts/migrate-011.js` removes both, with their links, art and room settings. Characters standing in either are returned to Ship City, and any location created beneath them moves up to Ship City. It is safe to rerun. Preview builds and `npm run dev:local` apply it automatically. Back up Production and run `node --env-file=.env.production-migration.local scripts/migrate-011.js` before merging.
 
+## Retiring the Dockside Exchange
+
+The Dockside Exchange was a test Vista inside Ship City. Migration `scripts/migrate-013.js` removes it with its links and art. Characters standing there return to Ship City, and it is safe to rerun. Preview builds and `npm run dev:local` apply it automatically. Back up Production and run `node --env-file=.env.production-migration.local scripts/migrate-013.js` before or after merging; the app works either way.
+
 ## Stand-up size
 
 In a Vista, players can resize their own character's stand-up from 50% to 150% with the Stand-up size slider, and the GM can resize any character. The size is saved with the character's position, so everyone sees the same scene. Migration `scripts/migrate-012.js` adds the `standup_scale` column and is safe to rerun. Preview builds and `npm run dev:local` apply it automatically. Back up Production and run `node --env-file=.env.production-migration.local scripts/migrate-012.js` before merging.

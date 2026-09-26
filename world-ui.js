@@ -35,8 +35,7 @@ const sampleArt = {
   'inner-sanctum': 'assets/inner-sanctum-map.png',
   'ziggurat-nine-icons': 'assets/ziggurat-nine-icons-scene.png',
   'palace-daars': 'assets/palace-daars-scene.png',
-  'marakanda-tower': 'assets/marakanda-tower-scene.png',
-  dockside: 'assets/dio-marketplace.png'
+  'marakanda-tower': 'assets/marakanda-tower-scene.png'
 };
 const locationArt = item => item.has_image
   ? `/api/location-image?id=${encodeURIComponent(item.id)}&v=${item.image_version}`
