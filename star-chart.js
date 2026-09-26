@@ -80,24 +80,36 @@ function symbol(parent, icon) {
 }
 
 // A labelled, selectable chart item. world-ui.js also uses this for world locations on the star map.
-export function chartMarker({ x, y, icon, name, sub, tier, side = 'r', hazard, rumored, abandoned, key, className = '', label }) {
+export function chartMarker({ x, y, icon, name, sub, tier, side = 'r', hazard, rumored, abandoned, visitable, key, className = '', label }) {
   const wrap = el('g', { transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})`, class: `${className}${tier === 'near' ? ' lod lod-near' : ''}`.trim() || null });
-  const item = el('g', { class: `star-item${hazard ? ' hazard' : ''}${rumored ? ' rumored' : ''}${abandoned ? ' abandoned' : ''}`, tabindex: 0, role: 'button', 'aria-label': label || `${name}, ${sub}`, 'data-key': key }, wrap);
+  const item = el('g', { class: `star-item${hazard ? ' hazard' : ''}${rumored ? ' rumored' : ''}${abandoned ? ' abandoned' : ''}${visitable ? ' visitable' : ''}`, tabindex: 0, role: 'button', 'aria-label': label || `${name}, ${sub}`, 'data-key': key }, wrap);
   const ico = el('g', { class: 'star-ico' }, item);
   el('circle', { class: 'star-halo', r: 26 }, ico);
   const sweep = el('circle', { class: 'star-sweep', r: 18 }, ico);
+  const beacon = el('circle', { class: 'star-beacon', r: 14 }, ico);
   const survey = el('circle', { class: 'star-survey', r: 14, pathLength: 1 }, ico);
   const drawn = el('g', { class: 'star-sym' }, ico);
   const r = icon ? symbol(drawn, icon) : 0;
   const nameText = el('text', { class: 'star-name' }, ico); nameText.textContent = name.toUpperCase();
   const subText = el('text', { class: 'star-sub' }, ico); subText.textContent = sub.toUpperCase();
-  const labels = { name: nameText, sub: subText, survey, sweep, side, r };
-  placeLabels(labels, r + 4);
+  const labels = { name: nameText, sub: subText, survey, sweep, beacon, side, r };
+  placeLabels(labels, clearanceFor(item, r));
   return Object.assign(wrap, { starItem: item, starLabels: labels });
 }
 
-function placeLabels({ name, sub, survey, sweep, side }, clearance) {
-  survey.setAttribute('r', clearance + 1); sweep.setAttribute('r', clearance);
+// Places a player can enter are drawn larger, so their labels need more room.
+const VISITABLE_SCALE = 1.25;
+const clearanceFor = (item, r) => r * (item.classList.contains('visitable') ? VISITABLE_SCALE : 1) + 4;
+
+// Marks a chart marker as somewhere the viewer can enter, which gives it a glow, a beacon and a larger symbol.
+export function setVisitable(marker, visitable) {
+  const item = marker?.starItem; if (!item || item.classList.contains('visitable') === visitable) return;
+  item.classList.toggle('visitable', visitable);
+  if (!marker.starLabels.body) placeLabels(marker.starLabels, clearanceFor(item, marker.starLabels.r));
+}
+
+function placeLabels({ name, sub, survey, sweep, beacon, side }, clearance) {
+  survey.setAttribute('r', clearance + 1); sweep.setAttribute('r', clearance); beacon.setAttribute('r', clearance + 1);
   const gap = clearance + 5;
   let x = gap, y = -1, anchor = 'start';
   if (side === 'l') { x = -gap; anchor = 'end'; }
@@ -199,6 +211,7 @@ export function initStarChart() {
     marker.starItem.querySelector('.star-sym').style.setProperty('--d', `${(item.tier === 'near' ? 1.9 : 1.5) + i * .02}s`);
     marker.starItem.addEventListener('click', event => { event.stopPropagation(); select(item.key); });
     marker.starItem.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(item.key); } });
+    if (item.body) marker.starLabels.body = true;
     items.append(marker); markers[item.key] = marker;
   });
 

@@ -87,7 +87,7 @@ Each icon is an image in `assets/icons/chart/`. The chart draws the frame around
 | None, drawn in rust | Hazards | `rift-storm`, `meteor`, `gas-wights`, `wreckers` |
 | Own emblem | Ship City | `ship-city` |
 
-A dashed frame means rumored, and a faded icon means abandoned. World locations on the star map pick an icon by kind: a Hub is an outpost, an Explorable is shallows, and a Vista or point of interest is a point of interest. A location that is Invisible to players shows a dashed frame, and a Restricted one is faded.
+A dashed frame means rumored, and a faded icon means abandoned. Places the viewer can enter (Ship City today, and any enterable star-map location) glow: the symbol is 25% larger, a gold ring stays drawn, a beacon pulses outward and the name is brighter. Informational places are slightly muted. A key in the frame explains the glow. World locations on the star map pick an icon by kind: a Hub is an outpost, an Explorable is shallows, and a Vista or point of interest is a point of interest. A location that is Invisible to players shows a dashed frame, and a Restricted one is faded.
 
 ## Motion
 

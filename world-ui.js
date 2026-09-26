@@ -1,5 +1,5 @@
 import { createSceneDust, createSceneTransition } from './scene-effects.js';
-import { KIND_ICON, chartMarker } from './star-chart.js';
+import { KIND_ICON, chartMarker, setVisitable } from './star-chart.js';
 
 const $ = id => document.getElementById(id);
 const node = (tag, className = '', content = '') => { const el = document.createElement(tag); if (className) el.className = className; if (content) el.textContent = content; return el; };
@@ -34,9 +34,7 @@ const sampleArt = {
   'ziggurat-nine-icons': 'assets/ziggurat-nine-icons-scene.png',
   'palace-daars': 'assets/palace-daars-scene.png',
   'marakanda-tower': 'assets/marakanda-tower-scene.png',
-  dockside: 'assets/dio-marketplace.png',
-  choir: 'assets/choir-below-map.png',
-  'choir-depths': 'assets/choir-depths-map.png'
+  dockside: 'assets/dio-marketplace.png'
 };
 const locationArt = item => item.has_image
   ? `/api/location-image?id=${encodeURIComponent(item.id)}&v=${item.image_version}`
@@ -160,6 +158,7 @@ export function initWorldUI(request, profile, activeCharacter) {
       const destination = location('ship-city');
       city.parentElement.style.display = destination ? '' : 'none';
       city.classList.toggle('unavailable', Boolean(destination && destination.access_level !== 'accessible'));
+      setVisitable(city.parentElement, Boolean(destination && canEnter(destination)));
       if (destination) city.setAttribute('aria-label', `${destination.title}${destination.access_level !== 'accessible' ? `, ${accessName(destination).toLowerCase()}` : ''}`);
     }
     // Other locations linked from the star map use the chart's icon family, in the same 900 x 600 chart space.
@@ -168,7 +167,7 @@ export function initWorldUI(request, profile, activeCharacter) {
     for (const link of world.links.filter(item => item.from_id === 'star-map' && item.to_id !== 'ship-city')) {
       const to = location(link.to_id); if (!to) continue;
       const restricted = to.access_level !== 'accessible';
-      const marker = chartMarker({ x: link.x, y: link.y, icon: KIND_ICON[to.kind] || 'poi', name: to.title, sub: `${kindName(to.kind)}${restricted ? ` · ${accessName(to)}` : ''}`, rumored: to.access_level === 'invisible', className: 'world-marker-svg', label: `Inspect ${to.title}${restricted ? `, ${accessName(to).toLowerCase()}` : ''}` });
+      const marker = chartMarker({ x: link.x, y: link.y, icon: KIND_ICON[to.kind] || 'poi', name: to.title, sub: `${kindName(to.kind)}${restricted ? ` · ${accessName(to)}` : ''}`, rumored: to.access_level === 'invisible', visitable: canEnter(to), className: 'world-marker-svg', label: `Inspect ${to.title}${restricted ? `, ${accessName(to).toLowerCase()}` : ''}` });
       marker.dataset.linkId = link.id;
       marker.starItem.classList.toggle('unavailable', to.access_level === 'inaccessible');
       const go = () => { $('dossier').classList.remove('open'); $('worldOpenSelected').hidden = true; selectedStar = null; inspectLocation(link); };
