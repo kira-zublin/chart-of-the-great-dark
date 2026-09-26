@@ -12,6 +12,7 @@ This document records decisions for the next map prototype. The existing static 
 - A Settlement presents a pannable, wheel-zoomable 2D background with clickable location markers anchored to the map. Settlements can contain markers for any type, including other settlements. A Delve presents a gridded tactical map. A Diorama presents character and creature stand-ups over a background.
 - Location discovery and access are shared across the party. **Invisible** locations have no player-visible marker or description. **Inaccessible** locations show a marker and description, with entry disabled. **Accessible** locations can be entered and moved into. The server enforces these states for character movement and map art.
 - The GM can edit the current location or a marker destination from the current Star or Settlement map. Settlement markers can be dragged to reposition them, with coordinate fields for precise placement. Newly created locations remain on the source map for immediate editing.
+- The GM's Area List opens any location directly, for the GM only. The GM can also instance a Hub, Explorable, or Vista: a temporary, disconnected copy (no markers, doors, or characters) for rebuilding a scene without touching the original. Instances are removed after two hours empty and unviewed, or on demand; deleting one returns its characters to the Star Map.
 
 ## Viewing and character position
 

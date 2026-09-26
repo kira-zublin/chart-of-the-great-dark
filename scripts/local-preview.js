@@ -18,6 +18,7 @@ import { retireChoirPrototype } from './migrate-011.js';
 import { applyStandupScale } from './migrate-012.js';
 import { retireDocksidePrototype } from './migrate-013.js';
 import { applyStandupVariants } from './migrate-014.js';
+import { applyInstances } from './migrate-015.js';
 import { seedShipCitySlice } from './seed-ship-city-slice.js';
 
 // Only the Blob token is taken from .env.local; the database stays in memory.
@@ -43,6 +44,7 @@ await retireChoirPrototype(sql);
 await applyStandupScale(sql);
 await retireDocksidePrototype(sql);
 await applyStandupVariants(sql);
+await applyInstances(sql);
 await seedShipCitySlice(sql);
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));

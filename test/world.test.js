@@ -10,6 +10,7 @@ import { applyLocationAccess } from '../scripts/migrate-008.js';
 import { applyLocationCards } from '../scripts/migrate-009.js';
 import { applyStandupScale } from '../scripts/migrate-012.js';
 import { applyStandupVariants } from '../scripts/migrate-014.js';
+import { applyInstances } from '../scripts/migrate-015.js';
 import { GET as authGet, POST as authPost } from '../api/auth.js';
 import { POST as characterPost } from '../api/characters.js';
 import { GET as worldGet, POST as worldPost } from '../api/world.js';
@@ -29,7 +30,7 @@ test('world positions, fog, GM permissions, pulls, and uploaded art', async () =
   process.env.REGISTRATION_INVITE_CODE = 'private invitation';
   const sql = db();
   try {
-    await applyInitialSchema(sql); await applySheetAndCrewSchema(sql); await applyChatSchema(sql); await applyWorldSchema(sql); await applyWorldSchema(sql); await applyLocationAccess(sql); await applyLocationAccess(sql); await applyLocationCards(sql); await applyStandupScale(sql); await applyLocationCards(sql); await applyStandupScale(sql); await applyStandupVariants(sql); await applyStandupVariants(sql);
+    await applyInitialSchema(sql); await applySheetAndCrewSchema(sql); await applyChatSchema(sql); await applyWorldSchema(sql); await applyWorldSchema(sql); await applyLocationAccess(sql); await applyLocationAccess(sql); await applyLocationCards(sql); await applyStandupScale(sql); await applyLocationCards(sql); await applyStandupScale(sql); await applyStandupVariants(sql); await applyStandupVariants(sql); await applyInstances(sql);
     assert.equal((await sql`SELECT parent_id FROM locations WHERE id = 'choir'`)[0].parent_id, 'ship-city');
     await sql`UPDATE locations SET parent_id = 'star-map' WHERE id = 'choir'`;
     await applyChoirParent(sql); await applyChoirParent(sql);

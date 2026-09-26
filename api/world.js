@@ -1,11 +1,41 @@
 import { body, currentProfile, db, error, guarded, json, randomUUID } from '../lib/server.js';
-import { coord, gridOf, inside, key, nearestOpen, roomAt, roomVisible, standupScale, uuid, validGrid } from '../lib/world.js';
+import { INSTANCE_IDLE_SECONDS, coord, gridOf, inside, key, nearestOpen, roomAt, roomVisible, standupScale, uuid, validGrid } from '../lib/world.js';
 
 const safeText = (value, limit) => typeof value === 'string' && value.trim().length > 0 && value.length <= limit ? value.trim() : null;
 const optionalText = (value, limit) => value === undefined ? '' : typeof value === 'string' && value.length <= limit ? value.trim() : null;
 const simpleGrid = () => ({ width: 10, height: 8, entry: [1, 1], blocked: [], rooms: [{ id: 'main', name: 'Main area', squares: Array.from({ length: 8 }, (_, y) => Array.from({ length: 10 }, (_, x) => [x, y])).flat() }] });
 const locate = async (sql, id) => (await sql`SELECT * FROM locations WHERE id = ${id} LIMIT 1`)[0];
 const conflict = cause => String(cause?.code || '').startsWith('SQLITE_CONSTRAINT');
+
+// Removes instanced areas with their links, art and room settings; locations created inside one move up to its
+// parent. Unless forced, an instance survives while a character stands in it or it was active within the idle
+// window. Forced removal first returns its characters to the Star Map. Every statement re-selects the same
+// instances inside one write batch, so a character arriving mid-cleanup keeps the whole instance intact.
+async function removeInstances(sql, ids, force = false) {
+  if (!ids.length) return;
+  const doomed = `SELECT d.id FROM locations d WHERE d.id IN (${ids.map(() => '?').join(', ')}) AND d.is_instance = 1${force ? '' : ` AND d.instance_active_at < unixepoch() - ${INSTANCE_IDLE_SECONDS} AND NOT EXISTS (SELECT 1 FROM character_positions p WHERE p.location_id = d.id)`}`;
+  const statement = (text, uses) => ({ sql: text, args: Array.from({ length: uses }, () => ids).flat() });
+  await sql.client.batch([
+    ...(force ? [statement(`UPDATE character_positions SET location_id = 'star-map', x = NULL, y = NULL WHERE location_id IN (${doomed})`, 1)] : []),
+    statement(`UPDATE locations SET parent_id = (SELECT e.parent_id FROM locations e WHERE e.id = locations.parent_id) WHERE parent_id IN (${doomed}) AND id NOT IN (${doomed})`, 2),
+    statement(`DELETE FROM location_links WHERE from_id IN (${doomed}) OR to_id IN (${doomed})`, 2),
+    ...['room_overrides', 'location_images', 'location_card_images'].map(table => statement(`DELETE FROM ${table} WHERE location_id IN (${doomed})`, 1)),
+    statement(`DELETE FROM locations WHERE id IN (${doomed})`, 1)
+  ], 'write');
+}
+
+// Keeps instances that someone is standing in or viewing marked active (at most once a minute), and removes
+// the ones left idle. Cleanup problems are logged rather than breaking the map.
+async function tidyInstances(sql, viewing) {
+  try {
+    const instances = await sql`SELECT l.id, l.instance_active_at, EXISTS (SELECT 1 FROM character_positions p WHERE p.location_id = l.id) AS occupied FROM locations l WHERE l.is_instance = 1`;
+    if (!instances.length) return;
+    const now = Math.floor(Date.now() / 1000), inUse = row => row.occupied || row.id === viewing;
+    const touched = instances.filter(row => inUse(row) && !(row.instance_active_at > now - 60)).map(row => row.id);
+    if (touched.length) await sql.query(`UPDATE locations SET instance_active_at = unixepoch() WHERE id IN (${touched.map(() => '?').join(', ')})`, touched);
+    await removeInstances(sql, instances.filter(row => !inUse(row) && !(row.instance_active_at > now - INSTANCE_IDLE_SECONDS)).map(row => row.id));
+  } catch (cause) { console.error('Instance cleanup failed', cause); }
+}
 
 // A placed player character whose stand-up this profile may change: its owner, or the GM.
 async function standupOwner(sql, profile, characterId) {
@@ -48,6 +78,7 @@ export async function GET(req) {
   return guarded(async () => {
     const sql = db(); const profile = await currentProfile(req, sql);
     if (!profile) return error('Sign in to view the world', 401);
+    await tidyInstances(sql, new URL(req.url).searchParams.get('viewing'));
     const gm = profile.role === 'gm';
     const locations = gm ? await sql.query('SELECT * FROM locations ORDER BY created_at, title') : await sql.query("SELECT * FROM locations WHERE access_level != 'invisible' ORDER BY created_at, title");
     const allowed = new Set(locations.map(item => item.id));
@@ -139,9 +170,30 @@ export async function POST(req) {
       if (!parent || !['star', 'settlement'].includes(parent.kind) || !coord(data.x) || !coord(data.y) || (parent.kind === 'star' ? data.x > 900 || data.y > 600 : data.x > 100 || data.y > 100)) return error('Choose a valid parent and marker position');
       const grid = data.kind === 'delve' ? simpleGrid() : null;
       const id = randomUUID(), linkId = randomUUID();
-      await sql`INSERT INTO locations (id, kind, parent_id, title, description, teaser, quote, quote_speaker, grid) VALUES (${id}, ${data.kind}, ${parent.id}, ${title}, ${description}, ${teaser}, ${quote}, ${speaker}, ${JSON.stringify(grid || {})})`;
+      // A location created inside an instance is temporary too, and is cleaned up the same way.
+      await sql`INSERT INTO locations (id, kind, parent_id, title, description, teaser, quote, quote_speaker, grid, is_instance, instance_active_at) VALUES (${id}, ${data.kind}, ${parent.id}, ${title}, ${description}, ${teaser}, ${quote}, ${speaker}, ${JSON.stringify(grid || {})}, ${parent.is_instance ? 1 : 0}, ${parent.is_instance ? Math.floor(Date.now() / 1000) : null})`;
       await sql`INSERT INTO location_links (id, from_id, to_id, kind, label, x, y) VALUES (${linkId}, ${parent.id}, ${id}, 'marker', ${title}, ${data.x}, ${data.y})`;
       return json({ id, linkId }, 201);
+    }
+    if (data.action === 'instance') {
+      const source = await locate(sql, data.locationId);
+      if (!source || !['settlement', 'delve', 'diorama'].includes(source.kind)) return error('Only Hubs, Explorables, and Vistas can be instanced');
+      // A disconnected copy: same parent, art and room settings, but no markers, doors or characters. It stays
+      // Accessible so the GM can pull players in; with no markers pointing to it, players cannot find it themselves.
+      const id = randomUUID();
+      await sql.client.batch([
+        { sql: `INSERT INTO locations (id, kind, parent_id, title, description, teaser, quote, quote_speaker, grid, fog_enabled, image_version, card_image_version, access_level, visible, is_instance, instance_of, instance_active_at)
+          SELECT ?, kind, parent_id, title, description, teaser, quote, quote_speaker, grid, fog_enabled, image_version, card_image_version, 'accessible', 1, 1, ?, unixepoch() FROM locations WHERE id = ?`, args: [id, source.instance_of || source.id, source.id] },
+        ...['location_images', 'location_card_images'].map(table => ({ sql: `INSERT INTO ${table} (location_id, mime_type, bytes) SELECT ?, mime_type, bytes FROM ${table} WHERE location_id = ?`, args: [id, source.id] })),
+        { sql: 'INSERT INTO room_overrides (location_id, room_id, visibility) SELECT ?, room_id, visibility FROM room_overrides WHERE location_id = ?', args: [id, source.id] }
+      ], 'write');
+      return json({ id }, 201);
+    }
+    if (data.action === 'deleteInstance') {
+      const location = await locate(sql, data.locationId);
+      if (!location?.is_instance) return error('Only instanced areas can be deleted');
+      await removeInstances(sql, [location.id], true);
+      return json({ ok: true });
     }
     if (data.action === 'edit') {
       const location = await locate(sql, data.locationId);
