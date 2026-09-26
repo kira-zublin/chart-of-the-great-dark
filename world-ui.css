@@ -371,3 +371,44 @@ svg.map .unavailable text { fill: #b7b7b5; }
 @media (max-width: 800px) {
   .world-scale-control.creature-control { left: 12px; right: 12px; bottom: calc(var(--chat-offset, 50px) + 124px); }
 }
+
+/* Creature Health: a thin bar under a token (spanning its footprint) or inside a stand-up's name plate. The GM's
+   bar is dimmed while players cannot see it. A creature at 0 Health is broken and turns grey. */
+.creature-health { --health: 1; height: 5px; border: 1px solid #0009; background: linear-gradient(90deg, #d9805e calc(var(--health) * 100%), #1b1512 0); box-shadow: 0 1px 3px #000a; }
+.creature-health.private { opacity: .55; }
+.world-cell > .creature-health { position: absolute; z-index: 5; left: 8%; width: calc(var(--footprint, 1) * (100% + 2px) - 2px - 16%); top: calc(var(--footprint, 1) * (100% + 2px) - 2px - 12%); }
+.creature-plate { position: absolute; z-index: 1; display: grid; gap: 3px; min-width: 70px; max-width: 180px; padding: 3px 8px 4px; transform: translate(-50%, 6px); border: 1px solid rgba(205, 184, 125, .3); background: rgba(8, 14, 18, .82); text-align: center; pointer-events: none; }
+.creature-plate.hidden-creature { opacity: .5; }
+.creature-plate-name { color: #f1e3bd; font-family: var(--display, Georgia); font-size: 12px; letter-spacing: .05em; overflow-wrap: anywhere; }
+.creature-token.broken, .creature-standup.broken { filter: grayscale(1) brightness(.6); }
+
+/* The placed creature sheet in the Creatures tab. */
+.creature-area { margin-bottom: 8px; }
+.creature-area .rule { margin: 12px 0 4px; }
+.placed-row.broken .creature-icon { filter: grayscale(1) brightness(.6); }
+.creature-placed-titles { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.creature-rename { color: #f4e6c1; font-family: var(--display, Georgia); font-size: 22px; letter-spacing: .05em; }
+.creature-health-row { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; }
+.creature-health-label { color: #978c72; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
+.creature-health-row input { width: 64px; min-height: 34px; color: #f1e3bd; font-family: var(--display, Georgia); font-size: 20px; text-align: center; }
+.creature-health-max { color: #b8aa88; font-family: var(--display, Georgia); font-size: 16px; }
+.creature-step { width: 34px; min-width: 34px; min-height: 34px; padding: 0; font-size: 18px; }
+.creature-toggles, .creature-conditions { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.creature-toggle { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 12px; color: #e1d3ac; cursor: pointer; }
+.creature-toggle input { flex: none; width: auto; min-height: 0; margin: 0; accent-color: #c9a862; }
+.creature-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.creature-chips:empty { display: none; }
+.creature-chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 2px 1px 8px; border: 1px solid rgba(217, 128, 94, .55); color: #e6a58c; font-size: 12px; }
+.creature-chip .text-button { min-height: 22px; padding: 0 5px; color: inherit; text-decoration: none; }
+.creature-add-condition { display: flex; gap: 8px; margin-top: 6px; }
+.creature-add-condition input { flex: 1; min-height: 32px; }
+.creature-attack-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.creature-use { flex: none; min-height: 24px; padding: 0 4px; font-size: 12px; }
+.creature-attacks li.used-last { opacity: .7; }
+.creature-attacks li.used-last .creature-use { color: #d98a68; }
+
+/* Chat: Blight dice in a signature attack, the attack's rule under its card, and speaking as a creature. */
+.roll-die.blight { background: linear-gradient(145deg, #4a2b3a, #24141d); }
+.roll-die.blight span.on { background: #e7a0bd; }
+.roll-note { margin: 4px 0 0; color: #c9bea4; font-size: 12px; line-height: 1.45; }
+.chat-identity-clear { min-height: 0; padding: 0 2px; font-size: 11px; }

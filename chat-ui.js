@@ -1,3 +1,5 @@
+import { creatureIcon } from './creature-stats.js';
+
 const $ = id => document.getElementById(id);
 const avatar = 'assets/characters/anonymous-explorer.png';
 const attributes = ['strength', 'agility', 'logic', 'insight', 'perception', 'empathy'];
@@ -6,6 +8,15 @@ const pips = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6,
 // Presentation model for a roll card; the dice and their interpretation come from the server.
 export function rollCard(roll) {
   if (roll.type === 'simple') return { title: 'Rolled d6', dice: [{ value: roll.dice[0], gear: false }], result: null, costs: '' };
+  // A creature's signature attack: base dice, then any Blight dice, with the attack's numbers and rule.
+  if (roll.type === 'attack') {
+    const result = [roll.baseDice.length ? `${roll.successes} ${roll.successes === 1 ? 'Success' : 'Successes'}` : null, roll.blightDice.length ? `${roll.blightSuccesses} Blight` : null].filter(Boolean).join(' · ');
+    return {
+      title: `Signature attack ${roll.roll} · ${roll.name}`,
+      dice: [...roll.baseDice.map(value => ({ value, gear: false })), ...roll.blightDice.map(value => ({ value, gear: true, blight: true }))],
+      result: result || null, costs: roll.summary || '', note: roll.text || '', hits: roll.successes + roll.blightSuccesses
+    };
+  }
   const attribute = roll.attribute ? roll.attribute[0].toUpperCase() + roll.attribute.slice(1) : 'Dice pool';
   const talent = roll.talent ? ` + ${roll.talent} (${roll.talentLevel})` : '';
   return {
@@ -32,18 +43,19 @@ function renderRollCard(body, roll, animate) {
   const tray = document.createElement('div'); tray.className = 'roll-dice'; tray.setAttribute('aria-hidden', 'true');
   const dice = card.dice.map((entry, index) => {
     if (entry.gear && !card.dice[index - 1]?.gear) tray.append(Object.assign(document.createElement('span'), { className: 'roll-sep' }));
-    const die = document.createElement('span'); die.className = `roll-die${entry.gear ? ' gear' : ''}`;
+    const die = document.createElement('span'); die.className = `roll-die${entry.gear ? ' gear' : ''}${entry.blight ? ' blight' : ''}`;
     dieFace(die, entry.value); tray.append(die);
     return die;
   });
   body.append(summary, title, tray);
   if (card.result) {
     const result = document.createElement('div'); result.className = 'roll-result'; result.setAttribute('aria-hidden', 'true');
-    const total = document.createElement('b'); total.textContent = card.result; if (!roll.successes) total.className = 'none';
+    const total = document.createElement('b'); total.textContent = card.result; if (!(card.hits ?? roll.successes)) total.className = 'none';
     result.append(total);
     if (card.costs) result.append(Object.assign(document.createElement('span'), { className: 'roll-cost', textContent: card.costs }));
     body.append(result);
-  }
+  } else if (card.costs) body.append(Object.assign(document.createElement('div'), { className: 'roll-result roll-cost', textContent: card.costs }));
+  if (card.note) { const note = document.createElement('p'); note.className = 'roll-note'; note.setAttribute('aria-hidden', 'true'); note.textContent = card.note; body.append(note); }
   if (!animate || !document.getElementById('app')?.classList.contains('motion')) return;
   // New rolls tumble in and settle on the server's result.
   dice.forEach((die, index) => {
@@ -56,6 +68,7 @@ function renderRollCard(body, roll, animate) {
 
 function rollText(roll) {
   if (roll.type === 'simple') return `Rolled d6: ${roll.dice[0]}`;
+  if (roll.type === 'attack') return [`Signature attack ${roll.roll}, ${roll.name}`, roll.summary, roll.baseDice.length ? `Base [${roll.baseDice.join(', ')}] · ${roll.successes} ${roll.successes === 1 ? 'success' : 'successes'}` : null, roll.blightDice.length ? `Blight [${roll.blightDice.join(', ')}] · ${roll.blightSuccesses} ${roll.blightSuccesses === 1 ? 'success' : 'successes'}` : null, roll.text].filter(Boolean).join('. ');
   const label = roll.attribute ? `${roll.attribute}${roll.talent ? ` + ${roll.talent} (${roll.talentLevel})` : ''}` : 'dice pool';
   const base = roll.baseDice.join(', '); const gear = roll.gearDice.length ? ` · Gear [${roll.gearDice.join(', ')}]` : '';
   const push = roll.type === 'push' ? `Push ${roll.pushCount}: ` : 'Rolled ';
@@ -63,9 +76,19 @@ function rollText(roll) {
   return `${push}${label} · Base [${base}]${gear} · ${roll.successes} ${roll.successes === 1 ? 'success' : 'successes'}${costs}`;
 }
 
+// The picture beside a chat line: a character's portrait, a creature's palette art or category medallion, or the
+// anonymous explorer.
+export function messageAvatar(item) {
+  if (item.creature_image) return `/api/creature-image?id=${encodeURIComponent(item.creature_image)}&slot=portrait&v=${item.creature_image_version}`;
+  if (item.creature_category) return creatureIcon(item.creature_category);
+  return item.has_portrait && item.character_id ? `/api/image?id=${encodeURIComponent(item.character_id)}&slot=portrait` : avatar;
+}
+
 // onMessages(messages, initial) hears every message shown, flagging the first batch of history after sign-in.
 export function initChatUI(request, profile, character, onMessages = () => {}) {
   let lastId = 0; let timer = null; let loading = false; let first = true;
+  // A placed creature the GM is speaking as ({ id, name }); it takes the place of the selected character.
+  let creature = null;
   let lastViewedId = 0; let hasViewedBefore = false;
   let pushId = null; let pushCount = 0; let secondPush = false;
   const list = $('chatMessages');
@@ -84,8 +107,13 @@ export function initChatUI(request, profile, character, onMessages = () => {}) {
   }
 
   function identity() {
-    const picked = character();
-    $('chatIdentity').textContent = picked ? `${picked.name} <${profile()?.name}>` : profile()?.name || '';
+    const picked = creature ? null : character();
+    $('chatIdentity').textContent = creature ? `${creature.name} <${profile()?.name}>` : picked ? `${picked.name} <${profile()?.name}>` : profile()?.name || '';
+    if (creature) {
+      const stop = document.createElement('button'); stop.type = 'button'; stop.className = 'text-button chat-identity-clear'; stop.textContent = 'Stop speaking as creature';
+      stop.addEventListener('click', () => speakAs(null));
+      $('chatIdentity').append(' ', stop);
+    }
     const select = $('chatTalent'); select.replaceChildren(new Option('No talent', ''));
     for (const talent of picked?.sheet?.talents || []) select.add(new Option(`${talent.name} (+${talent.level})`, talent.name));
     $('chatRollType').querySelector('option[value="skill"]').disabled = !picked;
@@ -107,7 +135,7 @@ export function initChatUI(request, profile, character, onMessages = () => {}) {
     const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
     const row = document.createElement('article'); row.className = 'chat-entry'; row.dataset.id = item.id;
     const img = document.createElement('img'); img.className = 'chat-avatar'; img.alt = '';
-    img.src = item.has_portrait && item.character_id ? `/api/image?id=${encodeURIComponent(item.character_id)}&slot=portrait` : avatar;
+    img.src = messageAvatar(item);
     img.onerror = () => { img.onerror = null; img.src = avatar; };
     const content = document.createElement('div');
     const heading = document.createElement('div'); heading.className = 'chat-entry-head';
@@ -136,13 +164,20 @@ export function initChatUI(request, profile, character, onMessages = () => {}) {
     } catch (cause) { $('chatStatus').textContent = cause.message; }
     finally { loading = false; }
   }
+  function speakAs(next) { creature = next ? { id: next.id, name: next.name } : null; identity(); }
   async function send(payload) {
     $('chatStatus').textContent = '';
-    const selected = character();
+    const selected = creature ? null : character();
+    // A push keeps its roll's speaker, and an attack names its own creature.
+    const speaker = payload.type === 'push' || payload.creatureId ? {} : creature ? { creatureId: creature.id } : { characterId: selected?.id || null };
     try {
-      const data = await request('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, characterId: payload.type === 'push' ? null : selected?.id || null }) });
+      const data = await request('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, ...speaker }) });
       render(data.message); onMessages([data.message], false); if (!$('chatContent').hidden) markViewed(); return data.message;
-    } catch (cause) { $('chatStatus').textContent = cause.message; return null; }
+    } catch (cause) {
+      // A removed creature can no longer speak.
+      if (creature && cause.message === 'Creature unavailable') speakAs(null);
+      $('chatStatus').textContent = cause.message; return null;
+    }
   }
   $('chatForm').addEventListener('submit', async event => {
     event.preventDefault(); if (!message.value.trim()) return;
@@ -238,7 +273,15 @@ export function initChatUI(request, profile, character, onMessages = () => {}) {
   resize.addEventListener('keydown', event => { if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); setHeight(dock.getBoundingClientRect().height + (event.key === 'ArrowUp' ? 24 : -24)); } });
   return {
     start() { lastId = 0; first = true; const saved = localStorage.getItem(`chat-viewed:${profile().id}`); hasViewedBefore = saved !== null; lastViewedId = Math.max(0, Number(saved) || 0); $('chatContent').hidden = true; toggle.textContent = 'Show'; toggle.setAttribute('aria-expanded', 'false'); setUnread(false); list.replaceChildren(); identity(); poll(); clearInterval(timer); timer = setInterval(poll, 2000); },
-    stop() { clearInterval(timer); timer = null; lastId = 0; pushId = null; pushCount = 0; secondPush = false; $('chatPush').hidden = true; $('chatRollResult').textContent = ''; list.replaceChildren(); rollDialog.close(); exportDialog.close(); },
-    refreshIdentity: identity
+    stop() { clearInterval(timer); timer = null; lastId = 0; creature = null; pushId = null; pushCount = 0; secondPush = false; $('chatPush').hidden = true; $('chatRollResult').textContent = ''; list.replaceChildren(); rollDialog.close(); exportDialog.close(); },
+    refreshIdentity: identity,
+    speakAs,
+    speakingAs: () => creature?.id || null,
+    // Posts a placed creature's signature attack (chosen by the GM) with its dice rolled on the server.
+    async attack(creatureId, roll) {
+      const sent = await send({ type: 'attack', creatureId, attack: roll });
+      if (!sent) throw new Error($('chatStatus').textContent || 'The attack could not be sent.');
+      return sent;
+    }
   };
 }

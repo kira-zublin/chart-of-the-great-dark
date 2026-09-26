@@ -51,8 +51,17 @@ export function sceneDropPosition(pointer, drag, bounds) {
   ];
 }
 
+// A creature's Health as a bar: filled share, and whether players can see it. Null when the viewer has no Health.
+export function healthBar(creature) {
+  if (creature.health === undefined || !creature.max_health) return null;
+  return { share: Math.max(0, Math.min(1, creature.health / creature.max_health)), text: `Health ${creature.health}/${creature.max_health}`, shared: creature.show_health !== false };
+}
+
 // onScene({ id, speakers }) reports the open Vista and the characters standing in it; null means no Vista is open.
-export function initWorldUI(request, profile, activeCharacter, onScene = () => {}) {
+// For the GM, creatures.onArea({ location, creatures }) reports the viewed location and its placed creatures;
+// creatures.open(id) opens a placed creature's sheet and creatures.speakAs(creature) makes chat speak as it.
+export function initWorldUI(request, profile, activeCharacter, onScene = () => {}, creatureHooks = {}) {
+  const hooks = { onArea: () => {}, open: () => {}, speakAs: () => {}, ...creatureHooks };
   let world = null, current = 'star-map', incomingLink = null, selectedStar = null, selectedLocal = null, timer = null, previousPosition = null, signature = '', draggingToken = false;
   let editingLinkId = null, editExpanded = false, draggingMarker = false;
   let renderedId = null, bloomOrigin = null, revealedLink = null;
@@ -213,6 +222,7 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
     bloomOrigin = null;
     renderMoveDock(item);
     onScene(item.kind === 'diorama' ? { id: item.id, speakers: new Set(world.positions.filter(pos => pos.location_id === item.id && !pos.hidden).map(pos => pos.character_id)) } : null);
+    if (isGM()) hooks.onArea({ location: item, creatures: creaturesIn(item.id) });
     if (isGM()) renderPanel(item);
     if (selectedLocal && ['settlement', 'star'].includes(item.kind)) {
       const selected = linksHere().find(link => link.id === selectedLocal);
@@ -496,13 +506,16 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
     // A creature token sits in its top-left square and spans its whole footprint.
     for (const creature of creaturesIn(item.id)) {
       const cell = creature.x === null ? null : board.querySelector(`[data-x="${creature.x}"][data-y="${creature.y}"]`);
-      if (cell) cell.append(creatureToken(creature));
+      if (!cell) continue;
+      cell.append(creatureToken(creature));
+      const health = healthMeter(creature);
+      if (health) { health.style.setProperty('--footprint', creature.footprint); cell.append(health); }
     }
     scene.append(board);
   }
 
   function creatureToken(creature) {
-    const token = node('img', `world-token creature-token${creature.hidden ? ' hidden-creature' : ''}${selectedCreature === creature.id ? ' selected' : ''}${isGM() ? ' movable' : ''}`);
+    const token = node('img', `world-token creature-token${creature.health === 0 ? ' broken' : ''}${creature.hidden ? ' hidden-creature' : ''}${selectedCreature === creature.id ? ' selected' : ''}${isGM() ? ' movable' : ''}`);
     token.style.setProperty('--footprint', creature.footprint);
     token.alt = token.title = creatureLabel(creature); token.draggable = false;
     token.src = creatureArt(creature, 'portrait') || creatureIcon(creature.category);
@@ -539,14 +552,14 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
       });
       layer.append(img);
     }
-    for (const creature of creaturesIn(item.id)) layer.append(creatureStandup(creature, layer));
+    for (const creature of creaturesIn(item.id)) layer.append(creatureStandup(creature, layer), creaturePlate(creature));
     renderStandupControls(scene, item);
   }
 
   // A creature's stand-up art, else its portrait, else its category medallion at medallion size.
   function creatureStandup(creature, layer) {
     const art = creatureArt(creature, 'standup') || creatureArt(creature, 'portrait');
-    const img = node('img', `world-standup creature-standup${art ? '' : ' placeholder'}${creature.standup_flipped ? ' flipped' : ''}${creature.hidden ? ' hidden-creature' : ''}${selectedCreature === creature.id ? ' selected' : ''}${isGM() ? ' movable' : ''}`);
+    const img = node('img', `world-standup creature-standup${creature.health === 0 ? ' broken' : ''}${art ? '' : ' placeholder'}${creature.standup_flipped ? ' flipped' : ''}${creature.hidden ? ' hidden-creature' : ''}${selectedCreature === creature.id ? ' selected' : ''}${isGM() ? ' movable' : ''}`);
     img.draggable = false;
     img.alt = img.title = creatureLabel(creature);
     img.src = art || creatureIcon(creature.category);
@@ -560,6 +573,27 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
       await creatureAction('moveCreature', { creatureId: creature.id, x, y });
     }, { onClick: () => selectCreature(creature.id) });
     return img;
+  }
+
+  // A thin Health bar; the GM's is dimmed while players cannot see it.
+  function healthMeter(creature) {
+    const bar = healthBar(creature);
+    if (!bar) return null;
+    const meter = node('div', `creature-health${bar.shared ? '' : ' private'}`);
+    meter.setAttribute('role', 'img'); meter.setAttribute('aria-label', `${creature.name}: ${bar.text}${bar.shared ? '' : ', hidden from players'}`);
+    meter.title = meter.getAttribute('aria-label');
+    meter.style.setProperty('--health', bar.share);
+    return meter;
+  }
+
+  // A creature's name under its stand-up, with its Health when the viewer may see it.
+  function creaturePlate(creature) {
+    const plate = node('div', `creature-plate${creature.hidden ? ' hidden-creature' : ''}`);
+    plate.style.left = `${(creature.x ?? 500) / 10}%`; plate.style.top = `${(creature.y ?? 800) / 10}%`;
+    plate.append(node('span', 'creature-plate-name', creature.name));
+    const health = healthMeter(creature);
+    if (health) plate.append(health);
+    return plate;
   }
 
   async function creatureAction(action, values, done = '') {
@@ -606,7 +640,10 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
     }, 'text-button area-delete');
     const close = button('×', () => selectCreature(creature.id), 'text-button creature-control-close');
     close.setAttribute('aria-label', 'Deselect creature');
-    box.append(copy, remove, close);
+    const sheet = button('Sheet', () => hooks.open(creature.id), 'text-button');
+    sheet.title = 'Health, conditions and signature attacks';
+    const speak = button('Speak as', () => { hooks.speakAs(creature); status(`Chat now speaks as ${creature.name}.`); }, 'text-button');
+    box.append(sheet, speak, copy, remove, close);
     scene.append(box);
   }
 
@@ -884,6 +921,11 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
     stop() { onScene(null); clearInterval(timer); clearTimeout(statusTimer); status(''); timer = null; world = null; renderedId = null; transition.finish(); dust.set(null); closeLocalDossier(); $('worldChrome').hidden = true; $('worldView').hidden = true; $('worldPanel').hidden = true; $('worldMoveDock').hidden = true; },
     characterChanged() { previousPosition = null; refresh(true).then(() => open(myPosition()?.location_id || 'star-map')); },
     placeCreature,
+    // Changes a placed creature (Health, conditions, name, visibility) and refreshes the map.
+    async updateCreature(creatureId, values) { await send('creature', { creatureId, ...values }); await refresh(true); },
+    async creatureStats(creatureId, values) { await send('creatureStats', { creatureId, ...values }); await refresh(true); },
+    async removeCreature(creatureId) { await send('removeCreature', { creatureId }); if (selectedCreature === creatureId) selectedCreature = null; await refresh(true); },
+    selectCreature(id) { selectedCreature = id; render(); },
     // The palette entry being dragged ({ id, footprint }), or null when the drag ends.
     paletteDrag(template) { paletteDrag = template; if (!template) { highlightSquares(null); refresh(true); } }
   };

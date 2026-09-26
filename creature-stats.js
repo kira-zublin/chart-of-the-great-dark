@@ -108,6 +108,19 @@ export function cleanStats(input) {
   return stats;
 }
 
+// Conditions a placed creature can carry: the six standard ones, plus any the GM names (a crit's Stunned, say).
+export const STANDARD_CONDITIONS = ['exhausted', 'dazed', 'confused', 'distracted', 'shaken', 'disheartened'];
+export function cleanCreatureConditions(value) {
+  if (!Array.isArray(value) || value.length > 12) return null;
+  const clean = [];
+  for (const entry of value) {
+    if (typeof entry !== 'string' || !entry.trim() || entry.length > 40) return null;
+    const name = entry.trim();
+    if (!clean.some(item => item.toLowerCase() === name.toLowerCase())) clean.push(name);
+  }
+  return clean;
+}
+
 // Placed creatures share their entry's name; later ones in the same location are numbered ("Sentry Hound 2").
 export const baseCreatureName = name => name.replace(/ \d+$/, '') || name;
 export function nextCreatureName(base, names) {

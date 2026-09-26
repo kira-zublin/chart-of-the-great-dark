@@ -223,6 +223,7 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
   <section id="paneCreatures" class="side-pane" role="tabpanel" aria-labelledby="panelTabCreatures" hidden>
     <div class="panel-head"><div><div class="eyebrow">GM tools</div><h2>Creature Palette</h2></div></div>
     <div id="creatureBrowse" class="creature-browse">
+      <div id="creatureArea" class="creature-area" hidden></div>
       <p class="field-hint">Drag a creature onto the Vista or Explorable you are viewing, or choose Place. Select a placed creature on the map to hide, resize, copy or remove it.</p>
       <div class="creature-toolbar">
         <label class="area-search">Search creatures<input id="creatureSearch" type="search" autocomplete="off" placeholder="Name, ability, attack or talent"></label>
@@ -233,6 +234,7 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
     </div>
     <p id="creatureMessage" class="message" role="status"></p>
     <div id="creatureDetail" class="creature-detail" hidden></div>
+    <div id="creaturePlaced" class="creature-detail creature-placed" hidden></div>
     <form id="creatureForm" class="character-form creature-form" novalidate hidden></form>
   </section>
   <section id="paneCharacters" class="side-pane" role="tabpanel" aria-labelledby="panelTabCharacters">

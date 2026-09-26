@@ -1,5 +1,7 @@
 // Visual-novel dialog for Vistas: echoes chat lines from the people in the scene with a portrait, typing them out
 // letter by letter. Chat feeds it messages and the world view tells it which Vista is open and who stands there.
+import { messageAvatar } from './chat-ui.js';
+
 const $ = id => document.getElementById(id);
 const node = (tag, className = '', content = '') => { const el = document.createElement(tag); if (className) el.className = className; if (content) el.textContent = content; return el; };
 const anonymous = 'assets/characters/anonymous-explorer.png';
@@ -12,11 +14,12 @@ export const outOfCharacter = text => /^\s*(\/\/|\(\(|ooc:)/i.test(text);
 // The dialog form of a chat message, or null for rolls, blank lines and out-of-character talk.
 export function dialogLine(message) {
   if (message.kind !== 'text' || !message.body?.trim() || outOfCharacter(message.body)) return null;
-  const narrator = message.from_gm && !message.character_id;
+  // The GM speaking as nobody is the narrator; as a creature, the creature speaks with its own picture.
+  const narrator = message.from_gm && !message.character_id && !message.creature_id;
   return {
     id: Number(message.id), narrator, text: message.body.trim(),
     speaker: narrator ? message.player_name : message.character_name || message.player_name,
-    portrait: narrator ? null : message.has_portrait && message.character_id ? `/api/image?id=${encodeURIComponent(message.character_id)}&slot=portrait` : anonymous
+    portrait: narrator ? null : message.creature_id || message.creature_category ? messageAvatar(message) : message.has_portrait && message.character_id ? `/api/image?id=${encodeURIComponent(message.character_id)}&slot=portrait` : anonymous
   };
 }
 

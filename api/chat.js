@@ -1,11 +1,16 @@
 import { randomInt } from 'node:crypto';
 import { body, currentProfile, db, error, guarded, json } from '../lib/server.js';
+import { attackSummary } from '../creature-stats.js';
 
 const attributes = new Set(['strength', 'agility', 'logic', 'insight', 'perception', 'empathy']);
-const select = `SELECT m.id, m.player_name, m.character_id, m.character_name, m.kind, m.body, m.roll, m.push_of, m.created_at,
+// A line the GM speaks as a placed creature carries the creature's palette art (creature_image) or category.
+const select = `SELECT m.id, m.player_name, m.character_id, m.character_name, m.creature_id, m.kind, m.body, m.roll, m.push_of, m.created_at,
   EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = m.character_id AND i.slot = 'portrait') AS has_portrait,
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = m.profile_id AND p.role = 'gm') AS from_gm
-  FROM chat_messages m`;
+  EXISTS (SELECT 1 FROM profiles p WHERE p.id = m.profile_id AND p.role = 'gm') AS from_gm,
+  c.category AS creature_category,
+  CASE WHEN EXISTS (SELECT 1 FROM creature_template_images i WHERE i.template_id = c.template_id AND i.slot = 'portrait') THEN c.template_id END AS creature_image,
+  t.updated_at AS creature_image_version
+  FROM chat_messages m LEFT JOIN creatures c ON c.id = m.creature_id LEFT JOIN creature_templates t ON t.id = c.template_id`;
 const present = row => ({ ...row, has_portrait: Boolean(row.has_portrait), from_gm: Boolean(row.from_gm), roll: row.roll ? JSON.parse(row.roll) : null });
 const date = value => /^\d{4}-\d{2}-\d{2}$/.test(value || '') && !Number.isNaN(Date.parse(value + 'T00:00:00Z')) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value;
 const line = value => String(value ?? '').replace(/\r?\n/g, ' ⏎ ').replace(/\r/g, ' ');
@@ -17,6 +22,13 @@ async function selectedCharacter(sql, profile, id) {
   const character = rows[0];
   if (!character || (profile.role !== 'gm' && (character.owner_id !== profile.id || character.kind !== 'pc'))) return false;
   return character;
+}
+
+// The GM may speak and attack as any placed creature.
+async function selectedCreature(sql, profile, id) {
+  if (id == null || id === '') return null;
+  if (profile.role !== 'gm' || typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) return false;
+  return (await sql`SELECT id, name, stats FROM creatures WHERE id = ${id} LIMIT 1`)[0] || false;
 }
 
 export async function GET(req) {
@@ -48,6 +60,10 @@ export async function GET(req) {
 
 export function describeRoll(roll) {
   if (roll.type === 'simple') return `rolled d6: ${roll.dice[0]}`;
+  if (roll.type === 'attack') {
+    const parts = [roll.baseDice.length ? `base [${roll.baseDice.join(', ')}] — ${roll.successes} ${roll.successes === 1 ? 'success' : 'successes'}` : null, roll.blightDice.length ? `Blight [${roll.blightDice.join(', ')}] — ${roll.blightSuccesses} ${roll.blightSuccesses === 1 ? 'success' : 'successes'}` : null];
+    return `used ${roll.roll}. ${roll.name}${roll.summary ? ` (${roll.summary})` : ''}${parts.some(Boolean) ? `: ${parts.filter(Boolean).join('; ')}` : ''}`;
+  }
   const label = roll.attribute ? `${roll.attribute}${roll.talent ? ` + ${roll.talent} (${roll.talentLevel})` : ''}` : 'dice pool';
   const modifier = roll.modifier ? ` ${roll.modifier > 0 ? '+' : ''}${roll.modifier}` : '';
   const dice = `base [${roll.baseDice.join(', ')}]${roll.gearDice.length ? `, gear [${roll.gearDice.join(', ')}]` : ''}`;
@@ -67,6 +83,9 @@ export async function POST(req) {
     const input = await body(req);
     const character = await selectedCharacter(sql, profile, input.characterId);
     if (character === false) return error('Character unavailable', 403);
+    const creature = await selectedCreature(sql, profile, input.creatureId);
+    if (creature === false) return error('Creature unavailable', 403);
+    if (character && creature) return error('Speak as a character or a creature, not both');
     let kind, message = '', roll = null, pushOf = null;
     if (input.type === 'text') {
       if (typeof input.text !== 'string' || !input.text.trim() || input.text.length > 2000) return error('Message must be 1–2000 characters');
@@ -79,6 +98,14 @@ export async function POST(req) {
       const count = Math.max(1, Math.min(30, base + modifier));
       const baseDice = dice(count); const gearDice = dice(gear);
       roll = { type: 'pool', base, modifier, gear, baseDice, gearDice, successes: successes(baseDice, gearDice) };
+      kind = 'roll';
+    } else if (input.type === 'attack') {
+      // The GM chooses the signature attack; the server rolls its base dice and any Blight dice.
+      if (!creature) return error('Choose a creature to attack with');
+      const attack = JSON.parse(creature.stats).attacks?.find(item => item.roll === input.attack);
+      if (!attack) return error('Signature attack unavailable', 404);
+      const baseDice = dice(Math.min(40, attack.dice ?? 0)), blightDice = dice(Math.min(40, attack.blightDice ?? 0));
+      roll = { type: 'attack', roll: attack.roll, name: attack.name, summary: attackSummary(attack), text: attack.text, damage: attack.damage, crit: attack.crit, blight: attack.blight, despair: attack.despair, baseDice, blightDice, gearDice: [], successes: successes(baseDice, []), blightSuccesses: successes(blightDice, []) };
       kind = 'roll';
     } else if (input.type === 'skill') {
       if (!character) return error('Select a character to roll an action');
@@ -113,10 +140,10 @@ export async function POST(req) {
       roll = { type: 'push', attribute: prior.attribute || null, talent: prior.talent || '', talentLevel: prior.talentLevel || 0, base: prior.base ?? null, modifier: prior.modifier || 0, gear: prior.gear || 0, pushCount, baseDice, gearDice, successes: successes(baseDice, gearDice), hopeLoss: baseDice.filter(die => die === 1).length, gearWear: gearDice.filter(die => die === 1).length };
       pushOf = previous.id; kind = 'roll';
       // Keep the identity attached to the roll, even if the UI selection changed.
-      const source = (await sql`SELECT character_id, character_name FROM chat_messages WHERE id = ${previous.id}`)[0];
+      const source = (await sql`SELECT character_id, character_name, creature_id FROM chat_messages WHERE id = ${previous.id}`)[0];
       let saved;
       try {
-        saved = await sql`INSERT INTO chat_messages (profile_id, player_name, character_id, character_name, kind, body, roll, push_of) VALUES (${profile.id}, ${profile.name}, ${source.character_id}, ${source.character_name}, ${kind}, '', ${JSON.stringify(roll)}, ${pushOf}) RETURNING id`;
+        saved = await sql`INSERT INTO chat_messages (profile_id, player_name, character_id, character_name, creature_id, kind, body, roll, push_of) VALUES (${profile.id}, ${profile.name}, ${source.character_id}, ${source.character_name}, ${source.creature_id}, ${kind}, '', ${JSON.stringify(roll)}, ${pushOf}) RETURNING id`;
       } catch (cause) {
         if (String(cause.code || '').startsWith('SQLITE_CONSTRAINT')) return error('This roll has already been pushed', 409);
         throw cause;
@@ -124,7 +151,7 @@ export async function POST(req) {
       const rows = await sql.query(`${select} WHERE m.id = ?`, [saved[0].id]);
       return json({ message: present(rows[0]) }, 201);
     } else return error('Unknown message type');
-    const rows = await sql`INSERT INTO chat_messages (profile_id, player_name, character_id, character_name, kind, body, roll) VALUES (${profile.id}, ${profile.name}, ${character?.id ?? null}, ${character?.name ?? null}, ${kind}, ${message}, ${roll ? JSON.stringify(roll) : null}) RETURNING id`;
+    const rows = await sql`INSERT INTO chat_messages (profile_id, player_name, character_id, character_name, creature_id, kind, body, roll) VALUES (${profile.id}, ${profile.name}, ${character?.id ?? null}, ${character?.name ?? creature?.name ?? null}, ${creature?.id ?? null}, ${kind}, ${message}, ${roll ? JSON.stringify(roll) : null}) RETURNING id`;
     const saved = await sql.query(`${select} WHERE m.id = ?`, [rows[0].id]);
     return json({ message: present(saved[0]) }, 201);
   });
