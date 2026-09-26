@@ -1,4 +1,5 @@
 import { createSceneDust, createSceneTransition } from './scene-effects.js';
+import { CREATURE_SCALE, creatureIcon } from './creature-stats.js';
 import { KIND_ICON, chartMarker, setVisitable } from './star-chart.js';
 
 const $ = id => document.getElementById(id);
@@ -55,6 +56,8 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
   let world = null, current = 'star-map', incomingLink = null, selectedStar = null, selectedLocal = null, timer = null, previousPosition = null, signature = '', draggingToken = false;
   let editingLinkId = null, editExpanded = false, draggingMarker = false;
   let renderedId = null, bloomOrigin = null, revealedLink = null;
+  // The GM's selected placed creature, and the palette entry being dragged onto the map ({ id, footprint }).
+  let selectedCreature = null, paletteDrag = null;
   const transition = createSceneTransition($('worldView')), dust = createSceneDust($('worldView'));
   const restartReveal = element => { element.classList.remove('revealing'); void element.offsetWidth; element.classList.add('revealing'); };
   // The ink bloom starts from the marker that was used to travel, when it is on screen.
@@ -72,6 +75,10 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
   const active = () => activeCharacter();
   const myPosition = () => world?.positions.find(item => item.character_id === active()?.id);
   const linksHere = () => world?.links.filter(item => item.from_id === current) || [];
+  const creaturesIn = id => (world?.creatures || []).filter(row => row.location_id === id);
+  // A creature's palette art, when its entry still exists and has that image.
+  const creatureArt = (creature, slot) => creature.template_id && creature[`has_${slot}`] ? `/api/creature-image?id=${encodeURIComponent(creature.template_id)}&slot=${slot}&v=${creature.image_version}` : null;
+  const creatureLabel = creature => [creature.name, creature.health !== undefined && (creature.show_health || !isGM()) ? `Health ${creature.health}/${creature.max_health}` : null, creature.hidden ? 'hidden from players' : null].filter(Boolean).join(' · ');
   let statusTimer;
   const status = message => {
     clearTimeout(statusTimer);
@@ -97,7 +104,7 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
       const nextSignature = JSON.stringify(world) + current + selectedStar;
       if (force || nextSignature !== signature) {
         signature = nextSignature;
-        if (!draggingToken && !draggingMarker && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) render();
+        if (!draggingToken && !draggingMarker && !paletteDrag && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) render();
       }
     } catch (cause) { status(cause.message); }
   }
@@ -107,7 +114,7 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
     if (!destination) return status('That location is not visible.');
     if (!canEnter(destination)) return status('This location is not open for entry.');
     bloomOrigin = originFor(linkId);
-    current = id; incomingLink = linkId; selectedStar = null;
+    current = id; incomingLink = linkId; selectedStar = null; selectedCreature = null;
     editingLinkId = null; editExpanded = false;
     closeLocalDossier();
     $('dossier').classList.remove('open'); $('dossier').setAttribute('aria-hidden', 'true');
@@ -244,6 +251,7 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
     const map = item.kind === 'settlement' ? renderSettlement(scene, item, art) : null;
     if (item.kind === 'delve') renderDelve(scene, item);
     if (item.kind === 'diorama') renderDiorama(scene, item);
+    if (isGM()) renderCreatureControls(scene, item);
     view.append(scene);
     if (map) setupSettlementNavigation(scene, map, item, art);
   }
@@ -395,35 +403,56 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
     }, { passive: false });
   }
 
-  function startDrag(token, onDrop) {
+  // The grid square under a point, looking beneath any token drawn over it.
+  const cellAt = (x, y) => document.elementsFromPoint(x, y).find(el => el.classList?.contains('world-cell')) || null;
+  let highlighted = [];
+  // Marks the squares a footprint would cover when the square under the pointer is its (grabX, grabY) square,
+  // and returns the footprint's top-left square.
+  function highlightSquares(cell, footprint = 1, grabX = 0, grabY = 0) {
+    highlighted.forEach(square => square.classList.remove('drop-target')); highlighted = [];
+    if (!cell) return null;
+    const anchor = [Number(cell.dataset.x) - grabX, Number(cell.dataset.y) - grabY];
+    for (let dy = 0; dy < footprint; dy++) for (let dx = 0; dx < footprint; dx++) {
+      const square = cell.parentElement.querySelector(`[data-x="${anchor[0] + dx}"][data-y="${anchor[1] + dy}"]`);
+      if (square) { square.classList.add('drop-target'); highlighted.push(square); }
+    }
+    return anchor;
+  }
+
+  // onDrop(target, pointer, drag) runs after a move; drag.anchor is the top-left grid square for tokens.
+  // A press without movement calls onClick when given.
+  function startDrag(token, onDrop, { footprint = 1, onClick = null } = {}) {
     token.addEventListener('pointerdown', event => {
       if (event.button !== 0) return;
       event.preventDefault(); token.setPointerCapture(event.pointerId);
       draggingToken = true;
       const bounds = token.getBoundingClientRect();
       const offsetX = event.clientX - bounds.left, offsetY = event.clientY - bounds.top;
+      // A large token is held by one of its squares, and keeps that square under the pointer.
+      const grabX = Math.min(footprint - 1, Math.floor(offsetX / bounds.width * footprint)), grabY = Math.min(footprint - 1, Math.floor(offsetY / bounds.height * footprint));
       const ghost = token.cloneNode(true);
       ghost.classList.add('world-drag-ghost');
       ghost.style.width = `${bounds.width}px`; ghost.style.height = `${bounds.height}px`;
       document.body.append(ghost);
       token.style.opacity = '.25';
-      let hovered = null, moved = false;
+      let hovered = null, anchor = null, moved = false;
       const move = next => {
         moved ||= Math.abs(next.clientX - event.clientX) + Math.abs(next.clientY - event.clientY) > 4;
         ghost.style.left = `${next.clientX - offsetX}px`; ghost.style.top = `${next.clientY - offsetY}px`;
-        const cell = document.elementFromPoint(next.clientX, next.clientY)?.closest('.world-cell');
-        if (hovered !== cell) { hovered?.classList.remove('drop-target'); hovered = cell; hovered?.classList.add('drop-target'); }
+        const cell = cellAt(next.clientX, next.clientY);
+        if (hovered !== cell) { hovered = cell; anchor = highlightSquares(cell, footprint, grabX, grabY); }
       };
       const cleanup = () => {
         draggingToken = false;
         token.style.opacity = '';
-        hovered?.classList.remove('drop-target'); ghost.remove();
+        highlightSquares(null); ghost.remove();
         token.removeEventListener('pointermove', move); token.removeEventListener('pointerup', finish); token.removeEventListener('pointercancel', cancel);
       };
       const finish = async up => {
         const target = document.elementFromPoint(up.clientX, up.clientY);
         cleanup();
-        if (target && moved) await onDrop(target, up, { offsetX, offsetY, width: bounds.width, height: bounds.height });
+        if (!moved && onClick) onClick();
+        else if (target && moved) await onDrop(target, up, { offsetX, offsetY, width: bounds.width, height: bounds.height, anchor });
         else refresh(true);
       };
       const cancel = () => { cleanup(); refresh(true); };
@@ -455,16 +484,36 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
         const token = node('img', 'world-token' + (pos.character_id === active()?.id ? ' own' : ''));
         token.alt = pos.name; token.title = pos.name; token.src = pos.has_portrait ? `/api/image?id=${encodeURIComponent(pos.character_id)}&slot=portrait` : 'assets/characters/anonymous-explorer.png';
         token.addEventListener('error', () => { token.src = 'assets/characters/anonymous-explorer.png'; }, { once: true });
-        if (pos.character_id === active()?.id || isGM()) startDrag(token, async target => {
-          const destination = target.closest('.world-cell'); if (!destination || destination.classList.contains('blocked')) return;
-          try { await send('position', { characterId: pos.character_id, x: Number(destination.dataset.x), y: Number(destination.dataset.y) }); status(''); await refresh(true); }
+        if (pos.character_id === active()?.id || isGM()) startDrag(token, async (target, up, drag) => {
+          if (!drag.anchor) return refresh(true);
+          try { await send('position', { characterId: pos.character_id, x: drag.anchor[0], y: drag.anchor[1] }); status(''); await refresh(true); }
           catch (cause) { status(cause.message); await refresh(true); }
         });
         cell.append(token);
       }
       board.append(cell);
     }
+    // A creature token sits in its top-left square and spans its whole footprint.
+    for (const creature of creaturesIn(item.id)) {
+      const cell = creature.x === null ? null : board.querySelector(`[data-x="${creature.x}"][data-y="${creature.y}"]`);
+      if (cell) cell.append(creatureToken(creature));
+    }
     scene.append(board);
+  }
+
+  function creatureToken(creature) {
+    const token = node('img', `world-token creature-token${creature.hidden ? ' hidden-creature' : ''}${selectedCreature === creature.id ? ' selected' : ''}${isGM() ? ' movable' : ''}`);
+    token.style.setProperty('--footprint', creature.footprint);
+    token.alt = token.title = creatureLabel(creature); token.draggable = false;
+    token.src = creatureArt(creature, 'portrait') || creatureIcon(creature.category);
+    token.dataset.creatureId = creature.id;
+    token.addEventListener('error', () => { token.src = creatureIcon(creature.category); }, { once: true });
+    if (isGM()) startDrag(token, async (target, up, drag) => {
+      if (!drag.anchor) return refresh(true);
+      selectedCreature = creature.id;
+      await creatureAction('moveCreature', { creatureId: creature.id, x: drag.anchor[0], y: drag.anchor[1] });
+    }, { footprint: creature.footprint, onClick: () => selectCreature(creature.id) });
+    return token;
   }
 
   // The delve suit when it is on and uploaded, else the stand-up, else the portrait.
@@ -490,8 +539,117 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
       });
       layer.append(img);
     }
+    for (const creature of creaturesIn(item.id)) layer.append(creatureStandup(creature, layer));
     renderStandupControls(scene, item);
   }
+
+  // A creature's stand-up art, else its portrait, else its category medallion at medallion size.
+  function creatureStandup(creature, layer) {
+    const art = creatureArt(creature, 'standup') || creatureArt(creature, 'portrait');
+    const img = node('img', `world-standup creature-standup${art ? '' : ' placeholder'}${creature.standup_flipped ? ' flipped' : ''}${creature.hidden ? ' hidden-creature' : ''}${selectedCreature === creature.id ? ' selected' : ''}${isGM() ? ' movable' : ''}`);
+    img.draggable = false;
+    img.alt = img.title = creatureLabel(creature);
+    img.src = art || creatureIcon(creature.category);
+    img.addEventListener('error', () => { img.src = creatureIcon(creature.category); img.classList.add('placeholder'); }, { once: true });
+    img.style.left = `${(creature.x ?? 500) / 10}%`; img.style.top = `${(creature.y ?? 800) / 10}%`;
+    img.style.setProperty('--standup-scale', creature.standup_scale ?? 1);
+    img.dataset.creatureId = creature.id;
+    if (isGM()) startDrag(img, async (target, up, drag) => {
+      const [x, y] = sceneDropPosition({ x: up.clientX, y: up.clientY }, drag, layer.getBoundingClientRect());
+      selectedCreature = creature.id;
+      await creatureAction('moveCreature', { creatureId: creature.id, x, y });
+    }, { onClick: () => selectCreature(creature.id) });
+    return img;
+  }
+
+  async function creatureAction(action, values, done = '') {
+    try { const result = await send(action, values); status(done); await refresh(true); return result; }
+    catch (cause) { status(cause.message); await refresh(true); return null; }
+  }
+
+  function selectCreature(id) { selectedCreature = selectedCreature === id ? null : id; render(); }
+
+  // The GM's controls for the selected placed creature: visibility, stand-up size and facing, copy and removal.
+  function renderCreatureControls(scene, item) {
+    const creature = creaturesIn(item.id).find(row => row.id === selectedCreature);
+    if (!creature) { selectedCreature = null; return; }
+    const box = node('div', 'world-scale-control creature-control');
+    box.setAttribute('role', 'group'); box.setAttribute('aria-label', `${creature.name} controls`);
+    box.append(node('strong', 'creature-control-name', creature.name));
+    const hiddenLabel = node('label', 'world-suit-toggle');
+    const hidden = node('input'); hidden.type = 'checkbox'; hidden.checked = creature.hidden;
+    hidden.addEventListener('change', () => { hidden.blur(); creatureAction('creature', { creatureId: creature.id, hidden: hidden.checked }, hidden.checked ? `${creature.name} is hidden from players.` : `${creature.name} is visible to players.`); });
+    hiddenLabel.append(hidden, document.createTextNode('Hidden'));
+    hiddenLabel.title = 'Hidden creatures are shown only to the GM and do not block characters';
+    box.append(hiddenLabel);
+    if (item.kind === 'diorama') {
+      const input = node('input'); input.type = 'range'; input.id = 'creatureScale';
+      input.min = String(CREATURE_SCALE.min); input.max = String(CREATURE_SCALE.max); input.step = '0.05'; input.value = String(creature.standup_scale ?? 1);
+      input.setAttribute('aria-label', `Size of ${creature.name}`);
+      const value = node('output', 'world-scale-value'); value.htmlFor = input.id;
+      const show = () => { value.textContent = `${Math.round(Number(input.value) * 100)}%`; };
+      const figure = () => scene.querySelector(`.creature-standup[data-creature-id="${CSS.escape(creature.id)}"]`);
+      input.addEventListener('input', () => { show(); figure()?.style.setProperty('--standup-scale', input.value); });
+      input.addEventListener('change', () => { input.blur(); creatureAction('creature', { creatureId: creature.id, scale: Number(input.value) }); });
+      show();
+      const flip = button('Flip', () => { figure()?.classList.toggle('flipped'); creatureAction('creature', { creatureId: creature.id, flipped: !creature.standup_flipped }); }, 'text-button world-flip');
+      flip.setAttribute('aria-pressed', String(creature.standup_flipped));
+      box.append(input, value, flip);
+    }
+    const copy = button('Duplicate', async () => {
+      const made = await creatureAction('duplicateCreature', { creatureId: creature.id });
+      if (made) { selectedCreature = made.id; status(`${made.name} added.`); render(); }
+    }, 'text-button');
+    const remove = button('Remove', () => {
+      if (!confirm(`Remove ${creature.name} from ${item.title}?`)) return;
+      selectedCreature = null; creatureAction('removeCreature', { creatureId: creature.id }, `${creature.name} removed.`);
+    }, 'text-button area-delete');
+    const close = button('×', () => selectCreature(creature.id), 'text-button creature-control-close');
+    close.setAttribute('aria-label', 'Deselect creature');
+    box.append(copy, remove, close);
+    scene.append(box);
+  }
+
+  // Places one creature from the palette in the viewed Vista or Explorable, at spot ({ x, y }) or a default.
+  async function placeCreature(templateId, spot = {}) {
+    const item = location(current);
+    if (!isGM()) throw new Error('Only the GM can place creatures.');
+    if (!['delve', 'diorama'].includes(item?.kind)) throw new Error('Open a Vista or Explorable to place creatures.');
+    const made = await send('placeCreature', { templateId, locationId: item.id, ...spot });
+    selectedCreature = made.id;
+    status(`${made.name} placed in ${item.title}.`);
+    await refresh(true);
+    return made;
+  }
+
+  // Palette entries dragged over the viewed scene: squares highlight in an Explorable, and a drop places one.
+  // A footprint is held by its middle square (the top-left one for 2 x 2).
+  const paletteGrab = () => Math.floor(((paletteDrag?.footprint || 1) - 1) / 2);
+  const acceptsPalette = () => isGM() && paletteDrag && ['delve', 'diorama'].includes(location(current)?.kind);
+  $('worldView').addEventListener('dragover', event => {
+    if (!acceptsPalette()) return;
+    event.preventDefault(); event.dataTransfer.dropEffect = 'copy';
+    if (location(current).kind === 'delve') highlightSquares(cellAt(event.clientX, event.clientY), paletteDrag.footprint, paletteGrab(), paletteGrab());
+  });
+  $('worldView').addEventListener('dragleave', event => { if (!$('worldView').contains(event.relatedTarget)) highlightSquares(null); });
+  $('worldView').addEventListener('drop', async event => {
+    if (!acceptsPalette()) return;
+    event.preventDefault();
+    const template = paletteDrag, item = location(current);
+    let spot;
+    if (item.kind === 'delve') {
+      const anchor = highlightSquares(cellAt(event.clientX, event.clientY), template.footprint, paletteGrab(), paletteGrab());
+      highlightSquares(null);
+      if (!anchor) return status('Drop the creature on a square of the grid.');
+      spot = { x: Math.max(0, anchor[0]), y: Math.max(0, anchor[1]) };
+    } else {
+      // The drop point is where the creature stands: the bottom centre of its stand-up.
+      const bounds = $('worldView').querySelector('.world-standups').getBoundingClientRect();
+      spot = { x: Math.max(0, Math.min(1000, Math.round((event.clientX - bounds.left) / bounds.width * 1000))), y: Math.max(0, Math.min(1000, Math.round((event.clientY - bounds.top) / bounds.height * 1000))) };
+    }
+    paletteDrag = null;
+    try { await placeCreature(template.id, spot); } catch (cause) { status(cause.message); await refresh(true); }
+  });
 
   // Lets a player resize, mirror, and suit up their own stand-up to suit the scene. Every setting is shared with everyone.
   function renderStandupControls(scene, item) {
@@ -724,6 +882,9 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
   return {
     start() { current = 'star-map'; previousPosition = null; $('worldChrome').hidden = false; refresh(true).then(() => { if (myPosition()?.location_id) open(myPosition().location_id); }); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) refresh(); }, 1000); },
     stop() { onScene(null); clearInterval(timer); clearTimeout(statusTimer); status(''); timer = null; world = null; renderedId = null; transition.finish(); dust.set(null); closeLocalDossier(); $('worldChrome').hidden = true; $('worldView').hidden = true; $('worldPanel').hidden = true; $('worldMoveDock').hidden = true; },
-    characterChanged() { previousPosition = null; refresh(true).then(() => open(myPosition()?.location_id || 'star-map')); }
+    characterChanged() { previousPosition = null; refresh(true).then(() => open(myPosition()?.location_id || 'star-map')); },
+    placeCreature,
+    // The palette entry being dragged ({ id, footprint }), or null when the drag ends.
+    paletteDrag(template) { paletteDrag = template; if (!template) { highlightSquares(null); refresh(true); } }
   };
 }

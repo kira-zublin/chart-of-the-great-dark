@@ -24,7 +24,9 @@ export function templateMeta(template) {
   return [`Ferocity ${stats.ferocity}`, `Health ${stats.health}`, `Armor ${stats.armor}`].join(' · ');
 }
 
-export function initCreatureUI(request) {
+// scene.place(templateId) places one creature in the viewed Vista or Explorable; scene.drag({ id, footprint } or
+// null) tells the map a palette entry is being dragged over it.
+export function initCreatureUI(request, scene = { place: async () => {}, drag: () => {} }) {
   let templates = null, filter = 'all', view = 'list', openId = null, editing = null, dirty = false, loading = null;
   const message = text => { $('creatureMessage').textContent = text || ''; };
   const find = id => templates?.find(item => item.id === id);
@@ -89,9 +91,20 @@ export function initCreatureUI(request) {
     open.append(icon, info);
     open.addEventListener('click', () => openDetail(template.id));
     open.setAttribute('aria-label', `${template.name}, ${CATEGORY_LABELS[template.category]}. Open stat block`);
+    const place = button('Place', () => placeHere(template), 'text-button creature-duplicate');
+    place.setAttribute('aria-label', `Place ${template.name} in the viewed area`);
     const copy = button('Duplicate', () => duplicate(template), 'text-button creature-duplicate');
-    copy.setAttribute('aria-label', `Duplicate ${template.name}`);
-    row.append(open, copy);
+    copy.setAttribute('aria-label', `Duplicate ${template.name} in the palette`);
+    row.append(open, place, copy);
+    // Dragging a row onto the viewed Vista or Explorable places the creature where it is dropped.
+    row.draggable = true;
+    row.addEventListener('dragstart', event => {
+      event.dataTransfer.setData('text/plain', template.name);
+      event.dataTransfer.effectAllowed = 'copy';
+      event.dataTransfer.setDragImage(icon, 21, 21);
+      scene.drag({ id: template.id, footprint: template.stats.footprint });
+    });
+    row.addEventListener('dragend', () => scene.drag(null));
     return row;
   }
 
@@ -159,11 +172,15 @@ export function initCreatureUI(request) {
       wrap.append(list);
     }
     const actions = node('div', 'panel-actions creature-actions');
-    actions.append(button('Edit', () => openEditor(template), 'primary-button'), button('Duplicate', () => duplicate(template)), button('Delete', () => remove(template), 'creature-delete'));
+    actions.append(button('Place in view', () => placeHere(template), 'primary-button'), button('Edit', () => openEditor(template)), button('Duplicate', () => duplicate(template)), button('Delete', () => remove(template), 'creature-delete'));
     wrap.append(actions);
   }
 
   // ---------- Actions ----------
+  async function placeHere(template) {
+    try { const made = await scene.place(template.id); message(`${made.name} placed. Drag it into position on the map.`); }
+    catch (cause) { message(cause.message); }
+  }
   async function duplicate(template) {
     if (!confirmLeave()) return;
     try {

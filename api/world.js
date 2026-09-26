@@ -1,5 +1,6 @@
 import { body, currentProfile, db, error, guarded, json, randomUUID } from '../lib/server.js';
-import { INSTANCE_IDLE_SECONDS, coord, gridOf, inside, key, nearestOpen, roomAt, roomVisible, standupScale, uuid, validGrid } from '../lib/world.js';
+import { INSTANCE_IDLE_SECONDS, coord, footprintFits, footprintSquares, gridOf, inside, key, nearestFootprint, nearestOpen, roomAt, roomVisible, standupScale, uuid, validGrid } from '../lib/world.js';
+import { CREATURE_SCALE, baseCreatureName, nextCreatureName } from '../creature-stats.js';
 
 const safeText = (value, limit) => typeof value === 'string' && value.trim().length > 0 && value.length <= limit ? value.trim() : null;
 const optionalText = (value, limit) => value === undefined ? '' : typeof value === 'string' && value.length <= limit ? value.trim() : null;
@@ -44,6 +45,56 @@ async function standupOwner(sql, profile, characterId) {
   return character && character.kind === 'pc' && position && (profile.role === 'gm' || character.owner_id === profile.id) ? character : null;
 }
 
+// Squares covered by placed creatures in an Explorable. Hidden creatures do not block characters, so an unseen
+// ambush does not give itself away; they still block other creatures.
+async function creatureSquares(sql, locationId, { exceptId = '', includeHidden = true } = {}) {
+  const rows = await sql`SELECT x, y, json_extract(stats, '$.footprint') AS size FROM creatures WHERE location_id = ${locationId} AND x IS NOT NULL AND id != ${exceptId} AND (${Number(includeHidden)} = 1 OR hidden = 0)`;
+  return new Set(rows.flatMap(row => footprintSquares(row.x, row.y, row.size || 1).map(pair => key(...pair))));
+}
+
+// SQL that is true when a size × size footprint at (x, y) is free of characters and other creatures. Checking in
+// the same statement as the write means a character or creature arriving at the same time cannot overlap it.
+const footprintFree = (locationId, x, y, size, exceptId = '') => ({
+  sql: `NOT EXISTS (SELECT 1 FROM character_positions p WHERE p.location_id = ? AND p.x BETWEEN ? AND ? AND p.y BETWEEN ? AND ?)
+    AND NOT EXISTS (SELECT 1 FROM creatures o WHERE o.location_id = ? AND o.id != ? AND o.x IS NOT NULL AND o.x < ? AND ? < o.x + json_extract(o.stats, '$.footprint') AND o.y < ? AND ? < o.y + json_extract(o.stats, '$.footprint'))`,
+  args: [locationId, x, x + size - 1, y, y + size - 1, locationId, exceptId, x + size, x, y + size, y]
+});
+
+// Chooses a creature's square (Explorable) or scene point (Vista) and runs write(x, y, guard), which returns the
+// written rows. In an Explorable an exact drop must fit where it lands; otherwise the nearest open space is used.
+async function positionCreature(sql, location, size, preferred, exact, write, exceptId = '') {
+  const grid = gridOf(location);
+  if (!grid) {
+    const [x, y] = preferred;
+    if (!coord(x) || !coord(y) || x > 1000 || y > 1000) return error('Position outside the scene');
+    return (await write(x, y, { sql: '1', args: [] })).length ? [x, y] : error('Creature unavailable', 404);
+  }
+  if (!validGrid(grid)) return error('This Explorable has an invalid grid', 409);
+  if (!Array.isArray(preferred) || !inside(grid, ...preferred)) return error('Choose a square within this Explorable');
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const occupied = await creatureSquares(sql, location.id, { exceptId });
+    for (const row of await sql`SELECT x, y FROM character_positions WHERE location_id = ${location.id} AND x IS NOT NULL`) occupied.add(key(row.x, row.y));
+    const square = exact ? (footprintFits(grid, ...preferred, size, occupied) ? preferred : null) : nearestFootprint(grid, preferred, size, occupied);
+    if (!square) return error(exact ? 'That spot is blocked or occupied' : 'There is no open space for this creature here', 409);
+    if ((await write(...square, footprintFree(location.id, ...square, size, exceptId))).length) return square;
+  }
+  return error('Position changed. Try again.', 409);
+}
+
+// A placed creature with its location, for the GM's creature actions.
+async function placedCreature(sql, id) {
+  if (!uuid(id)) return null;
+  const creature = (await sql`SELECT c.*, json_extract(c.stats, '$.footprint') AS size FROM creatures c WHERE c.id = ${id}`)[0];
+  return creature ? { ...creature, location: await locate(sql, creature.location_id) } : null;
+}
+
+// A default spot when the GM places a creature without dropping it somewhere: the Explorable's entry, or a
+// point along a Vista's floor that moves along with each creature already there.
+function defaultSpot(location, count) {
+  const grid = gridOf(location);
+  return grid ? grid.entry : [Math.min(1000, 260 + (count % 6) * 95), 820];
+}
+
 async function moveCharacter(sql, character, location, preferred, exact = false) {
   const grid = gridOf(location);
   if (grid && !validGrid(grid)) return error('This Explorable has an invalid grid', 409);
@@ -51,6 +102,7 @@ async function moveCharacter(sql, character, location, preferred, exact = false)
   if (!grid) preferred = location.kind === 'diorama' ? (preferred || [500, 800]) : null;
   for (let attempt = 0; attempt < 5; attempt++) {
     const occupied = new Set((await sql`SELECT x, y FROM character_positions WHERE location_id = ${location.id} AND x IS NOT NULL AND character_id != ${character.id}`).map(row => key(row.x, row.y)));
+    if (grid) for (const square of await creatureSquares(sql, location.id, { includeHidden: false })) occupied.add(square);
     let square = null;
     if (location.kind === 'diorama') {
       const taken = new Set((await sql`SELECT x, y FROM character_positions WHERE location_id = ${location.id} AND x IS NOT NULL AND character_id != ${character.id}`).map(row => key(row.x, row.y)));
@@ -67,8 +119,14 @@ async function moveCharacter(sql, character, location, preferred, exact = false)
       if (!square) return error('No open square is available in this Explorable', 409);
     }
     try {
-      await sql`INSERT INTO character_positions (character_id, location_id, x, y, changed_at) VALUES (${character.id}, ${location.id}, ${square?.[0] ?? null}, ${square?.[1] ?? null}, unixepoch()) ON CONFLICT(character_id) DO UPDATE SET location_id = excluded.location_id, x = excluded.x, y = excluded.y, changed_at = unixepoch()`;
-      return { characterId: character.id, locationId: location.id, x: square?.[0] ?? null, y: square?.[1] ?? null };
+      // In an Explorable the square must also be free of visible creatures at the moment of writing.
+      const [gx, gy] = grid ? square : [null, null];
+      const written = await sql`INSERT INTO character_positions (character_id, location_id, x, y, changed_at)
+        SELECT ${character.id}, ${location.id}, ${square?.[0] ?? null}, ${square?.[1] ?? null}, unixepoch()
+        WHERE NOT EXISTS (SELECT 1 FROM creatures c WHERE c.location_id = ${location.id} AND c.hidden = 0 AND c.x IS NOT NULL AND ${gx} BETWEEN c.x AND c.x + json_extract(c.stats, '$.footprint') - 1 AND ${gy} BETWEEN c.y AND c.y + json_extract(c.stats, '$.footprint') - 1)
+        ON CONFLICT(character_id) DO UPDATE SET location_id = excluded.location_id, x = excluded.x, y = excluded.y, changed_at = unixepoch() RETURNING character_id`;
+      if (written.length) return { characterId: character.id, locationId: location.id, x: square?.[0] ?? null, y: square?.[1] ?? null };
+      if (exact) return error('That square is blocked or occupied', 409);
     } catch (cause) { if (!conflict(cause)) throw cause; }
   }
   return error('Position changed. Try again.', 409);
@@ -99,7 +157,24 @@ export async function GET(req) {
       const hidden = !gm && location.kind === 'delve' && row.x !== null && !visibleRoom(location, roomAt(gridOf(location), row.x, row.y));
       return hidden ? { ...row, x: null, y: null, hidden: true } : row;
     });
-    return json({ locations: locations.map(item => ({ ...item, grid: gm || item.access_level === 'accessible' ? gridOf(item) : null, has_image: (gm || item.access_level === 'accessible') && item.image_version > 0, has_card_image: item.card_image_version > 0 })), links, positions, overrides: gm ? overrides : [], visibleRooms: Object.fromEntries(locations.filter(item => item.kind === 'delve' && (gm || item.access_level === 'accessible')).map(item => [item.id, Object.fromEntries([...gridOf(item).rooms.map(room => room.id), '_unassigned'].map(id => [id, visibleRoom(item, id)]))])) });
+    const creatures = (await sql.query(`SELECT c.id, c.template_id, c.name, c.category, c.location_id, c.x, c.y, c.standup_scale, c.standup_flipped, c.hidden, c.health, c.show_health,
+      json_extract(c.stats, '$.health') AS max_health, json_extract(c.stats, '$.footprint') AS footprint, COALESCE(t.updated_at, 0) AS image_version,
+      EXISTS (SELECT 1 FROM creature_template_images i WHERE i.template_id = c.template_id AND i.slot = 'portrait') AS has_portrait,
+      EXISTS (SELECT 1 FROM creature_template_images i WHERE i.template_id = c.template_id AND i.slot = 'standup') AS has_standup
+      FROM creatures c LEFT JOIN creature_templates t ON t.id = c.template_id ORDER BY c.created_at, c.id`)).filter(row => {
+      const location = locations.find(item => item.id === row.location_id);
+      if (!location) return false;
+      if (gm) return true;
+      if (row.hidden || location.access_level !== 'accessible') return false;
+      // In fog, players see a creature while any square it covers is in a visible room.
+      return location.kind !== 'delve' || row.x === null || footprintSquares(row.x, row.y, row.footprint || 1).some(([x, y]) => visibleRoom(location, roomAt(gridOf(location), x, y)));
+    }).map(row => {
+      const shared = { id: row.id, template_id: row.template_id, name: row.name, category: row.category, location_id: row.location_id, x: row.x, y: row.y, footprint: row.footprint || 1, standup_scale: row.standup_scale, standup_flipped: Boolean(row.standup_flipped), has_portrait: Boolean(row.has_portrait), has_standup: Boolean(row.has_standup), image_version: row.image_version };
+      // Players see Health only when the GM shows it for that creature.
+      if (gm) return { ...shared, hidden: Boolean(row.hidden), show_health: Boolean(row.show_health), health: row.health, max_health: row.max_health };
+      return row.show_health ? { ...shared, health: row.health, max_health: row.max_health } : shared;
+    });
+    return json({ locations: locations.map(item => ({ ...item, grid: gm || item.access_level === 'accessible' ? gridOf(item) : null, has_image: (gm || item.access_level === 'accessible') && item.image_version > 0, has_card_image: item.card_image_version > 0 })), links, positions, creatures, overrides: gm ? overrides : [], visibleRooms: Object.fromEntries(locations.filter(item => item.kind === 'delve' && (gm || item.access_level === 'accessible')).map(item => [item.id, Object.fromEntries([...gridOf(item).rooms.map(room => room.id), '_unassigned'].map(id => [id, visibleRoom(item, id)]))])) });
   });
 }
 
@@ -162,6 +237,55 @@ export async function POST(req) {
       return json({ ok: true });
     }
     if (profile.role !== 'gm') return error('Only the GM can edit the world', 403);
+    if (data.action === 'placeCreature') {
+      if (!uuid(data.templateId)) return error('Choose a creature from the palette');
+      const template = (await sql`SELECT id, name, category, stats FROM creature_templates WHERE id = ${data.templateId}`)[0];
+      if (!template) return error('Creature not found', 404);
+      const location = await locate(sql, data.locationId);
+      if (!location || !['delve', 'diorama'].includes(location.kind)) return error('Creatures can be placed only in Vistas and Explorables');
+      const names = (await sql`SELECT name FROM creatures WHERE location_id = ${location.id}`).map(row => row.name);
+      const stats = JSON.parse(template.stats), id = randomUUID(), name = nextCreatureName(template.name, names);
+      const dropped = data.x !== undefined || data.y !== undefined;
+      // A placed creature takes a copy of the entry's stats and starts at full Health.
+      const placed = await positionCreature(sql, location, stats.footprint || 1, dropped ? [data.x, data.y] : defaultSpot(location, names.length), false, (x, y, guard) => sql.query(
+        `INSERT INTO creatures (id, template_id, name, category, stats, location_id, x, y, health) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${guard.sql} RETURNING id`,
+        [id, template.id, name, template.category, template.stats, location.id, x, y, stats.health, ...guard.args]));
+      return placed instanceof Response ? placed : json({ id, name, x: placed[0], y: placed[1] }, 201);
+    }
+    if (data.action === 'moveCreature') {
+      const creature = await placedCreature(sql, data.creatureId);
+      if (!creature) return error('Creature not found', 404);
+      const moved = await positionCreature(sql, creature.location, creature.size || 1, [data.x, data.y], true, (x, y, guard) => sql.query(
+        `UPDATE creatures SET x = ?, y = ?, updated_at = unixepoch() WHERE id = ? AND ${guard.sql} RETURNING id`, [x, y, creature.id, ...guard.args]), creature.id);
+      return moved instanceof Response ? moved : json({ x: moved[0], y: moved[1] });
+    }
+    if (data.action === 'duplicateCreature') {
+      const creature = await placedCreature(sql, data.creatureId);
+      if (!creature) return error('Creature not found', 404);
+      const names = (await sql`SELECT name FROM creatures WHERE location_id = ${creature.location_id}`).map(row => row.name);
+      const id = randomUUID(), name = nextCreatureName(baseCreatureName(creature.name), names);
+      // The copy has the same stats, look and visibility, at full Health, beside the original.
+      const near = gridOf(creature.location) ? [creature.x ?? 0, creature.y ?? 0] : [Math.min(1000, (creature.x ?? 500) + 90), creature.y ?? 820];
+      const placed = await positionCreature(sql, creature.location, creature.size || 1, near, false, (x, y, guard) => sql.query(
+        `INSERT INTO creatures (id, template_id, name, category, stats, location_id, x, y, health, standup_scale, standup_flipped, hidden)
+          SELECT ?, template_id, ?, category, stats, location_id, ?, ?, json_extract(stats, '$.health'), standup_scale, standup_flipped, hidden FROM creatures WHERE id = ? AND ${guard.sql} RETURNING id`,
+        [id, name, x, y, creature.id, ...guard.args]));
+      return placed instanceof Response ? placed : json({ id, name, x: placed[0], y: placed[1] }, 201);
+    }
+    if (data.action === 'creature') {
+      const creature = await placedCreature(sql, data.creatureId);
+      if (!creature) return error('Creature not found', 404);
+      const { hidden, flipped, scale } = data;
+      if ([hidden, flipped].some(value => value !== undefined && typeof value !== 'boolean') || (scale !== undefined && !(Number.isFinite(scale) && scale >= CREATURE_SCALE.min && scale <= CREATURE_SCALE.max))) return error('Invalid creature setting');
+      const size = scale === undefined ? creature.standup_scale : Math.round(scale * 100) / 100;
+      await sql`UPDATE creatures SET hidden = ${hidden === undefined ? creature.hidden : Number(hidden)}, standup_flipped = ${flipped === undefined ? creature.standup_flipped : Number(flipped)}, standup_scale = ${size}, updated_at = unixepoch() WHERE id = ${creature.id}`;
+      return json({ ok: true });
+    }
+    if (data.action === 'removeCreature') {
+      if (!uuid(data.creatureId)) return error('Creature not found', 404);
+      const rows = await sql`DELETE FROM creatures WHERE id = ${data.creatureId} RETURNING id`;
+      return rows.length ? json({ ok: true }) : error('Creature not found', 404);
+    }
     if (data.action === 'create') {
       const title = safeText(data.title, 80), description = typeof data.description === 'string' && data.description.length <= 4000 ? data.description.trim() : null;
       const teaser = optionalText(data.teaser, 220), quote = optionalText(data.quote, 280), speaker = optionalText(data.quoteSpeaker, 100);

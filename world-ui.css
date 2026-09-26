@@ -350,3 +350,24 @@ svg.map .unavailable text { fill: #b7b7b5; }
 .creature-image-field { display: grid; gap: 6px; margin-bottom: 8px; }
 .creature-clear { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .creature-clear[hidden] { display: none; }
+
+/* Placed creatures. In an Explorable a token sits in its top-left square and spans its footprint: each square is
+   100% of the cell's inner width plus its 2px of border, less the same 8% inset a character token has. */
+.world-token.creature-token {
+  position: absolute; left: 8%; top: 8%; z-index: 4;
+  width: calc(var(--footprint, 1) * (100% + 2px) - 2px - 16%); height: calc(var(--footprint, 1) * (100% + 2px) - 2px - 16%);
+  border-color: #d9805e; background: #111a1f; cursor: default; box-shadow: 0 0 0 1px #0009, 0 4px 10px #000a;
+}
+.world-token.creature-token.movable, .world-standup.creature-standup.movable { cursor: grab; }
+.world-standup.creature-standup:not(.movable) { cursor: default; }
+.world-standup.creature-standup.placeholder { width: calc(clamp(96px, 11vw, 170px) * var(--standup-scale)); height: calc(clamp(96px, 11vw, 170px) * var(--standup-scale)); }
+.creature-token.hidden-creature, .creature-standup.hidden-creature { opacity: .5; }
+.world-token.creature-token.hidden-creature { border-style: dashed; }
+.world-token.creature-token.selected { border-color: #f4e6c1; box-shadow: 0 0 0 2px #0009, 0 0 18px #e6cc8caa; }
+.world-standup.creature-standup.selected { filter: drop-shadow(0 8px 6px #000b) drop-shadow(0 0 10px #e6cc8caa); }
+.world-scale-control.creature-control { right: auto; left: 20px; bottom: calc(var(--chat-offset, 50px) + 68px); flex-wrap: wrap; max-width: min(640px, calc(100vw - 40px)); }
+.creature-control-name { color: #f1e3bd; font-family: var(--display, Georgia); font-size: 15px; font-weight: 400; letter-spacing: .05em; }
+.creature-control .creature-control-close { font-size: 18px; line-height: 1; text-decoration: none; }
+@media (max-width: 800px) {
+  .world-scale-control.creature-control { left: 12px; right: 12px; bottom: calc(var(--chat-offset, 50px) + 124px); }
+}
