@@ -15,6 +15,7 @@ import { applyLocationAccess } from './migrate-008.js';
 import { applyLocationCards } from './migrate-009.js';
 import { applyJukeboxSchema } from './migrate-010.js';
 import { retireChoirPrototype } from './migrate-011.js';
+import { applyStandupScale } from './migrate-012.js';
 import { seedShipCitySlice } from './seed-ship-city-slice.js';
 
 // Only the Blob token is taken from .env.local; the database stays in memory.
@@ -37,6 +38,7 @@ await applyLocationAccess(sql);
 await applyLocationCards(sql);
 await applyJukeboxSchema(sql);
 await retireChoirPrototype(sql);
+await applyStandupScale(sql);
 await seedShipCitySlice(sql);
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));

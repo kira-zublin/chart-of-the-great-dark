@@ -1,10 +1,12 @@
 import { createSceneDust, createSceneTransition } from './scene-effects.js';
-import { KIND_ICON, chartMarker, setVisitable } from './star-chart.js';
+import { KIND_ICON, chartMarker, setVisitable } from './star-chart.js';
 
 const $ = id => document.getElementById(id);
 const node = (tag, className = '', content = '') => { const el = document.createElement(tag); if (className) el.className = className; if (content) el.textContent = content; return el; };
 const button = (label, action, className = '') => { const el = node('button', className, label); el.type = 'button'; el.addEventListener('click', action); return el; };
 const field = (label, input) => { const wrapper = node('label'); wrapper.append(label, input); return wrapper; };
+// Matches STANDUP_SCALE in lib/world.js and the database CHECK in migration 012.
+const STANDUP_SCALE = { min: 0.5, max: 1.5 };
 const kindName = kind => ({ star: 'Star Chart', settlement: 'Hub', delve: 'Explorable', diorama: 'Vista', poi: 'Point of interest' })[kind] || kind;
 const sampleArt = {
   'ship-city': 'assets/ship-city-map.jpg',
@@ -471,12 +473,38 @@ export function initWorldUI(request, profile, activeCharacter) {
       img.src = pos.has_standup ? `/api/image?id=${encodeURIComponent(pos.character_id)}&slot=standup` : pos.has_portrait ? `/api/image?id=${encodeURIComponent(pos.character_id)}&slot=portrait` : 'assets/characters/anonymous-explorer.png';
       img.addEventListener('error', () => { img.src = 'assets/characters/anonymous-explorer.png'; }, { once: true });
       img.style.left = `${(pos.x ?? 500) / 10}%`; img.style.top = `${(pos.y ?? 800) / 10}%`;
+      img.style.setProperty('--standup-scale', pos.standup_scale ?? 1);
+      img.dataset.characterId = pos.character_id;
       if (pos.character_id === active()?.id || isGM()) startDrag(img, async (target, up, drag) => {
         const [x, y] = sceneDropPosition({ x: up.clientX, y: up.clientY }, drag, layer.getBoundingClientRect());
         try { await send('position', { characterId: pos.character_id, x, y }); await refresh(true); } catch (cause) { status(cause.message); }
       });
       layer.append(img);
     }
+    renderScaleControl(scene, item);
+  }
+
+  // Lets a player resize their own stand-up to match the scene's perspective. The size is shared with everyone.
+  function renderScaleControl(scene, item) {
+    const mine = world.positions.find(pos => pos.character_id === active()?.id && pos.location_id === item.id && !pos.hidden);
+    if (!mine) return;
+    const box = node('div', 'world-scale-control');
+    const input = node('input'); input.type = 'range'; input.id = 'standupScale';
+    input.min = String(STANDUP_SCALE.min); input.max = String(STANDUP_SCALE.max); input.step = '0.05'; input.value = String(mine.standup_scale ?? 1);
+    input.setAttribute('aria-label', `Size of ${mine.name}`);
+    const value = node('output', 'world-scale-value'); value.htmlFor = input.id;
+    const show = () => { value.textContent = `${Math.round(Number(input.value) * 100)}%`; };
+    const figure = () => scene.querySelector(`.world-standup[data-character-id="${CSS.escape(mine.character_id)}"]`);
+    input.addEventListener('input', () => { show(); figure()?.style.setProperty('--standup-scale', input.value); });
+    input.addEventListener('change', async () => {
+      try { await send('scale', { characterId: mine.character_id, scale: Number(input.value) }); input.blur(); await refresh(true); }
+      catch (cause) { status(cause.message); }
+    });
+    const reset = button('Reset', () => { input.value = '1'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new Event('change')); }, 'text-button');
+    const label = node('label', 'world-scale-label', 'Stand-up size'); label.htmlFor = input.id;
+    show();
+    box.append(label, input, value, reset);
+    scene.append(box);
   }
 
   function renderPanel(item) {
