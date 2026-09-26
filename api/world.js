@@ -1,5 +1,5 @@
 import { body, currentProfile, db, error, guarded, json, randomUUID } from '../lib/server.js';
-import { coord, gridOf, inside, key, nearestOpen, roomAt, roomVisible, uuid, validGrid } from '../lib/world.js';
+import { coord, gridOf, inside, key, nearestOpen, roomAt, roomVisible, standupScale, uuid, validGrid } from '../lib/world.js';
 
 const safeText = (value, limit) => typeof value === 'string' && value.trim().length > 0 && value.length <= limit ? value.trim() : null;
 const optionalText = (value, limit) => value === undefined ? '' : typeof value === 'string' && value.length <= limit ? value.trim() : null;
@@ -45,7 +45,7 @@ export async function GET(req) {
     const locations = gm ? await sql.query('SELECT * FROM locations ORDER BY created_at, title') : await sql.query("SELECT * FROM locations WHERE access_level != 'invisible' ORDER BY created_at, title");
     const allowed = new Set(locations.map(item => item.id));
     const links = (await sql.query('SELECT * FROM location_links')).filter(link => allowed.has(link.from_id) && allowed.has(link.to_id) && (gm || locations.find(item => item.id === link.from_id)?.access_level === 'accessible'));
-    const rows = await sql.query(`SELECT c.id AS character_id, c.name, c.kind, c.owner_id, c.id AS image_id, COALESCE(p.location_id, 'star-map') AS location_id, p.x, p.y, p.changed_at,
+    const rows = await sql.query(`SELECT c.id AS character_id, c.name, c.kind, c.owner_id, c.id AS image_id, COALESCE(p.location_id, 'star-map') AS location_id, p.x, p.y, p.changed_at, COALESCE(p.standup_scale, 1) AS standup_scale,
       EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'portrait') AS has_portrait,
       EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'standup') AS has_standup
       FROM characters c LEFT JOIN character_positions p ON p.character_id = c.id WHERE c.kind = 'pc'`);
@@ -103,6 +103,15 @@ export async function POST(req) {
       if (location.kind === 'diorama' && (data.x > 1000 || data.y > 1000)) return error('Position outside the scene');
       const moved = await moveCharacter(sql, character, location, [data.x, data.y], true);
       return moved instanceof Response ? moved : json({ moved });
+    }
+    if (data.action === 'scale') {
+      if (!uuid(data.characterId) || !standupScale(data.scale)) return error('Choose a size between half and one and a half times');
+      const character = (await sql`SELECT id, owner_id, kind FROM characters WHERE id = ${data.characterId}`)[0];
+      const position = (await sql`SELECT location_id FROM character_positions WHERE character_id = ${data.characterId}`)[0];
+      if (!character || character.kind !== 'pc' || !position || (profile.role !== 'gm' && character.owner_id !== profile.id)) return error('Character unavailable', 403);
+      const scale = Math.round(data.scale * 100) / 100;
+      await sql`UPDATE character_positions SET standup_scale = ${scale} WHERE character_id = ${character.id}`;
+      return json({ scale });
     }
     if (profile.role !== 'gm') return error('Only the GM can edit the world', 403);
     if (data.action === 'create') {

@@ -61,8 +61,9 @@ svg.map, svg.map text, .settlement-map, .settlement-marker, .settlement-marker *
 }
 
 .world-standup {
-  width: clamp(210px, 30vw, 460px);
-  height: clamp(320px, 64vh, 680px);
+  --standup-scale: 1;
+  width: calc(clamp(210px, 30vw, 460px) * var(--standup-scale));
+  height: calc(clamp(320px, 64vh, 680px) * var(--standup-scale));
   object-position: center bottom;
   user-select: none;
   -webkit-user-select: none;
@@ -199,6 +200,10 @@ svg.map .unavailable text { fill: #b7b7b5; }
 .settlement-marker .marker-label {
   display: grid;
   gap: 2px;
+  position: relative;
+  isolation: isolate;
+  padding: 5px 12px 4px 10px;
+  margin-left: -6px;
   text-shadow: 0 0 3px #05090c, 0 0 10px #05090ce6, 0 0 22px #05090cb3;
   white-space: normal;
 }
@@ -231,4 +236,42 @@ svg.map .unavailable text { fill: #b7b7b5; }
   .settlement-marker { min-width: 150px; }
   .settlement-marker .marker-name { font-size: 16px; }
   .world-move-dock { bottom: calc(var(--chat-offset, 50px) + 8px); }
+}
+
+/* A soft, feathered backdrop keeps marker names readable on busy map art. */
+.settlement-marker .marker-label::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -2px -10px -3px -6px;
+  border-radius: 999px;
+  background: radial-gradient(closest-side, rgba(5, 10, 14, .82), rgba(5, 10, 14, .62) 62%, rgba(5, 10, 14, 0));
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+  transition: background .3s ease;
+}
+.settlement-marker:is(:hover, :focus-visible, .selected) .marker-label::before {
+  background: radial-gradient(closest-side, rgba(10, 18, 22, .9), rgba(10, 18, 22, .7) 62%, rgba(10, 18, 22, 0));
+}
+
+.world-scale-control {
+  position: absolute;
+  z-index: 6;
+  right: 20px;
+  bottom: calc(var(--chat-offset, 50px) + 12px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid rgba(205, 184, 125, .35);
+  background: url(assets/ui/paper-grain.png), linear-gradient(160deg, rgba(14, 22, 27, .92), rgba(7, 12, 16, .9));
+  box-shadow: 0 8px 24px #0009;
+}
+.world-scale-label { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #cdb887; }
+.world-scale-control input[type="range"] { width: 130px; min-height: 0; padding: 0; border: 0; background: none; accent-color: #c9a862; }
+.world-scale-value { min-width: 3.2em; font-size: 12px; font-variant-numeric: tabular-nums; color: #f1e3bd; text-align: right; }
+.world-scale-control .text-button { min-height: 26px; padding: 2px 4px; font-size: 12px; }
+@media (max-width: 800px) {
+  .world-scale-control { left: 12px; right: 12px; bottom: calc(var(--chat-offset, 50px) + 66px); }
+  .world-scale-control input[type="range"] { flex: 1; width: auto; }
 }

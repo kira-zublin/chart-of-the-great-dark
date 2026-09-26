@@ -8,6 +8,7 @@ import { applyWorldSchema } from '../scripts/migrate-006.js';
 import { applyChoirParent } from '../scripts/migrate-007.js';
 import { applyLocationAccess } from '../scripts/migrate-008.js';
 import { applyLocationCards } from '../scripts/migrate-009.js';
+import { applyStandupScale } from '../scripts/migrate-012.js';
 import { GET as authGet, POST as authPost } from '../api/auth.js';
 import { POST as characterPost } from '../api/characters.js';
 import { GET as worldGet, POST as worldPost } from '../api/world.js';
@@ -27,7 +28,7 @@ test('world positions, fog, GM permissions, pulls, and uploaded art', async () =
   process.env.REGISTRATION_INVITE_CODE = 'private invitation';
   const sql = db();
   try {
-    await applyInitialSchema(sql); await applySheetAndCrewSchema(sql); await applyChatSchema(sql); await applyWorldSchema(sql); await applyWorldSchema(sql); await applyLocationAccess(sql); await applyLocationAccess(sql); await applyLocationCards(sql); await applyLocationCards(sql);
+    await applyInitialSchema(sql); await applySheetAndCrewSchema(sql); await applyChatSchema(sql); await applyWorldSchema(sql); await applyWorldSchema(sql); await applyLocationAccess(sql); await applyLocationAccess(sql); await applyLocationCards(sql); await applyStandupScale(sql); await applyLocationCards(sql); await applyStandupScale(sql);
     assert.equal((await sql`SELECT parent_id FROM locations WHERE id = 'choir'`)[0].parent_id, 'ship-city');
     await sql`UPDATE locations SET parent_id = 'star-map' WHERE id = 'choir'`;
     await applyChoirParent(sql); await applyChoirParent(sql);
@@ -53,6 +54,10 @@ test('world positions, fog, GM permissions, pulls, and uploaded art', async () =
     assert.notDeepEqual([second.body.moved[0].x, second.body.moved[0].y], [1, 3]);
     assert.equal((await worldPost(req('/api/world', 'POST', { action: 'position', characterId: b, x: 1, y: 3 }, bob))).status, 409);
     assert.equal((await worldPost(req('/api/world', 'POST', { action: 'position', characterId: b, x: 5, y: 3 }, bob))).status, 200);
+    assert.equal((await worldPost(req('/api/world', 'POST', { action: 'scale', characterId: b, scale: 1.3 }, alice))).status, 403);
+    assert.equal((await worldPost(req('/api/world', 'POST', { action: 'scale', characterId: b, scale: 2 }, bob))).status, 400);
+    assert.equal((await worldPost(req('/api/world', 'POST', { action: 'scale', characterId: b, scale: 1.3 }, bob))).status, 200);
+    assert.equal((await data(await worldGet(req('/api/world', 'GET', undefined, alice)))).body.positions.find(pos => pos.character_id === b).standup_scale, 1.3);
     assert.equal((await worldPost(req('/api/world', 'POST', { action: 'room', locationId: 'choir', roomId: 'entry', visibility: 'hide' }, gm))).status, 200);
     const hidden = (await data(await worldGet(req('/api/world', 'GET', undefined, alice)))).body;
     assert.equal(hidden.visibleRooms.choir.entry, false);
