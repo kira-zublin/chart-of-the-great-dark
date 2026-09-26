@@ -73,7 +73,7 @@ The star map is a chart of the Jumuah system, drawn the way the rulebook draws i
 - **Geometry:** Orbits are centred on Jumuah at (450, 300) in the 900 × 600 chart space that star-map world locations already use. Their radius is proportional to the square root of the book's distance in AD. Positions around an orbit are chosen for legibility.
 - **Lines:** Every line connects or encloses something. Orbits are dashed, and routes are dotted: ore traffic, Guild routes and the three Slipstream tributaries. Region arcs carry lettering (the Core, the Rim, the Memosan Gulf, the White Fields of Albary, the Outer Fields, the Great Dark).
 - **Levels of detail:** Region names show when zoomed out. Moons, outposts and minor sites appear when zoomed in. Icons and labels stay the same size on screen while bodies and geography scale with the chart.
-- **Frame:** A double hairline border with bearing ticks, cardinal points, corner brackets, a compass rose and a scale note. It stays fixed while the chart moves.
+- **Frame:** A double hairline border with bearing ticks, cardinal points, corner brackets and a compass rose. It stays fixed while the chart moves.
 - **Parallax:** The wash moves at 60% of the chart's speed and the dust at 120%.
 
 ### Chart icons
@@ -87,7 +87,7 @@ Each icon is an image in `assets/icons/chart/`. The chart draws the frame around
 | None, drawn in rust | Hazards | `rift-storm`, `meteor`, `gas-wights`, `wreckers` |
 | Own emblem | Ship City | `ship-city` |
 
-A dashed frame means rumored, and a faded icon means abandoned. Places the viewer can enter (Ship City today, and any enterable star-map location) glow: the symbol is 25% larger, a gold ring stays drawn, a beacon pulses outward and the name is brighter. Informational places are slightly muted. A key in the frame explains the glow. World locations on the star map pick an icon by kind: a Hub is an outpost, an Explorable is shallows, and a Vista or point of interest is a point of interest. A location that is Invisible to players shows a dashed frame, and a Restricted one is faded.
+A dashed frame means rumored, and a faded icon means abandoned. Places the viewer can enter (Ship City today, and any enterable star-map location) glow: the symbol is 25% larger, a gold ring stays drawn, a beacon pulses outward and the name is brighter. Informational places are slightly muted. World locations on the star map pick an icon by kind: a Hub is an outpost, an Explorable is shallows, and a Vista or point of interest is a point of interest. A location that is Invisible to players shows a dashed frame, and a Restricted one is faded.
 
 ## Motion
 

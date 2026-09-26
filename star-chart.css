@@ -82,8 +82,6 @@ svg.map text { fill: #d6bd7e; paint-order: stroke; stroke: #05080c; stroke-width
 .star-item:not(.visitable):not(.hazard) .star-name { fill: #cdb887; }
 .star-item:not(.visitable) .star-sym { opacity: .88; }
 .star-item:not(.visitable):hover .star-sym, .star-item:not(.visitable).selected .star-sym { opacity: 1; }
-.chart-frame .chart-key { position: absolute; right: 34px; bottom: 104px; display: flex; align-items: center; gap: 9px; margin: 0; font: 600 9px Georgia, serif; letter-spacing: .14em; text-transform: uppercase; color: #e8cf93; }
-.chart-frame .chart-key i { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #f0d48f; box-shadow: 0 0 10px 3px rgba(255, 200, 110, .45), inset 0 0 4px rgba(255, 216, 150, .6); }
 
 /* Draw-in, once per page load */
 .drawing .draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: starDraw 1.7s cubic-bezier(.45, .1, .25, 1) forwards; animation-delay: var(--d, 0s); }
@@ -116,14 +114,11 @@ svg.map text { fill: #d6bd7e; paint-order: stroke; stroke: #05080c; stroke-width
 .chart-frame .corner.bl { bottom: 1px; left: 1px; transform: scaleY(-1); }
 .chart-frame .corner.br { bottom: 1px; right: 1px; transform: scale(-1); }
 .chart-frame .compass { position: absolute; right: 34px; bottom: 32px; width: 64px; height: 64px; color: #d6bd7e; opacity: .8; }
-.chart-frame .scale-note { position: absolute; right: 108px; bottom: 34px; max-width: 200px; margin: 0; text-align: right; font: 600 9px/1.45 Georgia, serif; letter-spacing: .14em; text-transform: uppercase; color: #a8966d; }
-.chart .hint { left: 34px; bottom: calc(var(--chat-offset, 58px) + 22px); }
 
 /* Dossier facts for chart items */
 #chartNote[hidden] { display: none; }
 
 @media (max-width: 800px) {
-  .chart-frame .compass, .chart-frame .scale-note, .chart-frame .chart-key { display: none; }
+  .chart-frame .compass { display: none; }
   .star-name { font-size: 10px; }
-  .chart .hint { display: none; }
 }
