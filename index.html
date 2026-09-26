@@ -124,6 +124,17 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 .side-panel-body{flex:1;overflow:auto;overflow-x:hidden;padding:14px 24px 34px}.side-pane[hidden]{display:none}
 .side-panel .sheet-tabs{top:-14px}.side-panel .sheet-tabs button[aria-selected="true"]{background:transparent;color:#f1dfb8;border-color:transparent;border-bottom:2px solid #d7bb7d}
 .character-empty{display:grid;gap:12px;justify-items:start}
+.sound-wrap{position:relative}.sound-menu{min-width:250px;display:grid;gap:12px}
+.sound-row,.jukebox-loop{display:flex;align-items:center;gap:8px}.sound-row input,.jukebox-loop input{width:auto;min-height:0}.sound-volume input{width:100%;min-height:0;padding:0;border:0;background:none;accent-color:#b79a60}.sound-menu .menu-note{padding:0 2px}
+#soundButton.attention{background:#b79a60;color:#111916;border-color:#d7bb7d;animation:sound-pulse 1.6s ease-in-out infinite}
+@keyframes sound-pulse{50%{box-shadow:0 0 0 4px #d7bb7d44}}@media(prefers-reduced-motion:reduce){#soundButton.attention{animation:none}}
+.jukebox-panel{display:grid;gap:10px}.jukebox-panel .rule{margin:12px 0 2px}.jukebox-warning{color:#f0b89e}
+.jukebox-now{display:grid;gap:6px;padding:12px;border:1px solid rgba(205,184,125,.3);background:#0b1419}.jukebox-now-title{font-size:19px;color:#f1dfb8;overflow-wrap:anywhere}.jukebox-now-status{font-size:12px;color:#b8aa88}
+.jukebox-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}.jukebox-controls button{min-height:34px;padding:6px 12px}
+.jukebox-upload{display:grid;gap:10px}.jukebox-upload button{justify-self:start}
+.jukebox-tracks{display:grid;gap:6px}.jukebox-track{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 10px;border:1px solid rgba(205,184,125,.16);background:#0d171c}
+.jukebox-track.active{border-color:#d7bb7d;border-left-width:3px}.jukebox-track-info{display:grid;gap:3px;min-width:0}.jukebox-track-title{overflow-wrap:anywhere;color:#eee0be}.jukebox-track small{font-size:11px;color:#a99b78}
+.jukebox-track button{min-height:32px;padding:6px 10px}.jukebox-delete{color:#e6a790}
 .chat-dock{position:absolute;z-index:11;right:20px;bottom:16px;width:min(440px,calc(100vw - 40px));background:#0d171c;box-shadow:0 12px 40px #000b;border:1px solid rgba(205,184,125,.45)}
 .chat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(205,184,125,.25);padding:5px 10px;color:var(--gold);font-size:13px;letter-spacing:.1em;text-transform:uppercase}
 .chat-head button{min-height:30px;padding:3px 9px}.chat-head button[data-unread="true"]::after{content:"!";display:inline-grid;place-items:center;margin-left:7px;width:17px;height:17px;border-radius:50%;background:#b77a45;color:#0d171c;font-weight:bold}.chat-content{padding:8px}.chat-messages{height:220px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:9px;padding:4px 2px 8px}
@@ -149,7 +160,7 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 <div class="bg-layer" id="bgLayer" aria-hidden="true"></div>
 <div class="bg-fog" aria-hidden="true"></div>
 <canvas id="dust" aria-hidden="true"></canvas>
-<div class="hud"><div><div class="account-wrap"><button id="accountButton" type="button" aria-expanded="false">Profile</button><div class="account-menu" id="accountMenu" hidden><div id="accountRole" class="role-label"></div><button id="logoutButton" type="button">Log out</button></div></div></div><div class="character-wrap"><button id="openGMTools" type="button" hidden>GM Tools</button><button id="openCrew" type="button">Crew Sheet</button><button id="characterButton" type="button" aria-expanded="false">Select character</button><div class="character-menu" id="characterMenu" hidden><div id="characterList"></div><button id="createCharacter" type="button">Create a new character</button><label id="filterRow" hidden>Show <select id="characterFilter"><option value="all">All characters</option><option value="pc">Player characters</option><option value="npc">NPCs</option></select></label></div></div></div>
+<div class="hud"><div><div class="account-wrap"><button id="accountButton" type="button" aria-expanded="false">Profile</button><div class="account-menu" id="accountMenu" hidden><div id="accountRole" class="role-label"></div><button id="logoutButton" type="button">Log out</button></div></div></div><div class="character-wrap"><div class="sound-wrap" id="soundControl" hidden><button id="soundButton" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="soundMenu">♪ Sound on</button><div class="character-menu sound-menu" id="soundMenu" hidden><label class="sound-row"><input id="soundMute" type="checkbox"> Mute music</label><label class="sound-volume">Volume<input id="soundVolume" type="range" min="0" max="100" step="5"></label><p class="menu-note">The GM chooses the music. These settings only affect this browser.</p></div></div><button id="openGMTools" type="button" hidden>GM Tools</button><button id="openCrew" type="button">Crew Sheet</button><button id="characterButton" type="button" aria-expanded="false">Select character</button><div class="character-menu" id="characterMenu" hidden><div id="characterList"></div><button id="createCharacter" type="button">Create a new character</button><label id="filterRow" hidden>Show <select id="characterFilter"><option value="all">All characters</option><option value="pc">Player characters</option><option value="npc">NPCs</option></select></label></div></div></div>
 <svg class="map" id="map" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Star chart with selectable explorables and landmarks">
 <defs>
 <filter id="glow" x="-200%" y="-200%" width="400%" height="400%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -266,7 +277,22 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
   </section>
   <section id="paneMusic" class="side-pane" role="tabpanel" aria-labelledby="panelTabMusic" hidden>
     <div class="panel-head"><div><div class="eyebrow">GM tools</div><h2>Music</h2></div></div>
-    <p class="field-hint">The jukebox is coming soon. You will be able to upload tracks here and play them for everyone at the table.</p>
+    <div id="jukeboxPanel" class="jukebox-panel">
+      <p id="jukeboxStorageNote" class="field-hint jukebox-warning" hidden>Music storage is not configured for this environment, so uploads are unavailable. Add <code>BLOB_READ_WRITE_TOKEN</code> to enable them.</p>
+      <p id="jukeboxMessage" class="message" role="status"></p>
+      <div class="rule">Now playing</div>
+      <div id="jukeboxNowPlaying" class="jukebox-now"></div>
+      <div class="rule">Add a track</div>
+      <form id="jukeboxUploadForm" class="jukebox-upload" novalidate>
+        <label>MP3 file (up to 15 MB)<input id="jukeboxFile" type="file" accept=".mp3,audio/mpeg"></label>
+        <label>Title<input id="jukeboxTitle" maxlength="120"></label>
+        <p class="field-hint">Only upload music the group is licensed to play.</p>
+        <button id="jukeboxUploadButton" class="primary-button" type="submit">Upload track</button>
+      </form>
+      <div class="rule">Library</div>
+      <p id="jukeboxUsage" class="field-hint"></p>
+      <div id="jukeboxTracks" class="jukebox-tracks"></div>
+    </div>
   </section>
   <section id="paneCreatures" class="side-pane" role="tabpanel" aria-labelledby="panelTabCreatures" hidden>
     <div class="panel-head"><div><div class="eyebrow">GM tools</div><h2>Creature Palette</h2></div></div>

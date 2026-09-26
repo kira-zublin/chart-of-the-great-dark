@@ -3,6 +3,7 @@ import { initCrewUI } from './crew-ui.js';
 import { initChatUI } from './chat-ui.js';
 import { initWorldUI } from './world-ui.js';
 import { initSidePanel } from './side-panel.js';
+import { initJukeboxUI } from './jukebox-ui.js';
 const $ = id => document.getElementById(id);
 $('mapStage').append(document.querySelector('.hud'));
 const state = { profile: null, characters: [], selected: null, registering: false };
@@ -12,6 +13,7 @@ setSheetDirtyHandler(() => { characterDirty = true; });
 $('characterForm').addEventListener('input', () => { characterDirty = true; });
 $('characterForm').addEventListener('change', () => { characterDirty = true; });
 const crewUI = initCrewUI(request, () => state.profile);
+const jukeboxUI = initJukeboxUI(request, () => state.profile);
 const sidePanel = initSidePanel({
   isGM: () => state.profile?.role === 'gm',
   canClose: confirmDiscard,
@@ -48,9 +50,11 @@ function showApp(profile) {
     loadCharacters();
     chatUI.start();
     worldUI.start();
+    jukeboxUI.start();
   } else {
     chatUI.stop();
     worldUI.stop();
+    jukeboxUI.stop();
     state.characters = []; state.selected = null;
     characterDirty = false; showEditor(false); sidePanel.hide();
     $('accountMenu').hidden = true;
