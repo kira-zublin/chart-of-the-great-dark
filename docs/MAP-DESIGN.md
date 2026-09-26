@@ -6,7 +6,7 @@ This document records decisions for the next map prototype. The existing static 
 
 ## World structure
 
-- The Star Map is the root view. Enterable locations use Settlement, Delve, or Diorama views. Points of Interest provide information but cannot be entered.
+- The Star Map is the root view. It is drawn as a chart of the Jumuah system from the Core Rules; see `docs/UI-GUIDE.md`. Ship City is the chart's enterable hub, and other star-map locations appear as markers at their stored chart coordinates. Enterable locations use Settlement, Delve, or Diorama views. Points of Interest provide information but cannot be entered.
 - Explicit connections describe map markers and doors between locations, including Delve-to-Delve links. Connections can carry an arrival square for each destination entrance. They do not require players to follow a fixed route: a player may enter any Accessible marker.
 - A location may also have an optional **parent** for context and navigation. Parentage does not limit connections or imply a travel rule. Back opens the current location's parent; without a parent, Back is disabled.
 - A Settlement presents a pannable, wheel-zoomable 2D background with clickable location markers anchored to the map. Settlements can contain markers for any type, including other settlements. A Delve presents a gridded tactical map. A Diorama presents character and creature stand-ups over a background.

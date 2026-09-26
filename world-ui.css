@@ -124,8 +124,8 @@ svg.map, svg.map text, .settlement-map, .settlement-marker, .settlement-marker *
 }
 .world-gm-controls button:disabled { cursor: not-allowed; opacity: .55; }
 .world-gm-controls .world-empty-note, .world-gm-controls .world-edit-hint { color: #b7aa8c; line-height: 1.45; }
-.settlement-marker[data-access="inaccessible"] { --marker-accent: #a7a9ab; }
-.settlement-marker[data-access="invisible"] { --marker-accent: #787f8a; opacity: .72; }
+.settlement-marker[data-access="inaccessible"] { --marker-accent: #a7a9ab; --marker-glow: rgba(200, 204, 210, .2); }
+.settlement-marker[data-access="invisible"] { --marker-accent: #787f8a; --marker-glow: rgba(150, 160, 175, .16); opacity: .72; }
 svg.map .unavailable .landmark-image, svg.map .unavailable .delve-icon, svg.map .world-marker-svg.unavailable circle { opacity: .45; }
 svg.map .unavailable text { fill: #b7b7b5; }
 
@@ -163,74 +163,72 @@ svg.map .unavailable text { fill: #b7b7b5; }
 .world-location-dossier .dossier-close { position: absolute; z-index: 2; left: 18px; top: 13px; width: 38px; height: 38px; min-height: 38px; border-radius: 50%; padding: 0; font-size: 20px; background: #111b22dd; }
 
 .settlement-marker {
-  --marker-accent: #cda76a;
+  --marker-accent: #d9bd7c;
+  --marker-glow: rgba(255, 204, 122, .42);
   position: absolute;
   z-index: 4;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 190px;
   min-height: 84px;
-  padding: 8px;
+  padding: 6px;
   border: 0;
   background: transparent;
-  color: #f2e2b6;
+  color: #f6e8c4;
   text-align: left;
   transform: translate(-50%, -50%);
-  filter: drop-shadow(0 5px 12px #000b);
 }
-.settlement-marker[data-kind="delve"] { --marker-accent: #bf875f; }
-.settlement-marker[data-kind="diorama"] { --marker-accent: #8db6b9; }
-.settlement-marker[data-kind="poi"] { --marker-accent: #b7a083; }
+.settlement-marker[data-kind="delve"] { --marker-accent: #e0916b; --marker-glow: rgba(255, 150, 105, .36); }
+.settlement-marker[data-kind="diorama"] { --marker-accent: #9cc7c6; --marker-glow: rgba(170, 225, 225, .3); }
+.settlement-marker[data-kind="poi"] { --marker-accent: #cdb591; --marker-glow: rgba(240, 214, 170, .3); }
 .settlement-marker.gm-draggable { cursor: grab; touch-action: none; }
 .settlement-marker.repositioning { cursor: grabbing; z-index: 6; }
-.settlement-marker .marker-sigil {
-  position: relative;
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 38% 31%, #f4e3b91c, #0b171ecf 62%);
-  border: 1px solid var(--marker-accent);
-  box-shadow: inset 0 0 0 5px #081319d9, inset 0 0 0 6px #bdad8270, 0 0 22px #d8b97649;
-  transition: transform .3s ease, box-shadow .3s ease;
+.settlement-marker .marker-sigil { position: relative; flex: none; width: 72px; height: 72px; }
+.settlement-marker .marker-glow,
+.settlement-marker .marker-ring,
+.settlement-marker .marker-icon { position: absolute; left: 50%; top: 50%; border-radius: 50%; pointer-events: none; }
+.settlement-marker .marker-glow {
+  width: 190px; height: 190px; margin: -95px 0 0 -95px;
+  background: radial-gradient(circle, var(--marker-glow), transparent 68%);
+  opacity: .5; transform: scale(.7); transition: opacity .5s ease, transform .6s cubic-bezier(.2, .7, .2, 1);
 }
-.settlement-marker .marker-sigil:before,
-.settlement-marker .marker-sigil:after { content: ""; position: absolute; inset: -8px; border: 1px dashed var(--marker-accent); border-radius: 50%; opacity: .65; }
-.settlement-marker .marker-sigil:after { inset: 8px; border-style: solid; opacity: .35; }
-.settlement-marker .marker-symbol { font-size: 31px; line-height: 1; color: #f5dfaa; text-shadow: 0 0 12px var(--marker-accent); }
+.settlement-marker .marker-ring { width: 86px; height: 86px; margin: -43px 0 0 -43px; border: 1px dashed var(--marker-accent); opacity: .55; transition: opacity .4s ease; }
+.settlement-marker .marker-ring::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; border: 1px solid var(--marker-accent); opacity: .3; }
+.settlement-marker .marker-icon { width: 88px; height: 88px; margin: -44px 0 0 -44px; border-radius: 0; user-select: none; -webkit-user-drag: none; transition: transform .45s cubic-bezier(.2, .7, .2, 1), filter .4s ease; }
 .settlement-marker .marker-label {
   display: grid;
-  gap: 5px;
-  padding: 10px 13px;
-  background: linear-gradient(90deg, #071118ed, #101a20d1);
-  border-top: 1px solid #c4ad79a3;
-  border-bottom: 1px solid #c4ad7957;
-  box-shadow: inset 3px 0 var(--marker-accent);
-  font-size: 12px;
-  line-height: 1.25;
-  letter-spacing: .12em;
+  gap: 2px;
+  text-shadow: 0 0 3px #05090c, 0 0 10px #05090ce6, 0 0 22px #05090cb3;
   white-space: normal;
 }
-.settlement-marker .marker-label small { font-size: 9px; letter-spacing: .17em; color: var(--marker-accent); text-transform: uppercase; }
-.settlement-marker:hover .marker-sigil,
-.settlement-marker:focus-visible .marker-sigil,
-.settlement-marker.selected .marker-sigil { box-shadow: inset 0 0 0 5px #081319d9, inset 0 0 0 6px #f1d9a6, 0 0 30px var(--marker-accent); transform: scale(1.08); }
-.settlement-marker:hover .marker-label,
-.settlement-marker:focus-visible .marker-label,
-.settlement-marker.selected .marker-label { background: #17262beb; color: #fff0ce; }
-.motion .settlement-marker .marker-sigil:before { animation: settlementOrbit 22s linear infinite; }
-.motion .settlement-marker .marker-symbol { animation: settlementPulse 4.5s ease-in-out infinite; }
-.motion .settlement-marker:nth-of-type(2) .marker-sigil:before { animation-direction: reverse; }
+.settlement-marker .marker-label small { font: 600 11px Georgia, serif; letter-spacing: .22em; color: var(--marker-accent); text-transform: uppercase; }
+.settlement-marker .marker-name { position: relative; padding-bottom: 6px; font-family: var(--display, Georgia, serif); font-size: 19px; line-height: 1.1; letter-spacing: .05em; white-space: nowrap; }
+.settlement-marker .marker-name::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: linear-gradient(90deg, var(--marker-accent), transparent); transform: scaleX(0); transform-origin: left; transition: transform .45s cubic-bezier(.22, .8, .2, 1);
+}
+.settlement-marker:hover .marker-glow,
+.settlement-marker:focus-visible .marker-glow,
+.settlement-marker.selected .marker-glow { opacity: 1; transform: scale(1.1); }
+.settlement-marker:hover .marker-icon,
+.settlement-marker:focus-visible .marker-icon,
+.settlement-marker.selected .marker-icon { transform: scale(1.08); filter: brightness(1.12); }
+.settlement-marker:hover .marker-ring,
+.settlement-marker:focus-visible .marker-ring,
+.settlement-marker.selected .marker-ring { opacity: .9; }
+.settlement-marker:hover .marker-name::after,
+.settlement-marker:focus-visible .marker-name::after,
+.settlement-marker.selected .marker-name::after { transform: scaleX(1); }
+.settlement-marker.selected .marker-name { color: #fff3d2; }
+.settlement-marker:is([data-access="inaccessible"], [data-access="invisible"]) .marker-icon { filter: grayscale(.85) brightness(.8); }
+.motion .settlement-marker .marker-ring { animation: settlementOrbit 40s linear infinite; }
 @keyframes settlementOrbit { to { transform: rotate(360deg); } }
-@keyframes settlementPulse { 50% { opacity: .72; text-shadow: 0 0 22px var(--marker-accent); } }
 
 .world-drag-ghost { position: fixed !important; z-index: 100; pointer-events: none !important; transform: none !important; opacity: .92 !important; box-shadow: 0 12px 30px #000c, 0 0 18px #e6cc8c88; filter: drop-shadow(0 10px 12px #000a); }
 
 @media (max-width: 800px) {
   .settlement-marker { min-width: 150px; }
-  .settlement-marker .marker-label { font-size: 10px; }
+  .settlement-marker .marker-name { font-size: 16px; }
   .world-move-dock { bottom: calc(var(--chat-offset, 50px) + 8px); }
 }

@@ -1,6 +1,67 @@
 const $ = id => document.getElementById(id);
 const avatar = 'assets/characters/anonymous-explorer.png';
 const attributes = ['strength', 'agility', 'logic', 'insight', 'perception', 'empathy'];
+const pips = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8] };
+
+// Presentation model for a roll card; the dice and their interpretation come from the server.
+export function rollCard(roll) {
+  if (roll.type === 'simple') return { title: 'Rolled d6', dice: [{ value: roll.dice[0], gear: false }], result: null, costs: '' };
+  const attribute = roll.attribute ? roll.attribute[0].toUpperCase() + roll.attribute.slice(1) : 'Dice pool';
+  const talent = roll.talent ? ` + ${roll.talent} (${roll.talentLevel})` : '';
+  return {
+    title: `${roll.type === 'push' ? `Push ${roll.pushCount} · ` : ''}${attribute}${talent}`,
+    dice: [...roll.baseDice.map(value => ({ value, gear: false })), ...roll.gearDice.map(value => ({ value, gear: true }))],
+    result: roll.successes ? `${roll.successes} ${roll.successes === 1 ? 'Success' : 'Successes'}` : 'No successes',
+    costs: roll.type === 'push' ? `${roll.hopeLoss} Hope loss · ${roll.gearWear} gear wear` : ''
+  };
+}
+
+function dieFace(die, value) {
+  die.classList.toggle('six', value === 6); die.classList.toggle('one', value === 1);
+  if (value === 6) { die.innerHTML = '<svg><use href="#die-six"/></svg>'; return; }
+  die.replaceChildren(...Array.from({ length: 9 }, (_, index) => {
+    const pip = document.createElement('span'); if (pips[value]?.includes(index)) pip.className = 'on'; return pip;
+  }));
+}
+
+function renderRollCard(body, roll, animate) {
+  const card = rollCard(roll);
+  body.classList.add('roll-card');
+  const summary = document.createElement('span'); summary.className = 'visually-hidden'; summary.textContent = rollText(roll);
+  const title = document.createElement('div'); title.className = 'roll-title'; title.setAttribute('aria-hidden', 'true'); title.textContent = card.title;
+  const tray = document.createElement('div'); tray.className = 'roll-dice'; tray.setAttribute('aria-hidden', 'true');
+  const dice = card.dice.map((entry, index) => {
+    if (entry.gear && !card.dice[index - 1]?.gear) tray.append(Object.assign(document.createElement('span'), { className: 'roll-sep' }));
+    const die = document.createElement('span'); die.className = `roll-die${entry.gear ? ' gear' : ''}`;
+    dieFace(die, entry.value); tray.append(die);
+    return die;
+  });
+  body.append(summary, title, tray);
+  if (card.result) {
+    const result = document.createElement('div'); result.className = 'roll-result'; result.setAttribute('aria-hidden', 'true');
+    const total = document.createElement('b'); total.textContent = card.result; if (!roll.successes) total.className = 'none';
+    result.append(total);
+    if (card.costs) result.append(Object.assign(document.createElement('span'), { className: 'roll-cost', textContent: card.costs }));
+    body.append(result);
+  }
+  if (!animate || !document.getElementById('app')?.classList.contains('motion')) return;
+  // New rolls tumble in and settle on the server's result.
+  dice.forEach((die, index) => {
+    const value = card.dice[index].value, spin = (Math.random() < .5 ? -1 : 1) * (180 + Math.random() * 200);
+    die.animate([{ transform: `translate(${-22 - Math.random() * 26}px, ${-14 + Math.random() * 8}px) rotate(${spin}deg)`, opacity: 0 }, { opacity: 1, offset: .25 }, { transform: 'none', opacity: 1 }], { duration: 560 + index * 70, easing: 'cubic-bezier(.2,.9,.3,1.15)' });
+    const tumble = setInterval(() => dieFace(die, 1 + Math.floor(Math.random() * 6)), 70);
+    setTimeout(() => { clearInterval(tumble); dieFace(die, value); if (value === 6) die.classList.add('glint'); }, 380 + index * 70);
+  });
+}
+
+function rollText(roll) {
+  if (roll.type === 'simple') return `Rolled d6: ${roll.dice[0]}`;
+  const label = roll.attribute ? `${roll.attribute}${roll.talent ? ` + ${roll.talent} (${roll.talentLevel})` : ''}` : 'dice pool';
+  const base = roll.baseDice.join(', '); const gear = roll.gearDice.length ? ` · Gear [${roll.gearDice.join(', ')}]` : '';
+  const push = roll.type === 'push' ? `Push ${roll.pushCount}: ` : 'Rolled ';
+  const costs = roll.type === 'push' ? ` · ${roll.hopeLoss} Hope loss · ${roll.gearWear} gear wear` : '';
+  return `${push}${label} · Base [${base}]${gear} · ${roll.successes} ${roll.successes === 1 ? 'success' : 'successes'}${costs}`;
+}
 
 export function initChatUI(request, profile, character) {
   let lastId = 0; let timer = null; let loading = false; let first = true;
@@ -40,14 +101,6 @@ export function initChatUI(request, profile, character) {
       } else parent.append(document.createTextNode(part));
     }
   }
-  function rollText(roll) {
-    if (roll.type === 'simple') return `Rolled d6: ${roll.dice[0]}`;
-    const label = roll.attribute ? `${roll.attribute}${roll.talent ? ` + ${roll.talent} (${roll.talentLevel})` : ''}` : 'dice pool';
-    const base = roll.baseDice.join(', '); const gear = roll.gearDice.length ? ` · Gear [${roll.gearDice.join(', ')}]` : '';
-    const push = roll.type === 'push' ? `Push ${roll.pushCount}: ` : 'Rolled ';
-    const costs = roll.type === 'push' ? ` · ${roll.hopeLoss} Hope loss · ${roll.gearWear} gear wear` : '';
-    return `${push}${label} · Base [${base}]${gear} · ${roll.successes} ${roll.successes === 1 ? 'success' : 'successes'}${costs}`;
-  }
   function render(item) {
     if (list.querySelector(`[data-id="${item.id}"]`)) return;
     const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
@@ -61,7 +114,7 @@ export function initChatUI(request, profile, character) {
     const time = document.createElement('time'); time.dateTime = new Date(Number(item.created_at) * 1000).toISOString();
     time.textContent = new Date(Number(item.created_at) * 1000).toLocaleString(); heading.append(name, time);
     const body = document.createElement('div'); body.className = item.kind === 'roll' ? 'chat-roll' : 'chat-body';
-    if (item.kind === 'roll') body.textContent = rollText(item.roll); else addText(body, item.body);
+    if (item.kind === 'roll') renderRollCard(body, item.roll, !first); else addText(body, item.body);
     content.append(heading, body); row.append(img, content); list.append(row);
     lastId = Math.max(lastId, Number(item.id));
     if (nearBottom || first) list.scrollTop = list.scrollHeight;

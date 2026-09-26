@@ -1,3 +1,6 @@
+import { createSceneDust, createSceneTransition } from './scene-effects.js';
+import { KIND_ICON, chartMarker, setVisitable } from './star-chart.js';
+
 const $ = id => document.getElementById(id);
 const node = (tag, className = '', content = '') => { const el = document.createElement(tag); if (className) el.className = className; if (content) el.textContent = content; return el; };
 const button = (label, action, className = '') => { const el = node('button', className, label); el.type = 'button'; el.addEventListener('click', action); return el; };
@@ -31,9 +34,7 @@ const sampleArt = {
   'ziggurat-nine-icons': 'assets/ziggurat-nine-icons-scene.png',
   'palace-daars': 'assets/palace-daars-scene.png',
   'marakanda-tower': 'assets/marakanda-tower-scene.png',
-  dockside: 'assets/dio-marketplace.png',
-  choir: 'assets/choir-below-map.png',
-  'choir-depths': 'assets/choir-depths-map.png'
+  dockside: 'assets/dio-marketplace.png'
 };
 const locationArt = item => item.has_image
   ? `/api/location-image?id=${encodeURIComponent(item.id)}&v=${item.image_version}`
@@ -51,6 +52,16 @@ export function sceneDropPosition(pointer, drag, bounds) {
 export function initWorldUI(request, profile, activeCharacter) {
   let world = null, current = 'star-map', incomingLink = null, selectedStar = null, selectedLocal = null, timer = null, previousPosition = null, signature = '', draggingToken = false;
   let editingLinkId = null, editExpanded = false, draggingMarker = false;
+  let renderedId = null, bloomOrigin = null, revealedLink = null;
+  const transition = createSceneTransition($('worldView')), dust = createSceneDust($('worldView'));
+  const restartReveal = element => { element.classList.remove('revealing'); void element.offsetWidth; element.classList.add('revealing'); };
+  // The ink bloom starts from the marker that was used to travel, when it is on screen.
+  const originFor = linkId => {
+    const marker = linkId ? document.querySelector(`[data-link-id="${CSS.escape(linkId)}"]`) : null;
+    const target = marker?.querySelector('.marker-sigil, .star-sym') || marker || document.querySelector('#map .star-item.selected .star-sym');
+    const box = target?.getBoundingClientRect();
+    return box?.width ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : null;
+  };
   const settlementViews = new Map();
   const isGM = () => profile()?.role === 'gm';
   const location = id => world?.locations.find(item => item.id === id);
@@ -92,6 +103,7 @@ export function initWorldUI(request, profile, activeCharacter) {
     const destination = location(id);
     if (!destination) return status('That location is not visible.');
     if (!canEnter(destination)) return status('This location is not open for entry.');
+    bloomOrigin = originFor(linkId);
     current = id; incomingLink = linkId; selectedStar = null;
     editingLinkId = null; editExpanded = false;
     closeLocalDossier();
@@ -100,9 +112,9 @@ export function initWorldUI(request, profile, activeCharacter) {
   }
 
   function closeLocalDossier() {
-    selectedLocal = null;
+    selectedLocal = null; revealedLink = null;
     const dossier = $('worldLocationDossier');
-    dossier.classList.remove('open'); dossier.setAttribute('aria-hidden', 'true');
+    dossier.classList.remove('open', 'revealing'); dossier.setAttribute('aria-hidden', 'true');
     document.querySelectorAll('.settlement-marker.selected').forEach(marker => marker.classList.remove('selected'));
   }
 
@@ -132,6 +144,7 @@ export function initWorldUI(request, profile, activeCharacter) {
       actions.append(enter);
     }
     const dossier = $('worldLocationDossier'); dossier.classList.add('open'); dossier.setAttribute('aria-hidden', 'false');
+    if (revealedLink !== link.id) { revealedLink = link.id; restartReveal(dossier); }
     if (isGM() && editingLinkId !== link.id) {
       editingLinkId = link.id; editExpanded = true;
       renderPanel(location(current));
@@ -139,29 +152,28 @@ export function initWorldUI(request, profile, activeCharacter) {
   }
 
   function renderStarMarkers() {
-    for (const [key, id] of [['choir', 'choir'], ['shipcity', 'ship-city']]) {
-      const marker = document.querySelector(`[data-key="${key}"]`);
-      if (marker) {
-        const destination = location(id);
-        marker.style.display = destination ? '' : 'none';
-        marker.classList.toggle('unavailable', Boolean(destination && destination.access_level !== 'accessible'));
-        if (destination) marker.setAttribute('aria-label', `${destination.title}${destination.access_level !== 'accessible' ? `, ${accessName(destination).toLowerCase()}` : ''}`);
-      }
+    // Ship City is part of the drawn Jumuah chart; it only needs its world state.
+    const city = document.querySelector('#map [data-key="shipcity"]');
+    if (city) {
+      const destination = location('ship-city');
+      city.parentElement.style.display = destination ? '' : 'none';
+      city.classList.toggle('unavailable', Boolean(destination && destination.access_level !== 'accessible'));
+      setVisitable(city.parentElement, Boolean(destination && canEnter(destination)));
+      if (destination) city.setAttribute('aria-label', `${destination.title}${destination.access_level !== 'accessible' ? `, ${accessName(destination).toLowerCase()}` : ''}`);
     }
-    const svg = $('map');
-    svg.querySelectorAll('.world-marker-svg').forEach(item => item.remove());
-    for (const link of world.links.filter(item => item.from_id === 'star-map' && !['choir', 'ship-city'].includes(item.to_id))) {
+    // Other locations linked from the star map use the chart's icon family, in the same 900 x 600 chart space.
+    const layer = $('chartMarkers');
+    layer.querySelectorAll('.world-marker-svg').forEach(item => item.remove());
+    for (const link of world.links.filter(item => item.from_id === 'star-map' && item.to_id !== 'ship-city')) {
       const to = location(link.to_id); if (!to) continue;
-      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      group.setAttribute('class', 'world-marker-svg'); group.setAttribute('role', 'button'); group.setAttribute('tabindex', '0');
-      group.setAttribute('aria-label', `Inspect ${to.title}${to.access_level !== 'accessible' ? `, ${accessName(to).toLowerCase()}` : ''}`); group.setAttribute('transform', `translate(${link.x} ${link.y})`);
-      group.classList.toggle('unavailable', to.access_level !== 'accessible');
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); circle.setAttribute('r', '13');
-      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text'); label.setAttribute('x', '19'); label.setAttribute('y', '4'); label.textContent = `${to.title}${to.access_level === 'accessible' ? '' : ` · ${accessName(to)}`}`;
-      group.append(circle, label);
+      const restricted = to.access_level !== 'accessible';
+      const marker = chartMarker({ x: link.x, y: link.y, icon: KIND_ICON[to.kind] || 'poi', name: to.title, sub: `${kindName(to.kind)}${restricted ? ` · ${accessName(to)}` : ''}`, rumored: to.access_level === 'invisible', visitable: canEnter(to), className: 'world-marker-svg', label: `Inspect ${to.title}${restricted ? `, ${accessName(to).toLowerCase()}` : ''}` });
+      marker.dataset.linkId = link.id;
+      marker.starItem.classList.toggle('unavailable', to.access_level === 'inaccessible');
       const go = () => { $('dossier').classList.remove('open'); $('worldOpenSelected').hidden = true; selectedStar = null; inspectLocation(link); };
-      group.addEventListener('click', go); group.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); go(); } });
-      svg.append(group);
+      marker.starItem.addEventListener('click', event => { event.stopPropagation(); go(); });
+      marker.starItem.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); go(); } });
+      layer.append(marker);
     }
     const selected = location(selectedStar);
     const visit = $('worldOpenSelected');
@@ -175,6 +187,9 @@ export function initWorldUI(request, profile, activeCharacter) {
     if (!world) return;
     const item = location(current) || location('star-map'); if (!item) return;
     const star = item.kind === 'star';
+    const arrived = renderedId !== null && renderedId !== item.id;
+    renderedId = item.id;
+    if (arrived) transition.prepare();
     $('worldHeadingTitle').textContent = item.title;
     $('worldHeadingDescription').textContent = item.description;
     if (!['settlement', 'star'].includes(item.kind) && selectedLocal) closeLocalDossier();
@@ -182,6 +197,9 @@ export function initWorldUI(request, profile, activeCharacter) {
     $('worldBack').disabled = !canEnter(location(item.parent_id));
     renderStarMarkers();
     if (!star) renderLocal(item);
+    dust.set(star ? null : item.kind);
+    if (arrived) { transition.play(bloomOrigin); restartReveal($('worldHeading')); }
+    bloomOrigin = null;
     renderMoveDock(item);
     if (isGM()) renderPanel(item);
     if (selectedLocal && ['settlement', 'star'].includes(item.kind)) {
@@ -258,8 +276,9 @@ export function initWorldUI(request, profile, activeCharacter) {
       marker.setAttribute('aria-label', `Inspect ${to.title}${to.access_level !== 'accessible' ? `, ${accessName(to).toLowerCase()}` : ''}`);
       if (selectedLocal === link.id) marker.classList.add('selected');
       const sigil = node('span', 'marker-sigil'); sigil.setAttribute('aria-hidden', 'true');
-      sigil.append(node('span', 'marker-symbol', ({ settlement: '✧', delve: '⌘', diorama: '◇', poi: '✦' })[to.kind] || '✦'));
-      const plate = node('span', 'marker-label'); plate.append(node('small', '', `${kindName(to.kind)}${to.access_level === 'accessible' ? '' : ` · ${accessName(to)}`}`), node('span', '', to.title));
+      const glyph = ['settlement', 'delve', 'diorama'].includes(to.kind) ? to.kind : 'poi';
+      sigil.innerHTML = `<span class="marker-glow"></span><span class="marker-ring"></span><img class="marker-icon" src="assets/icons/marker-${glyph}.png" alt="" draggable="false">`;
+      const plate = node('span', 'marker-label'); plate.append(node('small', '', `${kindName(to.kind)}${to.access_level === 'accessible' ? '' : ` · ${accessName(to)}`}`), node('span', 'marker-name', to.title));
       marker.append(sigil, plate);
       marker.style.left = `${Math.max(5, Math.min(95, link.x))}%`; marker.style.top = `${Math.max(5, Math.min(95, link.y))}%`;
       if (isGM()) {
@@ -529,7 +548,7 @@ export function initWorldUI(request, profile, activeCharacter) {
       const image = node('input'); image.type = 'file'; image.accept = 'image/png,image/jpeg,image/webp';
       const cardImage = node('input'); cardImage.type = 'file'; cardImage.accept = image.accept;
       edit.append(field('Location', targetSelect), field('Title', title), field('One-line impression (optional)', teaser), field('Description', description), field('In-world quote (optional)', quote), field('Quote speaker (optional)', quoteSpeaker), field('Party access', access));
-      const positionable = choice.link && !['star-choir', 'star-ship-city'].includes(choice.link.id);
+      const positionable = choice.link && choice.link.id !== 'star-ship-city';
       let x, y;
       if (positionable) {
         x = node('input'); y = node('input'); x.type = y.type = 'number'; x.step = y.step = '0.1';
@@ -582,7 +601,7 @@ export function initWorldUI(request, profile, activeCharacter) {
   $('worldOpenSelected').addEventListener('click', () => { if (canEnter(location(selectedStar))) open(selectedStar, world?.links.find(link => link.from_id === 'star-map' && link.to_id === selectedStar)?.id); });
   document.addEventListener('chart-marker', event => {
     closeLocalDossier();
-    selectedStar = ({ choir: 'choir', shipcity: 'ship-city' })[event.detail.key] || null;
+    selectedStar = event.detail.key === 'shipcity' ? 'ship-city' : null;
     const selected = location(selectedStar), visit = $('worldOpenSelected');
     visit.hidden = !selected;
     visit.disabled = Boolean(selected && !canEnter(selected));
@@ -593,7 +612,7 @@ export function initWorldUI(request, profile, activeCharacter) {
   });
   return {
     start() { current = 'star-map'; previousPosition = null; $('worldChrome').hidden = false; refresh(true).then(() => { if (myPosition()?.location_id) open(myPosition().location_id); }); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) refresh(); }, 1000); },
-    stop() { clearInterval(timer); clearTimeout(statusTimer); status(''); timer = null; world = null; closeLocalDossier(); $('worldChrome').hidden = true; $('worldView').hidden = true; $('worldPanel').hidden = true; $('worldMoveDock').hidden = true; },
+    stop() { clearInterval(timer); clearTimeout(statusTimer); status(''); timer = null; world = null; renderedId = null; transition.finish(); dust.set(null); closeLocalDossier(); $('worldChrome').hidden = true; $('worldView').hidden = true; $('worldPanel').hidden = true; $('worldMoveDock').hidden = true; },
     characterChanged() { previousPosition = null; refresh(true).then(() => open(myPosition()?.location_id || 'star-map')); }
   };
 }
