@@ -279,7 +279,7 @@ export function initWorldUI(request, profile, activeCharacter) {
       if (selectedLocal === link.id) marker.classList.add('selected');
       const sigil = node('span', 'marker-sigil'); sigil.setAttribute('aria-hidden', 'true');
       const glyph = ['settlement', 'delve', 'diorama'].includes(to.kind) ? to.kind : 'poi';
-      sigil.innerHTML = `<span class="marker-glow"></span><svg class="marker-glyph" viewBox="-30 -30 60 60"><circle class="marker-ticks" r="24"/><use href="#sigil-${glyph}"/></svg>`;
+      sigil.innerHTML = `<span class="marker-glow"></span><span class="marker-ring"></span><img class="marker-icon" src="assets/icons/marker-${glyph}.png" alt="" draggable="false">`;
       const plate = node('span', 'marker-label'); plate.append(node('small', '', `${kindName(to.kind)}${to.access_level === 'accessible' ? '' : ` · ${accessName(to)}`}`), node('span', 'marker-name', to.title));
       marker.append(sigil, plate);
       marker.style.left = `${Math.max(5, Math.min(95, link.x))}%`; marker.style.top = `${Math.max(5, Math.min(95, link.y))}%`;

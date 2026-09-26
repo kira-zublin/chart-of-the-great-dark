@@ -53,16 +53,16 @@ Panels carry a faint rust wash in one corner and a cool steel wash in the opposi
 
 ## Map markers
 
-Location markers on Hub maps are brass sigils with the name set directly on the painting, softened by a dark halo instead of a label box. Each kind has its own sigil and accent:
+Hub map markers use the same pattern as the star chart. The core icon is an image, and CSS adds the effects around it: a lamplight glow, a slowly turning dashed ring and a hover lift. Names sit directly on the painting, softened by a dark halo instead of a label box.
 
-| Kind | Sigil | Accent |
+| Kind | Icon (`assets/icons/`) | Accent |
 | --- | --- | --- |
-| Hub (`settlement`) | Compass rose | Gold |
-| Explorable (`delve`) | Descending arch with steps | Rust |
-| Vista (`diorama`) | Lens | Teal |
-| Point of interest (`poi`) | Diamond in a dotted ring | Pale brass |
+| Hub (`settlement`) | `marker-settlement.png`: compass rose | Gold |
+| Explorable (`delve`) | `marker-delve.png`: lit archway with descending steps | Rust |
+| Vista (`diorama`) | `marker-diorama.png`: teal glass eye | Teal |
+| Point of interest (`poi`) | `marker-poi.png`: faceted brass lozenge | Pale brass |
 
-The sigils are SVG symbols in `index.html` (`#sigil-*`). On hover, focus or selection, lamplight spreads under the marker and the name is underlined. Restricted and invisible locations use grey accents.
+The icons are 256×256 transparent PNGs, each with a brass medallion centred in the frame. A replacement, such as a painted version, must keep the same size and centring, because the glow and ring are centred on the image. On hover, focus or selection, the glow brightens, the ring sharpens and the name is underlined. Restricted and invisible locations turn the icon grey.
 
 ## Motion
 

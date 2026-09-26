@@ -184,17 +184,18 @@ svg.map .unavailable text { fill: #b7b7b5; }
 .settlement-marker[data-kind="poi"] { --marker-accent: #cdb591; --marker-glow: rgba(240, 214, 170, .3); }
 .settlement-marker.gm-draggable { cursor: grab; touch-action: none; }
 .settlement-marker.repositioning { cursor: grabbing; z-index: 6; }
-.settlement-marker .marker-sigil { position: relative; display: grid; place-items: center; flex: none; width: 72px; height: 72px; }
+.settlement-marker .marker-sigil { position: relative; flex: none; width: 72px; height: 72px; }
+.settlement-marker .marker-glow,
+.settlement-marker .marker-ring,
+.settlement-marker .marker-icon { position: absolute; left: 50%; top: 50%; border-radius: 50%; pointer-events: none; }
 .settlement-marker .marker-glow {
-  position: absolute; left: 50%; top: 50%; width: 190px; height: 190px; margin: -95px 0 0 -95px; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, var(--marker-glow), transparent 68%); mix-blend-mode: screen;
+  width: 190px; height: 190px; margin: -95px 0 0 -95px;
+  background: radial-gradient(circle, var(--marker-glow), transparent 68%);
   opacity: .5; transform: scale(.7); transition: opacity .5s ease, transform .6s cubic-bezier(.2, .7, .2, 1);
 }
-.settlement-marker .marker-glyph {
-  position: relative; width: 72px; height: 72px; overflow: visible; color: var(--marker-accent);
-  filter: drop-shadow(0 2px 3px #000e) drop-shadow(0 0 10px #0009); transition: transform .45s cubic-bezier(.2, .7, .2, 1);
-}
-.settlement-marker .marker-ticks { fill: none; stroke: var(--marker-accent); stroke-width: 3; stroke-dasharray: 1 5.28; opacity: .7; transform-box: fill-box; transform-origin: center; }
+.settlement-marker .marker-ring { width: 86px; height: 86px; margin: -43px 0 0 -43px; border: 1px dashed var(--marker-accent); opacity: .55; transition: opacity .4s ease; }
+.settlement-marker .marker-ring::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; border: 1px solid var(--marker-accent); opacity: .3; }
+.settlement-marker .marker-icon { width: 88px; height: 88px; margin: -44px 0 0 -44px; border-radius: 0; user-select: none; -webkit-user-drag: none; transition: transform .45s cubic-bezier(.2, .7, .2, 1), filter .4s ease; }
 .settlement-marker .marker-label {
   display: grid;
   gap: 2px;
@@ -210,14 +211,18 @@ svg.map .unavailable text { fill: #b7b7b5; }
 .settlement-marker:hover .marker-glow,
 .settlement-marker:focus-visible .marker-glow,
 .settlement-marker.selected .marker-glow { opacity: 1; transform: scale(1.1); }
-.settlement-marker:hover .marker-glyph,
-.settlement-marker:focus-visible .marker-glyph,
-.settlement-marker.selected .marker-glyph { transform: scale(1.08); }
+.settlement-marker:hover .marker-icon,
+.settlement-marker:focus-visible .marker-icon,
+.settlement-marker.selected .marker-icon { transform: scale(1.08); filter: brightness(1.12); }
+.settlement-marker:hover .marker-ring,
+.settlement-marker:focus-visible .marker-ring,
+.settlement-marker.selected .marker-ring { opacity: .9; }
 .settlement-marker:hover .marker-name::after,
 .settlement-marker:focus-visible .marker-name::after,
 .settlement-marker.selected .marker-name::after { transform: scaleX(1); }
 .settlement-marker.selected .marker-name { color: #fff3d2; }
-.motion .settlement-marker .marker-ticks { animation: settlementOrbit 40s linear infinite; }
+.settlement-marker:is([data-access="inaccessible"], [data-access="invisible"]) .marker-icon { filter: grayscale(.85) brightness(.8); }
+.motion .settlement-marker .marker-ring { animation: settlementOrbit 40s linear infinite; }
 @keyframes settlementOrbit { to { transform: rotate(360deg); } }
 
 .world-drag-ghost { position: fixed !important; z-index: 100; pointer-events: none !important; transform: none !important; opacity: .92 !important; box-shadow: 0 12px 30px #000c, 0 0 18px #e6cc8c88; filter: drop-shadow(0 10px 12px #000a); }
