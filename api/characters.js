@@ -3,8 +3,8 @@ import { cleanSheet } from '../lib/sheet.js';
 
 const fields = ['name', 'profession', 'origin', 'faction', 'appearance', 'motivation', 'description'];
 const statNames = ['strength', 'agility', 'logic', 'insight', 'perception', 'empathy'];
-const select = `SELECT c.id, c.owner_id, c.kind, c.name, c.profession, c.origin, c.faction, c.appearance, c.motivation, c.description, c.attributes, c.sheet, c.created_at, c.updated_at, p.name AS owner_name, EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'portrait') AS has_portrait, EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'standup') AS has_standup FROM characters c JOIN profiles p ON p.id = c.owner_id`;
-function present(row) { return { ...row, attributes: JSON.parse(row.attributes), sheet: JSON.parse(row.sheet), has_portrait: Boolean(row.has_portrait), has_standup: Boolean(row.has_standup) }; }
+const select = `SELECT c.id, c.owner_id, c.kind, c.name, c.profession, c.origin, c.faction, c.appearance, c.motivation, c.description, c.attributes, c.sheet, c.created_at, c.updated_at, p.name AS owner_name, EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'portrait') AS has_portrait, EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'standup') AS has_standup, EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'delve_suit') AS has_delve_suit FROM characters c JOIN profiles p ON p.id = c.owner_id`;
+function present(row) { return { ...row, attributes: JSON.parse(row.attributes), sheet: JSON.parse(row.sheet), has_portrait: Boolean(row.has_portrait), has_standup: Boolean(row.has_standup), has_delve_suit: Boolean(row.has_delve_suit) }; }
 
 export function clean(input) {
   if (!input || typeof input !== 'object') return null;

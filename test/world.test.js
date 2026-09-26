@@ -9,6 +9,7 @@ import { applyChoirParent } from '../scripts/migrate-007.js';
 import { applyLocationAccess } from '../scripts/migrate-008.js';
 import { applyLocationCards } from '../scripts/migrate-009.js';
 import { applyStandupScale } from '../scripts/migrate-012.js';
+import { applyStandupVariants } from '../scripts/migrate-014.js';
 import { GET as authGet, POST as authPost } from '../api/auth.js';
 import { POST as characterPost } from '../api/characters.js';
 import { GET as worldGet, POST as worldPost } from '../api/world.js';
@@ -28,7 +29,7 @@ test('world positions, fog, GM permissions, pulls, and uploaded art', async () =
   process.env.REGISTRATION_INVITE_CODE = 'private invitation';
   const sql = db();
   try {
-    await applyInitialSchema(sql); await applySheetAndCrewSchema(sql); await applyChatSchema(sql); await applyWorldSchema(sql); await applyWorldSchema(sql); await applyLocationAccess(sql); await applyLocationAccess(sql); await applyLocationCards(sql); await applyStandupScale(sql); await applyLocationCards(sql); await applyStandupScale(sql);
+    await applyInitialSchema(sql); await applySheetAndCrewSchema(sql); await applyChatSchema(sql); await applyWorldSchema(sql); await applyWorldSchema(sql); await applyLocationAccess(sql); await applyLocationAccess(sql); await applyLocationCards(sql); await applyStandupScale(sql); await applyLocationCards(sql); await applyStandupScale(sql); await applyStandupVariants(sql); await applyStandupVariants(sql);
     assert.equal((await sql`SELECT parent_id FROM locations WHERE id = 'choir'`)[0].parent_id, 'ship-city');
     await sql`UPDATE locations SET parent_id = 'star-map' WHERE id = 'choir'`;
     await applyChoirParent(sql); await applyChoirParent(sql);
@@ -73,6 +74,20 @@ test('world positions, fog, GM permissions, pulls, and uploaded art', async () =
     const bytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lXcAAAAASUVORK5CYII=', 'base64');
     assert.equal((await characterImagePut(new Request(base + `/api/image?id=${a}&slot=portrait`, { method: 'PUT', headers: { cookie: alice, 'Content-Type': 'image/png' }, body: bytes }))).status, 200);
     assert.equal((await characterImageGet(req(`/api/image?id=${a}&slot=portrait`, 'GET', undefined, bob))).status, 200);
+    const standup = (value, cookie) => worldPost(req('/api/world', 'POST', { action: 'standup', characterId: a, ...value }, cookie));
+    assert.equal((await standup({ flipped: true }, bob)).status, 403);
+    assert.equal((await standup({ flipped: 'yes' }, alice)).status, 400);
+    assert.equal((await standup({}, alice)).status, 400);
+    assert.equal((await standup({ flipped: true }, alice)).status, 200);
+    assert.equal((await standup({ delveSuit: true }, alice)).status, 400, 'the suit needs an uploaded image');
+    assert.equal((await characterImagePut(new Request(base + `/api/image?id=${a}&slot=delve_suit`, { method: 'PUT', headers: { cookie: alice, 'Content-Type': 'image/png' }, body: bytes }))).status, 200);
+    assert.equal((await characterImageGet(req(`/api/image?id=${a}&slot=delve_suit`, 'GET', undefined, bob))).status, 200);
+    assert.equal((await standup({ delveSuit: true }, gm)).status, 200);
+    const suited = (await data(await worldGet(req('/api/world', 'GET', undefined, bob)))).body.positions.find(pos => pos.character_id === a);
+    assert.deepEqual([suited.standup_flipped, suited.delve_suit, suited.has_delve_suit], [1, 1, 1]);
+    const moved = await data(await worldPost(req('/api/world', 'POST', { action: 'move', characterId: a, locationId: 'choir-depths' }, alice)));
+    assert.equal(moved.status, 200);
+    assert.equal((await data(await worldGet(req('/api/world', 'GET', undefined, alice)))).body.positions.find(pos => pos.character_id === a).delve_suit, 1, 'the suit stays on between locations');
     const uploadReq = new Request(base + `/api/location-image?id=${created.body.id}`, { method: 'PUT', headers: { cookie: gm, 'Content-Type': 'image/png' }, body: bytes });
     assert.equal((await imagePut(uploadReq)).status, 200);
     assert.equal((await imageGet(req(`/api/location-image?id=${created.body.id}`, 'GET', undefined, alice))).status, 200);

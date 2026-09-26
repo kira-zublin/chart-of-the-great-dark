@@ -5,7 +5,7 @@ const maxBytes = 2 * 1024 * 1024;
 function params(req) {
   const url = new URL(req.url);
   const id = url.searchParams.get('id'); const slot = url.searchParams.get('slot');
-  if (!id || !/^[0-9a-f-]{36}$/i.test(id) || !['portrait', 'standup'].includes(slot)) return null;
+  if (!id || !/^[0-9a-f-]{36}$/i.test(id) || !['portrait', 'standup', 'delve_suit'].includes(slot)) return null;
   return { id, slot };
 }
 async function canEdit(sql, profile, id) {
