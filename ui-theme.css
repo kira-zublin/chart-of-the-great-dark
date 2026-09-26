@@ -119,6 +119,12 @@ button.primary-button:not(:disabled):hover, button.primary-button:focus-visible 
 }
 .panel-tabs { gap: 6px; }
 .panel-tabs button { padding-inline: 2px; }
+/* The GM's six tabs do not fit a phone-width panel, so the row scrolls sideways instead of overlapping. */
+@media (max-width: 520px) {
+  .panel-tabs { overflow-x: auto; scrollbar-width: none; gap: 12px; }
+  .panel-tabs::-webkit-scrollbar { display: none; }
+  .panel-tabs button { flex: none; }
+}
 .panel-tabs button:hover, .sheet-tabs button:hover { color: #e3d5b0; }
 .panel-tabs button[aria-selected="true"], .sheet-tabs button[aria-selected="true"],
 .side-panel .sheet-tabs button[aria-selected="true"] { background: transparent; color: #f4e6c1; border-color: transparent; }

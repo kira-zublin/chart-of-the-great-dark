@@ -285,3 +285,18 @@ svg.map .unavailable text { fill: #b7b7b5; }
   .world-scale-control input[type="range"] { flex: 1; width: auto; }
   .world-scale-control .world-flip { padding-left: 4px; border-left: 0; }
 }
+
+/* GM Area List and instanced areas. */
+.area-search { display: grid; gap: 4px; margin: 12px 0 4px; font-size: 11px; }
+.area-search input { min-height: 32px; }
+.area-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 8px; border-bottom: 1px solid rgba(205, 184, 125, .14); }
+.area-row.current { background: rgba(201, 168, 98, .1); box-shadow: inset 2px 0 #c9a862; }
+.area-info { display: grid; gap: 2px; min-width: 0; }
+.area-title { color: #f1e3bd; font-size: 14px; overflow-wrap: anywhere; }
+.area-meta { color: #b8aa88; font-size: 11px; }
+.area-actions { display: flex; flex: none; gap: 8px; }
+.area-actions .text-button { min-height: 26px; padding: 2px 4px; font-size: 12px; }
+.area-actions .text-button:disabled { opacity: .45; text-decoration: none; cursor: default; }
+.area-delete { color: #e6a58c; }
+.instance-badge { display: inline-block; vertical-align: middle; margin-left: 4px; padding: 2px 7px; border: 1px solid rgba(143, 196, 216, .55); color: #a9d6e6; font-family: inherit; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
+.world-instance-note { padding: 8px 10px; border-left: 2px solid rgba(143, 196, 216, .6); background: rgba(143, 196, 216, .08); }

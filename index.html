@@ -182,6 +182,7 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
   <div class="side-panel-bar">
     <div class="panel-tabs" id="panelTabs" role="tablist" aria-label="Console sections">
       <button type="button" role="tab" id="panelTabMapping" aria-controls="paneMapping" aria-selected="false" tabindex="-1" data-panel="Mapping" data-gm-only>Mapping</button>
+      <button type="button" role="tab" id="panelTabAreas" aria-controls="paneAreas" aria-selected="false" tabindex="-1" data-panel="Areas" data-gm-only>Areas</button>
       <button type="button" role="tab" id="panelTabMusic" aria-controls="paneMusic" aria-selected="false" tabindex="-1" data-panel="Music" data-gm-only>Music</button>
       <button type="button" role="tab" id="panelTabCreatures" aria-controls="paneCreatures" aria-selected="false" tabindex="-1" data-panel="Creatures" data-gm-only>Creatures</button>
       <button type="button" role="tab" id="panelTabCharacters" aria-controls="paneCharacters" aria-selected="true" tabindex="0" data-panel="Characters">Characters</button>
@@ -193,6 +194,12 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
   <section id="paneMapping" class="side-pane" role="tabpanel" aria-labelledby="panelTabMapping" hidden>
     <div class="panel-head"><div><div class="eyebrow">GM tools</div><h2>Mapping</h2></div></div>
     <div class="world-gm-controls" id="worldPanel"></div>
+  </section>
+  <section id="paneAreas" class="side-pane" role="tabpanel" aria-labelledby="panelTabAreas" hidden>
+    <div class="panel-head"><div><div class="eyebrow">GM tools</div><h2>Area List</h2></div></div>
+    <p class="field-hint">Jump changes only your view. Instance makes a temporary, unconnected copy to rename and rebuild; it is removed about two hours after it is left empty and unviewed.</p>
+    <label class="area-search">Search areas<input id="areaSearch" type="search" autocomplete="off" placeholder="Name or parent"></label>
+    <div id="areaList" class="area-list"></div>
   </section>
   <section id="paneMusic" class="side-pane" role="tabpanel" aria-labelledby="panelTabMusic" hidden>
     <div class="panel-head"><div><div class="eyebrow">GM tools</div><h2>Music</h2></div></div>

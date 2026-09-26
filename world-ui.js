@@ -39,7 +39,7 @@ const sampleArt = {
 };
 const locationArt = item => item.has_image
   ? `/api/location-image?id=${encodeURIComponent(item.id)}&v=${item.image_version}`
-  : sampleArt[item.id] || null;
+  : sampleArt[item.id] || sampleArt[item.instance_of] || null;
 
 export function sceneDropPosition(pointer, drag, bounds) {
   const x = pointer.x - drag.offsetX + drag.width / 2;
@@ -83,7 +83,8 @@ export function initWorldUI(request, profile, activeCharacter) {
     if (!profile()) return;
     const requestingProfile = profile().id;
     try {
-      const latest = await request('/api/world');
+      // Naming the viewed location keeps an instanced area alive while someone is looking at it.
+      const latest = await request(`/api/world?viewing=${encodeURIComponent(current)}`);
       if (profile()?.id !== requestingProfile) return;
       const nextPosition = latest.positions.find(item => item.character_id === active()?.id);
       const changedByOther = previousPosition && nextPosition && (previousPosition.location_id !== nextPosition.location_id);
@@ -192,6 +193,7 @@ export function initWorldUI(request, profile, activeCharacter) {
     renderedId = item.id;
     if (arrived) transition.prepare();
     $('worldHeadingTitle').textContent = item.title;
+    if (isGM() && item.is_instance) $('worldHeadingTitle').append(' ', node('span', 'instance-badge', 'Instance'));
     $('worldHeadingDescription').textContent = item.description;
     if (!['settlement', 'star'].includes(item.kind) && selectedLocal) closeLocalDossier();
     $('worldView').hidden = star; $('worldChrome').hidden = false; $('worldPanel').hidden = !isGM();
@@ -529,10 +531,69 @@ export function initWorldUI(request, profile, activeCharacter) {
   function renderPanel(item) {
     const panel = $('worldPanel'); panel.replaceChildren();
     renderGMControls(panel, item);
+    renderAreaList(item);
+  }
+
+  // GM Area List: every location grouped by kind. Jump opens one for the GM only; Instance makes a temporary copy.
+  const AREA_GROUPS = [['instance', 'Instances'], ['star', 'Star Chart'], ['settlement', 'Hubs'], ['delve', 'Explorables'], ['diorama', 'Vistas'], ['poi', 'Points of interest']];
+  const instanceable = row => ['settlement', 'delve', 'diorama'].includes(row.kind);
+  function renderAreaList(item) {
+    const list = $('areaList'); list.replaceChildren();
+    const query = $('areaSearch').value.trim().toLowerCase();
+    const matches = world.locations.filter(row => !query || [row.title, location(row.parent_id)?.title].some(text => text?.toLowerCase().includes(query)));
+    for (const [group, heading] of AREA_GROUPS) {
+      const rows = matches.filter(row => (row.is_instance ? 'instance' : row.kind) === group).sort((a, b) => a.title.localeCompare(b.title));
+      if (!rows.length) continue;
+      list.append(node('div', 'rule', `${heading} · ${rows.length}`));
+      for (const row of rows) list.append(areaRow(row, item));
+    }
+    if (!list.childElementCount) list.append(node('p', 'world-empty-note', query ? 'No areas match that search.' : 'No areas yet.'));
+  }
+
+  function areaRow(row, item) {
+    const entry = node('div', 'area-row' + (row.id === item.id ? ' current' : ''));
+    const info = node('div', 'area-info');
+    const parent = location(row.parent_id);
+    const meta = [row.is_instance ? kindName(row.kind) : null, parent ? `in ${parent.title}` : null, row.access_level !== 'accessible' ? accessName(row) : null].filter(Boolean).join(' · ');
+    info.append(node('span', 'area-title', row.title));
+    if (meta) info.append(node('span', 'area-meta', meta));
+    // A Point of interest cannot be entered, so Jump opens the location whose map shows it.
+    const target = row.kind === 'poi' ? parent : row;
+    const jump = button(row.id === item.id ? 'Here' : 'Jump', () => open(target.id), 'text-button');
+    jump.disabled = !target || target.id === item.id;
+    const actions = node('div', 'area-actions'); actions.append(jump);
+    if (instanceable(row)) actions.append(button('Instance', () => createInstance(row), 'text-button'));
+    if (row.is_instance) actions.append(button('Delete', () => deleteInstance(row), 'text-button area-delete'));
+    entry.append(info, actions);
+    return entry;
+  }
+
+  async function createInstance(row) {
+    try {
+      const created = await send('instance', { locationId: row.id });
+      await refresh(true); open(created.id);
+      status(`Instance of ${row.title} created. Rename or rebuild it from the Mapping tab.`);
+    } catch (cause) { status(cause.message); }
+  }
+
+  async function deleteInstance(row) {
+    const here = world.positions.filter(pos => pos.location_id === row.id).length;
+    if (!confirm(`Delete the instance ${row.title}?${here ? ` ${here === 1 ? 'The character' : `The ${here} characters`} there will return to the Star Map.` : ''}`)) return;
+    try {
+      await send('deleteInstance', { locationId: row.id });
+      const leaving = current === row.id;
+      await refresh(true);
+      if (leaving) open(location(row.parent_id) ? row.parent_id : 'star-map');
+      status(`${row.title} instance deleted.`);
+    } catch (cause) { status(cause.message); }
   }
 
   function renderGMControls(panel, item) {
     panel.append(node('div', 'rule', item.title));
+    if (item.is_instance) {
+      panel.append(node('p', 'world-instance-note', 'Instanced area. Players cannot find it on their own, so pull them here. It is removed about two hours after it is left empty and unviewed.'));
+      panel.append(button('Delete instance', () => deleteInstance(item), 'area-delete'));
+    }
     if (item.kind !== 'poi') {
       if (item.access_level !== 'accessible') panel.append(node('p', 'world-empty-note', 'Set this location to Accessible before pulling characters here.'));
       else if (!world.positions.length) panel.append(node('p', 'world-empty-note', 'No player characters are available to pull.'));
@@ -641,6 +702,7 @@ export function initWorldUI(request, profile, activeCharacter) {
 
   $('worldBack').addEventListener('click', () => { const parent = location(current)?.parent_id; if (parent) open(parent); });
   $('worldStar').addEventListener('click', () => open('star-map'));
+  $('areaSearch').addEventListener('input', () => { if (world) renderAreaList(location(current) || location('star-map')); });
   $('worldLocationClose').addEventListener('click', closeLocalDossier);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeLocalDossier(); });
   new ResizeObserver(() => document.documentElement.style.setProperty('--chat-offset', `${$('chatDock').getBoundingClientRect().height + 12}px`)).observe($('chatDock'));
