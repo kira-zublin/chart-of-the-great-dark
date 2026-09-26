@@ -23,6 +23,15 @@ const locationArt = item => item.has_image
   ? `/api/location-image?id=${encodeURIComponent(item.id)}&v=${item.image_version}`
   : sampleArt[item.id] || null;
 
+export function sceneDropPosition(pointer, drag, bounds) {
+  const x = pointer.x - drag.offsetX + drag.width / 2;
+  const y = pointer.y - drag.offsetY + drag.height;
+  return [
+    Math.max(0, Math.min(1000, Math.round((x - bounds.left) / bounds.width * 1000))),
+    Math.max(0, Math.min(1000, Math.round((y - bounds.top) / bounds.height * 1000)))
+  ];
+}
+
 export function initWorldUI(request, profile, activeCharacter) {
   let world = null, current = 'star-map', incomingLink = null, selectedStar = null, selectedLocal = null, timer = null, previousPosition = null, signature = '', draggingToken = false;
   let editingLinkId = null, editExpanded = false, draggingMarker = false;
@@ -34,7 +43,12 @@ export function initWorldUI(request, profile, activeCharacter) {
   const active = () => activeCharacter();
   const myPosition = () => world?.positions.find(item => item.character_id === active()?.id);
   const linksHere = () => world?.links.filter(item => item.from_id === current) || [];
-  const status = message => { $('worldStatus').textContent = message || ''; };
+  let statusTimer;
+  const status = message => {
+    clearTimeout(statusTimer);
+    $('worldStatus').textContent = message || '';
+    if (message) statusTimer = setTimeout(() => { $('worldStatus').textContent = ''; }, 5000);
+  };
   const send = (action, values = {}) => request('/api/world', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ...values }) });
 
   async function refresh(force = false) {
@@ -148,11 +162,8 @@ export function initWorldUI(request, profile, activeCharacter) {
     $('worldHeadingTitle').textContent = item.title;
     $('worldHeadingDescription').textContent = item.description;
     if (!['settlement', 'star'].includes(item.kind) && selectedLocal) closeLocalDossier();
-    $('worldView').hidden = star; $('worldNav').hidden = false; $('worldPanel').hidden = !isGM();
+    $('worldView').hidden = star; $('worldChrome').hidden = false; $('worldPanel').hidden = !isGM();
     $('worldBack').disabled = !canEnter(location(item.parent_id));
-    const positioned = myPosition();
-    const actual = location(positioned?.location_id || 'star-map');
-    $('worldWhere').textContent = `Viewing: ${item.title} · ${active() ? `${active().name}: ${actual?.title || 'Star Map'}` : 'No character selected'}`;
     renderStarMarkers();
     if (!star) renderLocal(item);
     renderMoveDock(item);
@@ -372,7 +383,7 @@ export function initWorldUI(request, profile, activeCharacter) {
       const finish = async up => {
         const target = document.elementFromPoint(up.clientX, up.clientY);
         cleanup();
-        if (target && moved) await onDrop(target, up);
+        if (target && moved) await onDrop(target, up, { offsetX, offsetY, width: bounds.width, height: bounds.height });
         else refresh(true);
       };
       const cancel = () => { cleanup(); refresh(true); };
@@ -406,7 +417,7 @@ export function initWorldUI(request, profile, activeCharacter) {
         token.addEventListener('error', () => { token.src = 'assets/characters/anonymous-explorer.png'; }, { once: true });
         if (pos.character_id === active()?.id || isGM()) startDrag(token, async target => {
           const destination = target.closest('.world-cell'); if (!destination || destination.classList.contains('blocked')) return;
-          try { await send('position', { characterId: pos.character_id, x: Number(destination.dataset.x), y: Number(destination.dataset.y) }); status('Token moved.'); await refresh(true); }
+          try { await send('position', { characterId: pos.character_id, x: Number(destination.dataset.x), y: Number(destination.dataset.y) }); status(''); await refresh(true); }
           catch (cause) { status(cause.message); await refresh(true); }
         });
         cell.append(token);
@@ -425,9 +436,8 @@ export function initWorldUI(request, profile, activeCharacter) {
       img.src = pos.has_standup ? `/api/image?id=${encodeURIComponent(pos.character_id)}&slot=standup` : pos.has_portrait ? `/api/image?id=${encodeURIComponent(pos.character_id)}&slot=portrait` : 'assets/characters/anonymous-explorer.png';
       img.addEventListener('error', () => { img.src = 'assets/characters/anonymous-explorer.png'; }, { once: true });
       img.style.left = `${(pos.x ?? 500) / 10}%`; img.style.top = `${(pos.y ?? 800) / 10}%`;
-      if (pos.character_id === active()?.id || isGM()) startDrag(img, async (target, up) => {
-        const bounds = scene.getBoundingClientRect(); const x = Math.max(0, Math.min(1000, Math.round((up.clientX - bounds.left) / bounds.width * 1000)));
-        const y = Math.max(0, Math.min(1000, Math.round((up.clientY - bounds.top) / bounds.height * 1000)));
+      if (pos.character_id === active()?.id || isGM()) startDrag(img, async (target, up, drag) => {
+        const [x, y] = sceneDropPosition({ x: up.clientX, y: up.clientY }, drag, layer.getBoundingClientRect());
         try { await send('position', { characterId: pos.character_id, x, y }); await refresh(true); } catch (cause) { status(cause.message); }
       });
       layer.append(img);
@@ -552,6 +562,7 @@ export function initWorldUI(request, profile, activeCharacter) {
   $('worldLocationClose').addEventListener('click', closeLocalDossier);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeLocalDossier(); });
   new ResizeObserver(() => document.documentElement.style.setProperty('--chat-offset', `${$('chatDock').getBoundingClientRect().height + 12}px`)).observe($('chatDock'));
+  new ResizeObserver(() => document.documentElement.style.setProperty('--world-chrome-bottom', `${$('worldChrome').getBoundingClientRect().bottom}px`)).observe($('worldChrome'));
   $('worldOpenSelected').addEventListener('click', () => { if (canEnter(location(selectedStar))) open(selectedStar, world?.links.find(link => link.from_id === 'star-map' && link.to_id === selectedStar)?.id); });
   document.addEventListener('chart-marker', event => {
     closeLocalDossier();
@@ -565,8 +576,8 @@ export function initWorldUI(request, profile, activeCharacter) {
     signature = ''; if (location('star-map') && isGM()) renderPanel(location('star-map'));
   });
   return {
-    start() { current = 'star-map'; previousPosition = null; $('worldNav').hidden = false; refresh(true).then(() => { if (myPosition()?.location_id) open(myPosition().location_id); }); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) refresh(); }, 1000); },
-    stop() { clearInterval(timer); timer = null; world = null; closeLocalDossier(); $('worldNav').hidden = true; $('worldView').hidden = true; $('worldPanel').hidden = true; $('worldMoveDock').hidden = true; },
+    start() { current = 'star-map'; previousPosition = null; $('worldChrome').hidden = false; refresh(true).then(() => { if (myPosition()?.location_id) open(myPosition().location_id); }); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) refresh(); }, 1000); },
+    stop() { clearInterval(timer); clearTimeout(statusTimer); status(''); timer = null; world = null; closeLocalDossier(); $('worldChrome').hidden = true; $('worldView').hidden = true; $('worldPanel').hidden = true; $('worldMoveDock').hidden = true; },
     characterChanged() { previousPosition = null; refresh(true).then(() => open(myPosition()?.location_id || 'star-map')); }
   };
 }
