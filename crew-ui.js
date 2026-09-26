@@ -5,9 +5,9 @@ const sections = {
   rover: [['name', 'Name'], ['model', 'Model'], ['hull', 'Hull', 'number'], ['armor', 'Armor', 'number'], ['blight', 'Blight protection', 'number'], ['speed', 'Speed'], ['range', 'Range'], ['upgrades', 'Upgrades'], ['cargo', 'Cargo', 'long']],
   shuttle: [['name', 'Name'], ['model', 'Model'], ['hull', 'Hull', 'number'], ['armor', 'Armor', 'number'], ['blight', 'Blight protection', 'number'], ['speed', 'Travel speed'], ['range', 'Range'], ['upgrades', 'Upgrades'], ['cargo', 'Cargo', 'long']]
 };
-export function initCrewUI(request, profile, canLeaveCharacter) {
-  let crew = null; let characters = []; let timer = null; let loading = false;
-  const panel = $('crewPanel');
+export function initCrewUI(request, profile) {
+  let crew = null; let characters = []; let timer = null; let loading = false; let active = false;
+  const panel = $('paneCrew');
   const message = text => { $('crewMessage').textContent = text; };
   const tabs = ['Info', 'Maneuvers', 'Bird', 'Rover', 'Shuttle'];
   function selectTab(name) {
@@ -94,7 +94,7 @@ export function initCrewUI(request, profile, canLeaveCharacter) {
     }
   }
   async function load(force = false) {
-    if (loading || panel.hidden) return;
+    if (loading || !active) return;
     if (!force && panel.contains(document.activeElement)) return;
     loading = true;
     try {
@@ -145,15 +145,15 @@ export function initCrewUI(request, profile, canLeaveCharacter) {
     for (const input of document.querySelectorAll(`[data-crew-section="${section}"]`)) value[input.dataset.crewKey] = input.type === 'number' ? Number(input.value) : input.value;
     saveField(section, value);
   });
-  function close() { panel.hidden = true; clearInterval(timer); timer = null; crew = null; }
-  $('closeCrew').addEventListener('click', close);
-  $('openCrew').addEventListener('click', () => {
-    if (!profile()) return;
-    if (!canLeaveCharacter()) return;
-    $('characterPanel').hidden = true;
-    panel.hidden = false; selectTab('Info'); message(''); load(true);
-    clearInterval(timer); timer = setInterval(() => { if (!document.hidden) load(); }, 4000);
-  });
+  // Called by the side panel whenever the Crew tab becomes visible or hidden.
+  function setActive(on) {
+    if (on === active) return;
+    active = on; clearInterval(timer); timer = null;
+    if (!on) { crew = null; return; }
+    if (!profile()) { active = false; return; }
+    message(''); load(true);
+    timer = setInterval(() => { if (!document.hidden) load(); }, 4000);
+  }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
-  return { close };
+  return { setActive, close: () => setActive(false) };
 }

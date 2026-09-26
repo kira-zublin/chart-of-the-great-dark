@@ -25,7 +25,7 @@ The rules PDFs are local references in `gamerules/` and are deliberately exclude
 
 The crew is a single durable row in Turso, with five role slots in `crew_roles` referencing character IDs. The database prevents the same character occupying two slots and clears references when a character is deleted. The API requires a session for every read and write. Players may assign or clear their own PCs; the GM may manage any PC. Other crew fields are shared edits by all signed-in profiles. Each field-sized patch uses a revision comparison; a stale write receives HTTP 409 instead of overwriting newer state. Role assignment compares the expected occupant in SQL before changing the slot.
 
-While the Crew Sheet is open, clients fetch the latest state every four seconds and on returning to the browser tab. They immediately refetch after successful writes; polling pauses during active field editing. Turso remains authoritative, so refreshes and separate Vercel Function instances see the same state. This near-real-time approach adds no dedicated messaging service. Chat or subsecond presence can later use a push transport without changing the crew persistence model.
+While the Crew tab of the side panel is showing, clients fetch the latest state every four seconds and on returning to the browser tab. They immediately refetch after successful writes; polling pauses during active field editing. Turso remains authoritative, so refreshes and separate Vercel Function instances see the same state. This near-real-time approach adds no dedicated messaging service. Chat or subsecond presence can later use a push transport without changing the crew persistence model.
 
 ## Campaign chat and dice
 

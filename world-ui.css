@@ -28,7 +28,6 @@
 .world-chrome .world-nav { position: static; top: auto; left: auto; right: auto; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: auto; }
 .world-status { position: absolute; z-index: 9; top: 62px; right: 20px; max-width: min(300px, calc(100vw - 40px)); padding: 8px 11px; color: #f0b89e; font-size: 12px; background: #09131bea; border: 1px solid #9f755d80; pointer-events: none; }
 .world-status:empty { display: none; }
-.world-panel { top: 174px; max-height: calc(100vh - 244px); }
 .world-presence {
   top: calc(var(--world-chrome-bottom, 235px) + 14px);
   width: min(270px, calc(100vw - 48px));
@@ -123,8 +122,8 @@ svg.map, svg.map text, .settlement-map, .settlement-marker, .settlement-marker *
   opacity: .6;
   border-style: dashed;
 }
-.world-panel button:disabled { cursor: not-allowed; opacity: .55; }
-.world-panel .world-empty-note, .world-panel .world-edit-hint { color: #b7aa8c; line-height: 1.45; }
+.world-gm-controls button:disabled { cursor: not-allowed; opacity: .55; }
+.world-gm-controls .world-empty-note, .world-gm-controls .world-edit-hint { color: #b7aa8c; line-height: 1.45; }
 .settlement-marker[data-access="inaccessible"] { --marker-accent: #a7a9ab; }
 .settlement-marker[data-access="invisible"] { --marker-accent: #787f8a; opacity: .72; }
 svg.map .unavailable .landmark-image, svg.map .unavailable .delve-icon, svg.map .world-marker-svg.unavailable circle { opacity: .45; }
