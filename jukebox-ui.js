@@ -21,12 +21,17 @@ export function initJukeboxUI(request, profile) {
   let data = null, timer = null, clock = 0, hasClock = false, blocked = false, revision = null, signature = '';
   const settingsKey = () => `jukebox-audio:${profile()?.id}`;
   let settings = { muted: false, volume: 0.7 };
+  // The GM's shared level while the GM drags the slider, before the server has it.
+  let gmVolumeDraft = null;
   const isGM = () => profile()?.role === 'gm';
+  const gmVolume = () => gmVolumeDraft ?? data?.state?.volume ?? 1;
+  // Each browser's own volume scaled by the GM's level for everyone.
+  const setVolume = () => { audio.volume = Math.min(1, Math.max(0, settings.volume * gmVolume())); };
 
   function loadSettings() {
     try { settings = { ...settings, ...JSON.parse(localStorage.getItem(settingsKey()) || '{}') }; } catch { /* keep defaults */ }
     settings.volume = Math.min(1, Math.max(0, Number(settings.volume) || 0));
-    audio.muted = Boolean(settings.muted); audio.volume = settings.volume;
+    audio.muted = Boolean(settings.muted); setVolume();
     $('soundMute').checked = audio.muted; $('soundVolume').value = String(Math.round(settings.volume * 100));
   }
   function saveSettings() { localStorage.setItem(settingsKey(), JSON.stringify(settings)); }
@@ -34,6 +39,7 @@ export function initJukeboxUI(request, profile) {
   // ---------- Playback shared by every signed-in profile ----------
   function apply() {
     const state = data?.state;
+    setVolume();
     if (!state || state.status !== 'playing' || !state.url) {
       audio.pause();
       if ((!state || state.status === 'stopped' || !state.url) && audio.getAttribute('src')) { audio.removeAttribute('src'); audio.load(); }
@@ -94,7 +100,7 @@ export function initJukeboxUI(request, profile) {
     if (!event.target.closest('.sound-wrap')) { $('soundMenu').hidden = true; $('soundButton').setAttribute('aria-expanded', 'false'); }
   });
   $('soundMute').addEventListener('change', () => { settings.muted = $('soundMute').checked; audio.muted = settings.muted; saveSettings(); apply(); });
-  $('soundVolume').addEventListener('input', () => { settings.volume = Number($('soundVolume').value) / 100; audio.volume = settings.volume; saveSettings(); });
+  $('soundVolume').addEventListener('input', () => { settings.volume = Number($('soundVolume').value) / 100; setVolume(); saveSettings(); });
 
   // ---------- GM Music tab ----------
   const message = text => { $('jukeboxMessage').textContent = text || ''; };
@@ -127,7 +133,7 @@ export function initJukeboxUI(request, profile) {
     loop.addEventListener('change', () => act({ action: 'loop', loop: loop.checked }));
     const loopLabel = node('label', 'jukebox-loop'); loopLabel.append(loop, document.createTextNode('Loop track'));
     controls.append(loopLabel);
-    now.append(controls);
+    now.append(controls, renderVolume(state));
 
     $('jukeboxUsage').textContent = `${tracks.length} ${tracks.length === 1 ? 'track' : 'tracks'} · ${megabytes(data.usageBytes)} of 1 GB`;
     const list = $('jukeboxTracks'); list.replaceChildren();
@@ -148,6 +154,24 @@ export function initJukeboxUI(request, profile) {
     }
   }
 
+  // The GM's volume for everyone. Dragging previews it locally; releasing saves it for every listener.
+  function renderVolume(state) {
+    const wrap = node('div', 'jukebox-volume');
+    const input = node('input'); input.type = 'range'; input.id = 'jukeboxVolume'; input.min = '0'; input.max = '100'; input.step = '1';
+    input.value = String(Math.round((gmVolumeDraft ?? state.volume ?? 1) * 100));
+    const label = node('label', '', 'Volume for everyone'); label.htmlFor = input.id;
+    const value = node('output', 'jukebox-volume-value'); value.htmlFor = input.id;
+    const show = () => { value.textContent = `${input.value}%`; };
+    input.addEventListener('input', () => { gmVolumeDraft = Number(input.value) / 100; show(); setVolume(); });
+    input.addEventListener('change', async () => {
+      await act({ action: 'volume', volume: Number(input.value) / 100 });
+      gmVolumeDraft = null; setVolume();
+    });
+    show();
+    wrap.append(label, input, value);
+    return wrap;
+  }
+
   function readDuration(file) {
     return new Promise(resolve => {
       const probe = new Audio(); const url = URL.createObjectURL(file);
@@ -166,7 +190,7 @@ export function initJukeboxUI(request, profile) {
   $('jukeboxUploadForm').addEventListener('submit', async event => {
     event.preventDefault();
     const file = $('jukeboxFile').files[0], title = $('jukeboxTitle').value.trim();
-    const limit = data?.maxTrackBytes || 15 * 1024 * 1024;
+    const limit = data?.maxTrackBytes || 50 * 1024 * 1024;
     if (!file) return message('Choose an MP3 file to upload.');
     if (!(file.type === 'audio/mpeg' || /\.mp3$/i.test(file.name))) return message('Only MP3 files can be uploaded.');
     if (file.size > limit) return message(`Tracks must be ${megabytes(limit)} or smaller.`);

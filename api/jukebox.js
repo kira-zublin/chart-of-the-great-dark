@@ -5,14 +5,14 @@ const pathnamePattern = /^jukebox\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const maxDurationMs = 6 * 60 * 60 * 1000;
 
 async function snapshot(sql, profile) {
-  const state = (await sql`SELECT s.track_id, s.status, s.started_at_ms, s.position_ms, s.loop, s.revision, t.blob_url, t.duration_ms
+  const state = (await sql`SELECT s.track_id, s.status, s.started_at_ms, s.position_ms, s.loop, s.revision, s.volume, t.blob_url, t.duration_ms
     FROM jukebox_state s LEFT JOIN jukebox_tracks t ON t.id = s.track_id WHERE s.id = 1`)[0];
   // Players receive only what playback needs: no track titles or ids.
   const shared = {
     status: state.track_id ? state.status : 'stopped',
     url: state.track_id ? state.blob_url : null,
     started_at_ms: state.started_at_ms, position_ms: state.position_ms,
-    duration_ms: state.duration_ms, loop: Boolean(state.loop), revision: state.revision
+    duration_ms: state.duration_ms, loop: Boolean(state.loop), revision: state.revision, volume: state.volume
   };
   const result = { now: Date.now(), state: shared };
   if (profile.role === 'gm') {
@@ -49,7 +49,7 @@ export async function POST(req) {
         if (!blobStore.configured()) return error('Music storage is not configured for this environment.', 503);
         const size = Number(input.size);
         if (!Number.isInteger(size) || size < 1) return error('Choose an MP3 file to upload.');
-        if (size > maxTrackBytes) return error('Tracks must be 15 MB or smaller.', 413);
+        if (size > maxTrackBytes) return error(`Tracks must be ${maxTrackBytes / 1024 / 1024} MB or smaller.`, 413);
         const pathname = `jukebox/${randomUUID()}.mp3`;
         const clientToken = await blobStore.clientToken({ pathname, allowedContentTypes: ['audio/mpeg'], maximumSizeInBytes: maxTrackBytes, validUntil: now + 15 * 60 * 1000, addRandomSuffix: false, allowOverwrite: false });
         return json({ pathname, clientToken });
@@ -97,6 +97,13 @@ export async function POST(req) {
       case 'loop': {
         if (typeof input.loop !== 'boolean') return error('Loop must be on or off.');
         await sql`UPDATE jukebox_state SET loop = ${input.loop ? 1 : 0}, revision = revision + 1 WHERE id = 1`;
+        break;
+      }
+      case 'volume': {
+        // The GM's level for every listener, multiplied by each browser's own volume. It leaves revision alone so
+        // clients adjust loudness without re-seeking the track.
+        if (typeof input.volume !== 'number' || !(input.volume >= 0 && input.volume <= 1)) return error('Volume must be between 0 and 100%.');
+        await sql`UPDATE jukebox_state SET volume = ${Math.round(input.volume * 100) / 100} WHERE id = 1`;
         break;
       }
       default:
