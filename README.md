@@ -62,4 +62,12 @@ The local preview seeds six Ship City districts as Hubs: Aluminum Bay, the Chasm
 
 Location cards add an optional one-line impression, an optional attributed quote, and a separately uploaded illustration. Existing descriptions remain valid. Migration `scripts/migrate-009.js` adds these fields and the card image table without changing existing locations; it runs automatically only for the isolated Preview database. Any later deployment against a persistent database requires applying it to the intended target before deploying the new API.
 
+## Jukebox
+
+The GM uploads licensed MP3 tracks (up to 15 MB each) in the Music tab and plays one at a time for every signed-in profile. Audio files live in Vercel Blob; Turso stores track titles and the shared playback state. Uploads require `BLOB_READ_WRITE_TOKEN`, which Vercel adds when a Blob store is connected to the project; pull it into `.env.local` with `npx vercel env pull .env.local`. `npm run dev:local` reads only that token from `.env.local`, so local uploads go to the real Blob store while the database stays in memory. Without the token the Music tab explains that uploads are unavailable.
+
+Migration `scripts/migrate-010.js` adds the `jukebox_tracks` and `jukebox_state` tables and is safe to rerun. Preview builds apply it automatically; back up Production and run `node --env-file=.env.production-migration.local scripts/migrate-010.js` before merging the jukebox.
+
+The browser upload helper is a committed bundle at `vendor/blob-client.js`, because the app loads browser modules without a bundler. After upgrading `@vercel/blob`, run `npm run build:vendor` and commit the result.
+
 To publish the reviewed Ship City slice to an existing Production campaign, first verify `.env.production-migration.local` targets the Production database and differs from Preview. Run `node --env-file=.env.production-migration.local scripts/publish-ship-city.js status` to check for conflicting IDs and characters at the two retired sample markers. Then run `node --env-file=.env.production-migration.local scripts/publish-ship-city.js apply ../production-backups/ship-city-pre-release-<unique-timestamp>.sqlite`. The apply command creates and verifies a local SQLite backup before applying migrations 008/009 and inserting the city data in one transaction. It aborts if the target IDs already exist or if retiring the original sample markers would strand a character. Keep the backup outside Git. The Production Vercel build does not run this seed.
