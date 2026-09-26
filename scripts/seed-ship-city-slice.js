@@ -1,7 +1,7 @@
 import { db } from '../lib/server.js';
 
 // A reviewable local slice. Run only against an isolated development database.
-const places = [
+export const places = [
   ['chasm', 'settlement', 'ship-city', 'The Chasm', 'The deep cleft at the heart of Ship City, ringed with palaces, markets and precarious bridges beneath the Dome.', 'The city opens around you in a dizzying stack of inhabited rings.', 'Every cage ride is a wager on where you will end up.', 'Ivara, cable cage operator', 'accessible'],
   ['aluminum-bay', 'settlement', 'ship-city', 'Aluminum Bay', 'Cargo, travelers and rumor enter Ship City through this sprawling harbor of cranes, pressure piers and dim warehouse halls.', 'The harbor never quite stops moving.', 'If it came into this city, someone in the Bay remembers who carried it.', 'Tavi, crane rat', 'accessible'],
   ['vermilion-house', 'diorama', 'chasm', 'Vermilion House', 'Perched halfway down the Chasm, this three-story stone complex is the Explorers Guild headquarters. Its courtyard gathers delvers between assignments; the Archive, offices and Master Moska’s quarters lie in separate wings.', 'The Explorers Guild’s home is equal parts mission office and reunion hall.', 'They call it a small Guild until they need someone to go first.', 'Rena, veteran delver', 'accessible'],
@@ -34,7 +34,7 @@ const places = [
   ['marakanda-tower', 'diorama', 'inner-sanctum', 'Marakanda Tower', 'The Alamasy family’s Scriptorium of the Seeker preserves books, info cubes, emerald discs and artifacts from the Old Horizon. Scholars receive visitors by permit while the deepest collections remain closely supervised.', 'Seek the Old Horizon in a guarded scholar’s tower.', 'A record may be lost for centuries and still arrive too soon.', 'Alamasy archivist', 'inaccessible']
 ];
 
-const markers = [
+export const markers = [
   ['city-chasm', 'ship-city', 'chasm', 43, 37], ['city-aluminum-bay', 'ship-city', 'aluminum-bay', 42, 75],
   ['city-hull-town', 'ship-city', 'hull-town', 28, 25], ['city-cave-gardens', 'ship-city', 'cave-gardens', 31, 46],
   ['city-turbine-halls', 'ship-city', 'turbine-halls', 34, 60], ['city-inner-sanctum', 'ship-city', 'inner-sanctum', 65, 62],
