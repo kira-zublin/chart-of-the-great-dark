@@ -66,6 +66,19 @@ Hub map markers use the same pattern as the star chart. The core icon is an imag
 
 The icons are 256×256 transparent PNGs, each with a brass medallion centred in the frame. A replacement, such as a painted version, must keep the same size and centring, because the glow and ring are centred on the image. On hover, focus or selection, the glow brightens, the ring sharpens and the name is underlined. Restricted and invisible locations turn the icon grey.
 
+### Creature placeholders
+
+Until creatures have painted art, the palette shows a category medallion from `assets/icons/creatures/`: a brass ring around a dark disc, the same frame for every category, with its own emblem. They are 256×256 SVGs, so painted portraits can replace them at the same size and centring.
+
+| Category | Icon | Emblem |
+| --- | --- | --- |
+| Blight Being | `blight.svg` | Rust star-burst of Blight crystal |
+| Construct | `construct.svg` | Nested brass hexagons with a teal eye |
+| Beast | `beast.svg` | Three claw marks |
+| Echo | `echo.svg` | Teal spiral wisp |
+| Adversary | `adversary.svg` | Human bust |
+| Other | `other.svg` | Four-pointed star |
+
 ## Star chart
 
 The star map is a chart of the Jumuah system, drawn the way the rulebook draws its charts: gold line engraving over a dark watercolor wash (`assets/star-wash.jpg`).

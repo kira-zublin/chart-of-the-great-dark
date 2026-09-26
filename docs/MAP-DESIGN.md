@@ -26,7 +26,11 @@ This document records decisions for the next map prototype. The existing static 
 
 ## Creatures
 
-The GM needs a searchable creature palette and the ability to create entries. This will replace the current GM NPC management interface. Creatures and PCs share identity, images, and some sheet concepts, but palette entries and placed creature instances have different behavior from player-controlled characters. The exact storage model remains open until the first creature workflow is designed.
+The GM has a searchable creature palette in the Creatures tab. Palette entries (templates) follow the Core Rules, chapter 13: **creatures** have Ferocity, Health, Armor, a few attributes, abilities, a D6 behavior pattern and six signature attacks; **adversaries** are human NPCs with six attributes, Health, talents and gear. Book entries are loaded from a local library file by an import script; the GM can edit them and create, duplicate and delete entries.
+
+Dropping an entry into a Vista or Explorable places one creature. A placed creature copies the entry's stats at that moment and then changes on its own (current Health, conditions, renames), so editing or deleting the palette entry never changes creatures already placed. Placed creatures belong to the location and disappear with it, including instanced areas. Named, recurring NPCs remain `npc` characters, separate from creatures.
+
+Players see a placed creature's name; the GM can choose per creature whether players also see its Health. The GM picks signature attacks rather than rolling for them, and can speak in chat as a creature on the current map.
 
 ## Delve grid and rooms
 
@@ -43,6 +47,6 @@ The first prototype uses a small prepared journey through the Star Map, Ship Cit
 
 ## Later decisions
 
-- Should creature tokens also reserve grid squares against player movement once creature placement is implemented? The intended direction is yes, for the full footprint.
+- Creature tokens reserve grid squares against player movement for their full footprint (1×1, 2×2 or 3×3).
 - Should the nearest-square search treat diagonal squares as adjacent, and can it place a character on a square physically disconnected from the entrance when the nearby area is full?
-- Are creature palette entries reusable templates with multiple placed instances, or does each creature record represent one individual that can appear in only one location?
+- Palette entries are reusable templates; each placement is a separate creature with its own copy of the stats.

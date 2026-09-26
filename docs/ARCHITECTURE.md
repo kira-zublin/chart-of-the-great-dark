@@ -57,6 +57,14 @@ MP3 files are stored in Vercel Blob, not Turso: tracks are larger than the 4.5 M
 
 `vendor/blob-client.js` is the browser half of `@vercel/blob`, bundled by `scripts/build-vendor.js` with esbuild (a development dependency) because the app serves browser modules unbundled. It loads only when the GM uploads.
 
+## Creature palette
+
+`db/017_creatures.sql` (applied by `scripts/migrate-017.js`) adds three tables. `creature_templates` holds the GM's palette entries: a name, one of six categories (Blight Being, Construct, Beast, Echo, Adversary, Other), a `source` of `book` or `custom`, and a JSON stat block. `creature_template_images` holds an optional portrait and stand-up per entry under the same 2 MB, signature-checked rules as character images. `creatures` holds placed creatures: a copy of the stat block taken at placement, current Health and conditions, position and stand-up settings, a `hidden` flag and a per-creature `show_health` flag. A placed creature keeps its category and snapshot when its template is deleted (`template_id` becomes null) and is removed with its location. `chat_messages` gains an optional `creature_id` for lines the GM speaks as a creature.
+
+`creature-stats.js` is shared by the API and the browser. `cleanStats` validates both stat-block shapes (creature and adversary) with bounded lengths and counts, and orders behavior rows and attacks by their D6 result. `/api/creatures` and writes to `/api/creature-image` are GM-only. A player can read a template image only while a creature placed from it is on the map and not hidden.
+
+The rulebook's creatures and adversaries are copyrighted and the repository is public, so the extracted library is kept in the uncommitted `gamerules/creature-library.json`. `scripts/import-creatures.js` validates every entry and then writes them in one batch, matched by a stable `book_key`. Entries already present are left as the GM edited them unless the script runs with `--overwrite`. Preview builds do not import the library, because the file is not in the repository; `npm run dev:local` imports it when the file exists locally. Without portraits the palette shows category placeholder medallions from `assets/icons/creatures/`.
+
 ## Visual layer
 
 `ui-theme.css` holds the shared visual language (display typeface, surfaces, dividers, controls and dice cards) on top of the base styles. `scene-effects.js` provides the ink-bloom transition and scene dust; `world-ui.js` calls it only when the viewed location changes. `star-chart.js` draws the star map as a chart of the Jumuah system. The book content on it is static presentation data. Star-map world locations keep their stored 0–900 × 0–600 coordinates and are drawn by `world-ui.js` with the chart's `chartMarker`. Both effects are presentation only and are skipped when reduced motion is requested. See `docs/UI-GUIDE.md`.

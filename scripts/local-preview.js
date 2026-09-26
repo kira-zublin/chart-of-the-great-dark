@@ -20,7 +20,9 @@ import { retireDocksidePrototype } from './migrate-013.js';
 import { applyStandupVariants } from './migrate-014.js';
 import { applyInstances } from './migrate-015.js';
 import { applyJukeboxVolume } from './migrate-016.js';
+import { applyCreatureSchema } from './migrate-017.js';
 import { seedShipCitySlice } from './seed-ship-city-slice.js';
+import { DEFAULT_LIBRARY, importCreatureLibrary } from './import-creatures.js';
 
 // Only the Blob token is taken from .env.local; the database stays in memory.
 try {
@@ -47,13 +49,22 @@ await retireDocksidePrototype(sql);
 await applyStandupVariants(sql);
 await applyInstances(sql);
 await applyJukeboxVolume(sql);
+await applyCreatureSchema(sql);
 await seedShipCitySlice(sql);
+// The rulebook creatures load only when the local, uncommitted library file is present.
+try {
+  const counts = await importCreatureLibrary(sql, JSON.parse(await readFile(DEFAULT_LIBRARY, 'utf8')));
+  console.log(`Creature palette: ${counts.added} rulebook entries loaded.`);
+} catch (cause) {
+  if (cause.code !== 'ENOENT') throw cause;
+  console.log('gamerules/creature-library.json not found; the creature palette starts empty.');
+}
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number(process.env.LOCAL_PREVIEW_PORT || 3000);
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
-const publicFiles = new Set(['index.html', 'world-ui.css', 'ui-theme.css', 'star-chart.css', 'scene-effects.js', 'star-chart.js', 'app.js', 'world-ui.js', 'chat-ui.js', 'sheet-ui.js', 'crew-ui.js', 'side-panel.js', 'jukebox-ui.js', 'vista-dialog.js', 'vendor/blob-client.js']);
-const api = { auth: '../api/auth.js', characters: '../api/characters.js', image: '../api/image.js', crew: '../api/crew.js', 'crew-image': '../api/crew-image.js', chat: '../api/chat.js', world: '../api/world.js', 'location-image': '../api/location-image.js', jukebox: '../api/jukebox.js' };
+const publicFiles = new Set(['index.html', 'world-ui.css', 'ui-theme.css', 'star-chart.css', 'scene-effects.js', 'star-chart.js', 'app.js', 'world-ui.js', 'chat-ui.js', 'sheet-ui.js', 'crew-ui.js', 'side-panel.js', 'jukebox-ui.js', 'vista-dialog.js', 'creature-ui.js', 'creature-stats.js', 'vendor/blob-client.js']);
+const api = { auth: '../api/auth.js', characters: '../api/characters.js', image: '../api/image.js', crew: '../api/crew.js', 'crew-image': '../api/crew-image.js', chat: '../api/chat.js', world: '../api/world.js', 'location-image': '../api/location-image.js', jukebox: '../api/jukebox.js', creatures: '../api/creatures.js', 'creature-image': '../api/creature-image.js' };
 const server = createServer(async (incoming, outgoing) => {
   try {
     const url = new URL(incoming.url, `http://127.0.0.1:${port}`);

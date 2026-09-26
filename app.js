@@ -6,6 +6,7 @@ import { initSidePanel } from './side-panel.js';
 import { initJukeboxUI } from './jukebox-ui.js';
 import { initStarChart } from './star-chart.js';
 import { initVistaDialog } from './vista-dialog.js';
+import { initCreatureUI } from './creature-ui.js';
 const $ = id => document.getElementById(id);
 $('mapStage').append(document.querySelector('.hud'));
 initStarChart();
@@ -17,10 +18,11 @@ $('characterForm').addEventListener('input', () => { characterDirty = true; });
 $('characterForm').addEventListener('change', () => { characterDirty = true; });
 const crewUI = initCrewUI(request, () => state.profile);
 const jukeboxUI = initJukeboxUI(request, () => state.profile);
+const creatureUI = initCreatureUI(request);
 const sidePanel = initSidePanel({
   isGM: () => state.profile?.role === 'gm',
   canClose: confirmDiscard,
-  onChange: tab => crewUI.setActive(tab === 'Crew')
+  onChange: tab => { crewUI.setActive(tab === 'Crew'); creatureUI.setActive(tab === 'Creatures'); }
 });
 const vistaDialog = initVistaDialog(() => state.profile);
 const chatUI = initChatUI(request, () => state.profile, () => {
@@ -60,6 +62,7 @@ function showApp(profile) {
     worldUI.stop();
     vistaDialog.reset();
     jukeboxUI.stop();
+    creatureUI.reset();
     state.characters = []; state.selected = null;
     characterDirty = false; showEditor(false); sidePanel.hide();
     $('accountMenu').hidden = true;
