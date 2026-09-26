@@ -3,9 +3,10 @@ import { body, currentProfile, db, error, guarded, json } from '../lib/server.js
 
 const attributes = new Set(['strength', 'agility', 'logic', 'insight', 'perception', 'empathy']);
 const select = `SELECT m.id, m.player_name, m.character_id, m.character_name, m.kind, m.body, m.roll, m.push_of, m.created_at,
-  EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = m.character_id AND i.slot = 'portrait') AS has_portrait
+  EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = m.character_id AND i.slot = 'portrait') AS has_portrait,
+  EXISTS (SELECT 1 FROM profiles p WHERE p.id = m.profile_id AND p.role = 'gm') AS from_gm
   FROM chat_messages m`;
-const present = row => ({ ...row, has_portrait: Boolean(row.has_portrait), roll: row.roll ? JSON.parse(row.roll) : null });
+const present = row => ({ ...row, has_portrait: Boolean(row.has_portrait), from_gm: Boolean(row.from_gm), roll: row.roll ? JSON.parse(row.roll) : null });
 const date = value => /^\d{4}-\d{2}-\d{2}$/.test(value || '') && !Number.isNaN(Date.parse(value + 'T00:00:00Z')) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value;
 const line = value => String(value ?? '').replace(/\r?\n/g, ' ⏎ ').replace(/\r/g, ' ');
 

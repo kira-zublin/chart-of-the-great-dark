@@ -86,6 +86,10 @@ Instances clean themselves up. Each map refresh marks an instance active while a
 
 Migration `scripts/migrate-015.js` adds the `is_instance`, `instance_of`, and `instance_active_at` columns to `locations`. It is safe to rerun. Preview builds and `npm run dev:local` apply it automatically. Back up Production and run `node --env-file=.env.production-migration.local scripts/migrate-015.js` **before merging**; until then, creating locations fails.
 
+## Vista dialog
+
+In a Vista, chat lines appear in a visual-novel dialog box at the top of the scene, with the speaker's portrait and the text typing out letter by letter. It shows text lines from characters standing in that Vista and from the GM: a GM line with no character selected appears as italic narration, and a GM speaking as an NPC shows that NPC. Dice rolls and out-of-character lines (starting with `//`, `((`, or `ooc:`) stay in the chat log only. Lines that arrive together queue up; clicking the box finishes the current line or skips to the next. On entering a Vista the latest line appears in full. The × hides the box, leaving a **Show dialog** button; each browser remembers the choice. No migration is needed: chat messages now also report whether the GM sent them (`from_gm`).
+
 ## Jukebox
 
 The GM uploads licensed MP3 tracks (up to 50 MB each) in the Music tab and plays one at a time for every signed-in profile. Audio files live in Vercel Blob; Turso stores track titles and the shared playback state. Uploads require `BLOB_READ_WRITE_TOKEN`, which Vercel adds when a Blob store is connected to the project; pull it into `.env.local` with `npx vercel env pull .env.local`. `npm run dev:local` reads only that token from `.env.local`, so local uploads go to the real Blob store while the database stays in memory. Without the token the Music tab explains that uploads are unavailable.

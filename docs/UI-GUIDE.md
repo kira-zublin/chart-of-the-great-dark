@@ -11,6 +11,7 @@ Readability comes first. Decoration must never hide interaction state, and every
 | `index.html` (inline `<style>`) | Base layout and component structure for the star chart, HUD, panels, chat and dialogs. |
 | `world-ui.css` | Location views: headings, markers, grids, standups, the location card. |
 | `ui-theme.css` | The visual-language layer: typeface, surfaces, dividers, buttons, tabs, fields, reveals, scene transitions and dice cards. Loaded last. |
+| `vista-dialog.js` | The Vista dialog box: which chat lines it shows, the portrait, and the letter-by-letter typing. Styles are in `ui-theme.css`. |
 | `scene-effects.js` | The ink-bloom transition between locations and drifting dust in scenes. |
 | `star-chart.js`, `star-chart.css` | The star map: the engraved chart of the Jumuah system, its book content, and the markers for star-map locations. |
 

@@ -223,3 +223,40 @@ button.primary-button:not(:disabled):hover, button.primary-button:focus-visible 
 .jukebox-volume label { white-space: nowrap; }
 .jukebox-volume input[type="range"] { flex: 1; min-width: 0; min-height: 0; padding: 0; border: 0; background: none; accent-color: #c9a862; }
 .jukebox-volume-value { min-width: 3em; text-align: right; font-variant-numeric: tabular-nums; color: #f1e3bd; }
+
+/* Vista dialog: chat lines from the scene, visual-novel style, top centre between the heading and the top-right buttons. */
+.vista-dialog {
+  position: absolute; z-index: 8; top: 16px; left: 50%; transform: translateX(-50%);
+  width: min(800px, calc(100vw - 1180px)); /* clears the heading and the GM's four top-right buttons */
+  display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 18px; align-items: start;
+  padding: 16px 46px 16px 16px;
+  border: 1px solid rgba(205, 184, 125, .45); border-top: 2px solid #c6a66c;
+  background: url(assets/ui/paper-grain.png), linear-gradient(160deg, rgba(14, 22, 27, .94), rgba(7, 12, 16, .92));
+  box-shadow: 0 14px 38px #000b;
+  cursor: pointer;
+}
+.vista-dialog[hidden] { display: none; }
+.vista-dialog.narrator { grid-template-columns: minmax(0, 1fr); padding-left: 24px; }
+.vista-dialog-portrait { width: 112px; height: 112px; object-fit: cover; border: 1px solid #b89a5e; box-shadow: 0 0 0 3px #0a1318, 0 0 0 4px rgba(205, 184, 125, .35); background: #20282b; }
+.vista-dialog-portrait[hidden] { display: none; }
+.vista-dialog-body { display: grid; gap: 8px; min-width: 0; }
+.vista-dialog-name { font-family: "Marcellus SC", serif; font-size: 20px; letter-spacing: .04em; color: #f1dfb8; }
+.vista-dialog-text { max-height: 8.4em; overflow-y: auto; overscroll-behavior: contain; font-size: 17px; line-height: 1.55; color: #efe4c9; white-space: pre-wrap; overflow-wrap: anywhere; cursor: text; }
+.vista-dialog.narrator .vista-dialog-name { font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: #cdb887; }
+.vista-dialog.narrator .vista-dialog-text { font-style: italic; }
+.vista-dialog-hide { position: absolute; top: 8px; right: 8px; width: 30px; min-height: 30px; padding: 0; border-color: transparent; background: transparent; color: #cdb887; font-size: 20px; line-height: 1; }
+.vista-dialog-hide:hover, .vista-dialog-hide:focus-visible { color: #f4e6c1; }
+.vista-dialog-show { position: absolute; z-index: 8; top: 16px; left: 50%; transform: translateX(-50%); min-height: 32px; padding: 6px 14px; }
+.vista-dialog-show[hidden] { display: none; }
+/* Too narrow to fit beside the heading and buttons: sit under the top bar, right of the heading. */
+@media (max-width: 1699px) {
+  .vista-dialog { top: 72px; left: 460px; right: 20px; width: auto; max-width: 820px; transform: none; }
+  .vista-dialog-show { top: 72px; }
+}
+@media (max-width: 800px) {
+  .vista-dialog { top: calc(var(--world-chrome-bottom, 235px) + 12px); left: 12px; right: 12px; max-width: none; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; padding: 12px 40px 12px 12px; }
+  .vista-dialog-portrait { width: 64px; height: 64px; }
+  .vista-dialog-name { font-size: 16px; }
+  .vista-dialog-text { max-height: 6.2em; font-size: 15px; }
+  .vista-dialog-show { top: calc(var(--world-chrome-bottom, 235px) + 12px); }
+}
