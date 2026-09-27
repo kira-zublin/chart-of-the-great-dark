@@ -277,7 +277,7 @@ Use explicit connections between locations for travel, including non-hierarchica
 
 Viewing a location and moving a character there are distinct actions. Visible map markers may be opened for information without changing character position. Party discovery and visibility are shared. The Star Map is the root view; characters there need no map coordinates.
 
-The GM may browse locations without a controlled character and pull selected player characters to the GM's current location. See `docs/MAP-DESIGN.md` for the current map decisions and remaining questions.
+The GM may browse locations without a controlled character and pull selected characters, player characters or NPCs, to the GM's current location. A GM controlling an NPC moves it like a player moves their character. Players see an NPC on the map only after the GM has placed it. See `docs/MAP-DESIGN.md` for the current map decisions and remaining questions.
 
 Avoid tightly coupling global campaign data to the rendering implementation of one particular map type.
 

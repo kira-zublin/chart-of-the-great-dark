@@ -22,7 +22,7 @@ This document records decisions for the next map prototype. The existing static 
 - Switching the active character opens that character's current location. Characters initially start at the Star Map. A character there is described as viewing the Star Map and needs no chart coordinates. A ship marker may be added later under GM control.
 - In Delves, character and creature positions use grid squares; doors specify the square where an arriving character is placed. In Dioramas, character and creature positions use scene coordinates. The first prototype allows direct dragging without movement rules.
 - Each Delve has a default arrival square in its prepared grid data. An arrival through a door uses that door's destination square instead. If the preferred square is blocked or occupied, place the arriving character in the nearest open, unoccupied square. This also applies when the GM pulls several characters into a Delve. Two characters must not occupy the same square.
-- The GM browses independently of any selected character. **Pull Characters** opens a picker for any or all existing player characters and moves those selected into the GM's viewed location.
+- The GM browses independently of any selected character. **Pull Characters** opens a picker for any or all existing player characters and NPCs and moves those selected into the GM's viewed location. A GM controlling an NPC also moves it with **Move Here**, like a player. Players see an NPC on the map only once the GM has placed it; unplaced NPCs stay private.
 
 ## Creatures
 
