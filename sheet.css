@@ -234,3 +234,15 @@
 .save-status[data-state="error"] { color: #f0b89e; }
 .save-status[data-state="error"]::before { background: #d98a68; }
 .explorer-footer [hidden] { display: none; }
+
+/* Rules reference: talent descriptions, table choosers and feature tooltips (present once the library is imported). */
+.explorer button.talent-toggle { min-height: 0; padding: 0; border: 0; background: none; font: 15px Georgia, serif; letter-spacing: normal; text-transform: none; text-align: left; color: var(--head); cursor: pointer; }
+.explorer button.talent-toggle::before { content: none; }
+.explorer button.talent-toggle:not(:disabled):hover { box-shadow: none; color: #fff3d6; text-decoration: underline dotted rgba(205, 184, 125, .6); text-underline-offset: 4px; }
+.talent-rule { margin: -2px 0 0; padding: 0 0 10px; border-bottom: 1px solid rgba(205, 184, 125, .1); font-size: 13px; line-height: 1.45; font-style: italic; color: #a99b78; }
+.talent-option-rule { position: sticky; bottom: 0; padding: 8px 10px; border-top: 1px solid rgba(205, 184, 125, .2); background: #0c1418; font-size: 12.5px; line-height: 1.4; font-style: italic; color: #b8aa88; }
+.talent-option-rule:empty { display: none; }
+.wound-rule { margin: 0; font-size: 12px; line-height: 1.4; font-style: italic; color: #a99b78; }
+.wound-chooser { display: grid; gap: 8px; padding: 10px; border: 1px dashed rgba(205, 184, 125, .3); }
+.wound-chooser-actions { display: flex; gap: 8px; }
+.feature-chip.has-rule { cursor: help; }

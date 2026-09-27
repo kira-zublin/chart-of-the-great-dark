@@ -21,9 +21,11 @@ import { applyStandupVariants } from './migrate-014.js';
 import { applyInstances } from './migrate-015.js';
 import { applyJukeboxVolume } from './migrate-016.js';
 import { applyCreatureSchema } from './migrate-017.js';
+import { applyRulesLibrarySchema } from './migrate-018.js';
 import { seedShipCitySlice } from './seed-ship-city-slice.js';
 import { DEFAULT_LIBRARY, importCreatureLibrary } from './import-creatures.js';
 import { importCreaturePortraits } from './import-creature-portraits.js';
+import { DEFAULT_RULES_LIBRARY, importRulesLibrary } from './import-rules.js';
 
 // Only the Blob token is taken from .env.local; the database stays in memory.
 try {
@@ -51,6 +53,7 @@ await applyStandupVariants(sql);
 await applyInstances(sql);
 await applyJukeboxVolume(sql);
 await applyCreatureSchema(sql);
+await applyRulesLibrarySchema(sql);
 await seedShipCitySlice(sql);
 // The rulebook creatures load only when the local, uncommitted library file is present.
 try {
@@ -63,11 +66,20 @@ try {
   console.log('gamerules/creature-library.json not found; the creature palette starts empty.');
 }
 
+// Talent descriptions and the injury, trauma and Blight tables load the same way.
+try {
+  const counts = await importRulesLibrary(sql, JSON.parse(await readFile(DEFAULT_RULES_LIBRARY, 'utf8')));
+  console.log(`Rules reference: ${counts.talent} talents and ${counts.injury + counts.trauma + counts.blight} table rows loaded.`);
+} catch (cause) {
+  if (cause.code !== 'ENOENT') throw cause;
+  console.log('gamerules/rules-library.json not found; the sheet runs without rule descriptions.');
+}
+
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number(process.env.LOCAL_PREVIEW_PORT || 3000);
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 const publicFiles = new Set(['index.html', 'world-ui.css', 'ui-theme.css', 'star-chart.css', 'scene-effects.js', 'star-chart.js', 'app.js', 'world-ui.js', 'chat-ui.js', 'sheet-ui.js', 'crew-ui.js', 'side-panel.js', 'jukebox-ui.js', 'vista-dialog.js', 'creature-ui.js', 'creature-stats.js', 'explorer-rules.js', 'sheet.css', 'vendor/blob-client.js']);
-const api = { auth: '../api/auth.js', characters: '../api/characters.js', image: '../api/image.js', crew: '../api/crew.js', 'crew-image': '../api/crew-image.js', chat: '../api/chat.js', world: '../api/world.js', 'location-image': '../api/location-image.js', jukebox: '../api/jukebox.js', creatures: '../api/creatures.js', 'creature-image': '../api/creature-image.js' };
+const api = { auth: '../api/auth.js', characters: '../api/characters.js', image: '../api/image.js', crew: '../api/crew.js', 'crew-image': '../api/crew-image.js', chat: '../api/chat.js', world: '../api/world.js', 'location-image': '../api/location-image.js', jukebox: '../api/jukebox.js', creatures: '../api/creatures.js', rules: '../api/rules.js', 'creature-image': '../api/creature-image.js' };
 const server = createServer(async (incoming, outgoing) => {
   try {
     const url = new URL(incoming.url, `http://127.0.0.1:${port}`);

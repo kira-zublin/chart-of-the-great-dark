@@ -16,6 +16,20 @@ export function setSheetHandlers(next) { Object.assign(handlers, next); }
 
 let character = blankCharacter();
 let adjusting = false;
+// Rulebook reference loaded from /api/rules; empty until the GM has imported the local library.
+const rules = { talent: new Map(), feature: new Map(), injuries: [], trauma: [], blight: [] };
+const openTalents = new Set();
+const rulesKinds = { injury: 'injuries', trauma: 'trauma', blight: 'blight' };
+export function setRulesLibrary(entries = []) {
+  rules.talent.clear(); rules.feature.clear(); rules.injuries = []; rules.trauma = []; rules.blight = [];
+  for (const entry of entries) {
+    if (entry.kind === 'talent') rules.talent.set(entry.name.toLowerCase(), entry.data);
+    else if (entry.kind === 'feature') rules.feature.set(`${entry.data.applies}:${entry.name.toLowerCase()}`, entry.data.text);
+    else if (rulesKinds[entry.kind]) rules[rulesKinds[entry.kind]].push({ name: entry.name, ...entry.data });
+  }
+  renderTalents(); for (const kind of Object.keys(woundLists)) renderWounds(kind); renderGear();
+}
+const talentText = name => rules.talent.get(String(name).trim().toLowerCase())?.text || '';
 const emit = () => handlers.change();
 
 function node(tag, className = '', text = '') {
@@ -241,7 +255,9 @@ function renderTalents() {
   if (!character.sheet.talents.length) host.append(node('p', 'empty-note', 'No talents yet.'));
   character.sheet.talents.forEach((talent, index) => {
     const row = node('div', 'talent-row');
-    const name = node('span', 'talent-name', talent.name || 'Unnamed talent');
+    const rule = talentText(talent.name); const key = talent.name.toLowerCase();
+    const name = rule ? button(talent.name, 'talent-name talent-toggle', () => { openTalents.has(key) ? openTalents.delete(key) : openTalents.add(key); renderTalents(); }) : node('span', 'talent-name', talent.name || 'Unnamed talent');
+    if (rule) name.setAttribute('aria-expanded', String(openTalents.has(key)));
     const source = talentSource(talent.name, context);
     if (source) name.append(node('span', `talent-source${source.includes('Key') ? ' key' : ''}`, source));
     const max = talentMax(talent.name);
@@ -262,6 +278,7 @@ function renderTalents() {
       actions.append(raise);
     }
     row.append(name, levels, actions); host.append(row);
+    if (rule && openTalents.has(key)) host.append(node('p', 'talent-rule', rule));
   });
   $('talentSearch').placeholder = adjusting ? 'Add a talent…' : 'Learn a talent (5 XP)…';
   $('talentHint').textContent = adjusting
@@ -298,8 +315,10 @@ function renderPicker() {
     list.append(node('div', 'talent-option-group', label));
     for (const item of items) {
       const option = button(item.name, 'talent-option', () => chooseTalent(item.name)); option.setAttribute('role', 'option'); option.disabled = short;
+      option.dataset.talent = item.name;
       option.append(node('span', '', `${item.group}${item.max === 1 ? ' · one level' : ''}`));
       option.addEventListener('mousedown', event => event.preventDefault());
+      option.addEventListener('mouseenter', () => { if (option.disabled) return; optionIndex = [...list.querySelectorAll('.talent-option:not(:disabled)')].indexOf(option); highlightOption(); });
       list.append(option);
     }
   }
@@ -309,9 +328,15 @@ function renderPicker() {
     list.append(option);
   }
   if (!list.querySelector('.talent-option')) list.append(node('div', 'talent-option-note', 'No matching talent.'));
-  const all = [...list.querySelectorAll('.talent-option:not(:disabled)')];
+  if (rules.talent.size) list.append(node('div', 'talent-option-rule'));
+  highlightOption();
+}
+function highlightOption() {
+  const list = $('talentOptions'); const all = [...list.querySelectorAll('.talent-option:not(:disabled)')];
   optionIndex = Math.min(optionIndex, Math.max(0, all.length - 1));
   all.forEach((option, index) => option.classList.toggle('active', index === optionIndex));
+  const detail = list.querySelector('.talent-option-rule');
+  if (detail) detail.textContent = talentText(all[optionIndex]?.dataset.talent || '') || '';
 }
 function chooseTalent(name) { addTalent(name, !adjusting); $('talentSearch').value = ''; closePicker(); }
 function closePicker() { $('talentOptions').hidden = true; $('talentSearch').setAttribute('aria-expanded', 'false'); }
@@ -328,8 +353,7 @@ $('talentSearch').addEventListener('keydown', event => {
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault(); if (!all.length) return;
     optionIndex = (optionIndex + (event.key === 'ArrowDown' ? 1 : all.length - 1)) % all.length;
-    all.forEach((option, index) => option.classList.toggle('active', index === optionIndex));
-    all[optionIndex].scrollIntoView({ block: 'nearest' });
+    highlightOption(); all[optionIndex].scrollIntoView({ block: 'nearest' });
   }
   if (event.key === 'Enter') { event.preventDefault(); all[optionIndex]?.click(); }
 });
@@ -343,7 +367,7 @@ function renderConditionTiles() {
     tile.append(node('small', '', `−2 ${item.name}`)); host.append(tile);
   }
 }
-const woundLists = { injuries: { host: 'injuryRows', name: 'Injury', heal: true, lethal: true }, trauma: { host: 'traumaRows', name: 'Trauma', heal: true }, blight: { host: 'blightRows', name: 'Manifestation' } };
+const woundLists = { injuries: { host: 'injuryRows', name: 'Injury', heal: true, lethal: true }, trauma: { host: 'traumaRows', name: 'Trauma', heal: true }, blight: { host: 'blightRows', name: 'Manifestation', heal: true } };
 function field(value, className, placeholder, maxLength, onInput) {
   const input = node('input', className); input.value = value; input.placeholder = placeholder; input.maxLength = maxLength;
   input.setAttribute('aria-label', placeholder);
@@ -366,14 +390,36 @@ function renderWounds(kind) {
     const meta = node('div', 'wound-meta');
     meta.append(field(wound.effect, 'ink-input', 'Effect', 500, value => { wound.effect = value; }));
     if (spec.heal) meta.append(field(wound.heal, 'ink-input wound-heal', 'Heals in', 200, value => { wound.heal = value; }));
+    const row = rules[kind].find(item => item.name.toLowerCase() === wound.name.trim().toLowerCase());
+    if (row) card.append(node('p', 'wound-rule', [`D66 ${row.roll}`, row.description].filter(Boolean).join(' · ')));
     if (wound.lethal) card.append(node('p', 'wound-warning', 'Lethal: dies after one shift unless stabilized.'));
     card.prepend(head); card.append(meta); host.append(card);
   });
 }
+function addWound(kind, row = null) {
+  character.sheet[kind].push(row ? { name: row.name, effect: row.effect, heal: row.heal, lethal: Boolean(row.lethal) } : { name: '', effect: '', heal: '', lethal: false });
+  // A table result that says "you become …" marks those conditions too.
+  const becomes = row?.effect.match(/\byou become ([^.]+)/i)?.[1] || '';
+  const marked = attributes.map(item => item.condition).filter(condition => new RegExp(`\\b${condition}\\b`, 'i').test(becomes));
+  if (marked.length) { character.sheet.conditions = [...new Set([...character.sheet.conditions, ...marked])]; renderChips(); renderWheel(); renderConditionTiles(); }
+  renderWounds(kind); emit();
+  if (!row) $(woundLists[kind].host).lastElementChild?.querySelector('input')?.focus();
+}
+// With the rules reference loaded, Add opens a chooser for the book's table; otherwise it adds a blank card.
 for (const add of document.querySelectorAll('[data-add-wound]')) add.addEventListener('click', () => {
-  const kind = add.dataset.addWound;
-  character.sheet[kind].push({ name: '', effect: '', heal: '', lethal: false }); renderWounds(kind); emit();
-  $(woundLists[kind].host).lastElementChild?.querySelector('input')?.focus();
+  const kind = add.dataset.addWound; const table = rules[kind];
+  if (!table.length) { addWound(kind); return; }
+  const chooser = node('div', 'wound-chooser');
+  const select = node('select'); select.setAttribute('aria-label', `${woundLists[kind].name} from the table`);
+  select.append(new Option('Write your own', ''), ...table.map((row, index) => new Option(`${row.roll} · ${row.name}`, String(index))));
+  const detail = node('p', 'wound-rule');
+  const describe = () => { const row = table[Number(select.value)]; detail.textContent = select.value === '' ? 'A blank card to fill in.' : [row.description, row.effect, row.heal && `Heals: ${row.heal}`].filter(Boolean).join(' · '); };
+  select.addEventListener('change', describe); describe();
+  const close = () => { chooser.remove(); add.hidden = false; add.focus(); };
+  const actions = node('div', 'wound-chooser-actions');
+  actions.append(button('Add', 'small-button', () => { const row = select.value === '' ? null : table[Number(select.value)]; chooser.remove(); add.hidden = false; addWound(kind, row); }), button('Cancel', 'small-button', close));
+  chooser.addEventListener('keydown', event => { if (event.key === 'Escape') close(); });
+  chooser.append(select, detail, actions); add.hidden = true; add.after(chooser); select.focus();
 });
 
 /* Gear tab */
@@ -410,12 +456,14 @@ function choiceCell(label, value, options, onChange) {
   cell.append(select); return cell;
 }
 // Features are stored as comma-separated text and shown as chips.
-function featureEditor(entry, options, listId) {
+function featureEditor(entry, options, listId, applies) {
   const host = node('div', 'feature-chips');
   const draw = () => {
     host.replaceChildren();
     splitFeatures(entry.features).forEach((feature, index, all) => {
       const chip = node('span', 'feature-chip', feature);
+      const rule = rules.feature.get(`${applies}:${feature.toLowerCase()}`) || rules.feature.get(`${applies}:${feature.toLowerCase().replace(/\s+\d+$/, '')}`);
+      if (rule) { chip.title = rule; chip.classList.add('has-rule'); }
       chip.append(button('×', 'xchip-clear', () => { all.splice(index, 1); entry.features = joinFeatures(all); draw(); emit(); }, `Remove ${feature}`));
       host.append(chip);
     });
@@ -453,7 +501,7 @@ function renderGear() {
     const stats = node('div', 'statline');
     stats.append(numberCell('Bonus', weapon.bonus, 99, value => { weapon.bonus = value; }), numberCell('Damage', weapon.damage, 99, value => { weapon.damage = value; }),
       numberCell('Crit', weapon.crit, 99, value => { weapon.crit = value; }), choiceCell('Range', weapon.range, ranges, value => { weapon.range = value; }));
-    card.append(stats, featureEditor(weapon, weaponFeatures, 'weaponFeatureOptions')); weapons.append(card);
+    card.append(stats, featureEditor(weapon, weaponFeatures, 'weaponFeatureOptions', 'weapon')); weapons.append(card);
   });
   const armor = $('armorRows'); armor.replaceChildren();
   if (!character.sheet.armor.length) armor.append(node('p', 'empty-note', 'No armor or suit.'));
@@ -461,7 +509,7 @@ function renderGear() {
     const card = gearCard(list, index, suit, 'Armor or suit', 'Remove', 'Worn');
     const stats = node('div', 'statline two');
     stats.append(numberCell('Armor rating', suit.rating, 99, value => { suit.rating = value; }), numberCell('Blight protection', suit.blight, 99, value => { suit.blight = value; }));
-    card.append(stats, featureEditor(suit, suitFeatures, 'suitFeatureOptions')); armor.append(card);
+    card.append(stats, featureEditor(suit, suitFeatures, 'suitFeatureOptions', 'suit')); armor.append(card);
   });
   const items = $('equipmentRows'); items.replaceChildren();
   if (!character.sheet.equipment.length) items.append(node('p', 'empty-note', 'Nothing carried.'));
@@ -617,7 +665,9 @@ export function renderCharacter(source = null) {
   for (const key of Object.keys(books)) fillChoice(key);
   // A new character opens ready for creation; an existing one opens ready for play.
   adjusting = !source; $('adjustSheet').textContent = adjusting ? 'Done' : 'Adjust'; $('adjustSheet').setAttribute('aria-pressed', String(adjusting));
-  $('talentSearch').value = ''; closePicker();
+  $('talentSearch').value = ''; closePicker(); openTalents.clear();
+  for (const chooser of document.querySelectorAll('.wound-chooser')) chooser.remove();
+  for (const add of document.querySelectorAll('[data-add-wound]')) add.hidden = false;
   renderHeader(); renderTracks(); renderChips(); renderWheel(); renderXP(); renderTalents(); renderConditionTiles();
   for (const kind of Object.keys(woundLists)) renderWounds(kind);
   renderGear(); renderKeepsake(); renderGrants();

@@ -1,4 +1,4 @@
-import { collectCharacter, renderCharacter, setSheetHandlers, setSheetImage, setSheetTab } from './sheet-ui.js';
+import { collectCharacter, renderCharacter, setRulesLibrary, setSheetHandlers, setSheetImage, setSheetTab } from './sheet-ui.js';
 import { initCrewUI } from './crew-ui.js';
 import { initChatUI } from './chat-ui.js';
 import { initWorldUI } from './world-ui.js';
@@ -64,6 +64,8 @@ function showApp(profile) {
     $('characterKindRow').hidden = profile.role !== 'gm';
     sidePanel.setRole();
     loadCharacters();
+    // The rules reference is optional: without it the sheet simply has no descriptions.
+    request('/api/rules').then(data => setRulesLibrary(data.entries)).catch(() => setRulesLibrary([]));
     chatUI.start();
     worldUI.start();
     jukeboxUI.start();
