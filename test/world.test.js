@@ -110,6 +110,19 @@ test('world positions, fog, GM permissions, pulls, and uploaded art', async () =
     assert.equal((await worldPost(req('/api/world', 'POST', { action: 'marker', linkId: created.body.linkId, x: 101, y: 75 }, gm))).status, 400);
     assert.equal((await worldPost(req('/api/world', 'POST', { action: 'edit', locationId: created.body.id, title: 'Test Hall', description: 'A test.', accessLevel: 'invisible' }, gm))).status, 200);
     assert.equal((await data(await worldGet(req('/api/world', 'GET', undefined, alice)))).body.locations.some(loc => loc.id === created.body.id), false);
+    // The GM moves NPCs like characters; players see an NPC only once it is placed.
+    const npc = (await data(await characterPost(req('/api/characters', 'POST', { ...character('Warden Tahir'), kind: 'npc' }, gm)))).body.id;
+    assert.equal((await characterImagePut(new Request(base + `/api/image?id=${npc}&slot=standup`, { method: 'PUT', headers: { cookie: gm, 'Content-Type': 'image/png' }, body: bytes }))).status, 200);
+    assert.equal((await data(await worldGet(req('/api/world', 'GET', undefined, alice)))).body.positions.some(pos => pos.character_id === npc), false, 'an unplaced NPC stays hidden');
+    assert.equal((await data(await worldGet(req('/api/world', 'GET', undefined, gm)))).body.positions.find(pos => pos.character_id === npc).kind, 'npc', 'the GM can pull an unplaced NPC');
+    assert.equal((await characterImageGet(req(`/api/image?id=${npc}&slot=standup`, 'GET', undefined, alice))).status, 404);
+    assert.equal((await worldPost(req('/api/world', 'POST', { action: 'move', characterId: npc, locationId: 'choir' }, alice))).status, 403);
+    assert.equal((await data(await worldPost(req('/api/world', 'POST', { action: 'pull', characterIds: [npc], locationId: 'choir' }, gm)))).status, 200);
+    assert.equal((await data(await worldGet(req('/api/world', 'GET', undefined, alice)))).body.positions.find(pos => pos.character_id === npc).location_id, 'choir');
+    assert.equal((await characterImageGet(req(`/api/image?id=${npc}&slot=standup`, 'GET', undefined, alice))).status, 200, 'players can see a placed NPC');
+    assert.equal((await data(await worldPost(req('/api/world', 'POST', { action: 'move', characterId: npc, locationId: 'choir-depths' }, gm)))).status, 200);
+    assert.equal((await worldPost(req('/api/world', 'POST', { action: 'standup', characterId: npc, flipped: true }, alice))).status, 403);
+    assert.equal((await worldPost(req('/api/world', 'POST', { action: 'standup', characterId: npc, flipped: true }, gm))).status, 200);
     assert.equal((await authGet(req('/api/auth', 'GET', undefined, alice))).status, 200);
   } finally {
     sql.client.close(); delete process.env.TURSO_DATABASE_URL; delete process.env.REGISTRATION_INVITE_CODE;

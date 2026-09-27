@@ -793,13 +793,14 @@ export function initWorldUI(request, profile, activeCharacter, onScene = () => {
     }
     if (item.kind !== 'poi') {
       if (item.access_level !== 'accessible') panel.append(node('p', 'world-empty-note', 'Set this location to Accessible before pulling characters here.'));
-      else if (!world.positions.length) panel.append(node('p', 'world-empty-note', 'No player characters are available to pull.'));
+      else if (!world.positions.length) panel.append(node('p', 'world-empty-note', 'No characters are available to pull.'));
       else {
         const pull = node('details'); pull.append(node('summary', '', 'Pull Characters'));
         const list = node('div');
-        for (const pos of world.positions) {
+        // Player characters first, then NPCs.
+        for (const pos of [...world.positions].sort((x, y) => (x.kind === 'npc') - (y.kind === 'npc'))) {
           const check = node('input'); check.type = 'checkbox'; check.value = pos.character_id;
-          list.append(field(pos.name, check));
+          list.append(field(pos.kind === 'npc' ? `${pos.name} (NPC)` : pos.name, check));
         }
         const pullButton = button('Pull selected', async () => {
           const ids = [...list.querySelectorAll('input:checked')].map(input => input.value);
