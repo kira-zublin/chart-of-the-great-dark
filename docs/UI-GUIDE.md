@@ -125,6 +125,7 @@ Animate only `transform`, `opacity` and masks. Transitions run only when the vie
 Chat shows each roll as a card:
 
 - **Base dice** are bone; **gear dice** are dark metal, after a thin divider.
+- **A creature's signature attack** shows its base dice, then its **Blight dice** in dark plum, with the attack's numbers and rule under the result.
 - **A six** shows a star and a gold face. **A one** has rust pips, because a push turns base ones into Hope loss and gear ones into gear wear.
 - The result line gives the successes. A push also shows its Hope loss and gear wear.
 

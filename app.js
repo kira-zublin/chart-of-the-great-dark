@@ -18,7 +18,12 @@ $('characterForm').addEventListener('input', () => { characterDirty = true; });
 $('characterForm').addEventListener('change', () => { characterDirty = true; });
 const crewUI = initCrewUI(request, () => state.profile);
 const jukeboxUI = initJukeboxUI(request, () => state.profile);
-const creatureUI = initCreatureUI(request, { place: id => worldUI.placeCreature(id), drag: template => worldUI.paletteDrag(template) });
+const creatureUI = initCreatureUI(request, {
+  place: id => worldUI.placeCreature(id), drag: template => worldUI.paletteDrag(template),
+  update: (id, values) => worldUI.updateCreature(id, values), stats: (id, values) => worldUI.creatureStats(id, values),
+  remove: id => worldUI.removeCreature(id), select: id => worldUI.selectCreature(id),
+  attack: (id, roll) => chatUI.attack(id, roll), speakAs: creature => chatUI.speakAs(creature), speakingAs: () => chatUI.speakingAs()
+});
 const sidePanel = initSidePanel({
   isGM: () => state.profile?.role === 'gm',
   canClose: confirmDiscard,
@@ -32,7 +37,11 @@ const chatUI = initChatUI(request, () => state.profile, () => {
 const worldUI = initWorldUI(request, () => state.profile, () => {
   const id = state.selected?.id || (state.profile && localStorage.getItem(`active-character:${state.profile.id}`));
   return state.characters.find(item => item.id === id && item.kind === 'pc') || null;
-}, vistaDialog.setScene);
+}, vistaDialog.setScene, {
+  onArea: area => creatureUI.setArea(area),
+  open: id => { sidePanel.open('Creatures'); creatureUI.openPlaced(id); },
+  speakAs: creature => chatUI.speakAs(creature)
+});
 
 async function request(path, options = {}) {
   const response = await fetch(path, { credentials: 'same-origin', ...options });

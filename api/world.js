@@ -1,6 +1,7 @@
 import { body, currentProfile, db, error, guarded, json, randomUUID } from '../lib/server.js';
 import { INSTANCE_IDLE_SECONDS, coord, footprintFits, footprintSquares, gridOf, inside, key, nearestFootprint, nearestOpen, roomAt, roomVisible, standupScale, uuid, validGrid } from '../lib/world.js';
-import { CREATURE_SCALE, baseCreatureName, nextCreatureName } from '../creature-stats.js';
+import { CREATURE_SCALE, baseCreatureName, cleanCreatureConditions, nextCreatureName } from '../creature-stats.js';
+import { cleanTemplate } from './creatures.js';
 
 const safeText = (value, limit) => typeof value === 'string' && value.trim().length > 0 && value.length <= limit ? value.trim() : null;
 const optionalText = (value, limit) => value === undefined ? '' : typeof value === 'string' && value.length <= limit ? value.trim() : null;
@@ -157,7 +158,8 @@ export async function GET(req) {
       const hidden = !gm && location.kind === 'delve' && row.x !== null && !visibleRoom(location, roomAt(gridOf(location), row.x, row.y));
       return hidden ? { ...row, x: null, y: null, hidden: true } : row;
     });
-    const creatures = (await sql.query(`SELECT c.id, c.template_id, c.name, c.category, c.location_id, c.x, c.y, c.standup_scale, c.standup_flipped, c.hidden, c.health, c.show_health,
+    const creatures = (await sql.query(`SELECT c.id, c.template_id, c.name, c.category, c.location_id, c.x, c.y, c.standup_scale, c.standup_flipped, c.hidden, c.health, c.show_health, c.conditions, c.stats,
+      (SELECT json_extract(m.roll, '$.roll') FROM chat_messages m WHERE m.creature_id = c.id AND m.kind = 'roll' AND json_extract(m.roll, '$.type') = 'attack' ORDER BY m.id DESC LIMIT 1) AS last_attack,
       json_extract(c.stats, '$.health') AS max_health, json_extract(c.stats, '$.footprint') AS footprint, COALESCE(t.updated_at, 0) AS image_version,
       EXISTS (SELECT 1 FROM creature_template_images i WHERE i.template_id = c.template_id AND i.slot = 'portrait') AS has_portrait,
       EXISTS (SELECT 1 FROM creature_template_images i WHERE i.template_id = c.template_id AND i.slot = 'standup') AS has_standup
@@ -171,7 +173,8 @@ export async function GET(req) {
     }).map(row => {
       const shared = { id: row.id, template_id: row.template_id, name: row.name, category: row.category, location_id: row.location_id, x: row.x, y: row.y, footprint: row.footprint || 1, standup_scale: row.standup_scale, standup_flipped: Boolean(row.standup_flipped), has_portrait: Boolean(row.has_portrait), has_standup: Boolean(row.has_standup), image_version: row.image_version };
       // Players see Health only when the GM shows it for that creature.
-      if (gm) return { ...shared, hidden: Boolean(row.hidden), show_health: Boolean(row.show_health), health: row.health, max_health: row.max_health };
+      // The GM also gets the stat snapshot, conditions, and the signature attack used last (a creature never repeats one).
+      if (gm) return { ...shared, hidden: Boolean(row.hidden), show_health: Boolean(row.show_health), health: row.health, max_health: row.max_health, conditions: JSON.parse(row.conditions), stats: JSON.parse(row.stats), last_attack: row.last_attack };
       return row.show_health ? { ...shared, health: row.health, max_health: row.max_health } : shared;
     });
     return json({ locations: locations.map(item => ({ ...item, grid: gm || item.access_level === 'accessible' ? gridOf(item) : null, has_image: (gm || item.access_level === 'accessible') && item.image_version > 0, has_card_image: item.card_image_version > 0 })), links, positions, creatures, overrides: gm ? overrides : [], visibleRooms: Object.fromEntries(locations.filter(item => item.kind === 'delve' && (gm || item.access_level === 'accessible')).map(item => [item.id, Object.fromEntries([...gridOf(item).rooms.map(room => room.id), '_unassigned'].map(id => [id, visibleRoom(item, id)]))])) });
@@ -275,10 +278,32 @@ export async function POST(req) {
     if (data.action === 'creature') {
       const creature = await placedCreature(sql, data.creatureId);
       if (!creature) return error('Creature not found', 404);
-      const { hidden, flipped, scale } = data;
-      if ([hidden, flipped].some(value => value !== undefined && typeof value !== 'boolean') || (scale !== undefined && !(Number.isFinite(scale) && scale >= CREATURE_SCALE.min && scale <= CREATURE_SCALE.max))) return error('Invalid creature setting');
+      const { hidden, flipped, scale, showHealth, health, name, conditions } = data;
+      if ([hidden, flipped, showHealth].some(value => value !== undefined && typeof value !== 'boolean') || (scale !== undefined && !(Number.isFinite(scale) && scale >= CREATURE_SCALE.min && scale <= CREATURE_SCALE.max))) return error('Invalid creature setting');
+      if (health !== undefined && !(Number.isInteger(health) && health >= 0 && health <= 99)) return error('Health must be a whole number from 0 to 99');
+      const cleanName = name === undefined ? creature.name : typeof name === 'string' && name.trim() && name.length <= 80 ? name.trim() : null;
+      if (cleanName === null) return error('Give the creature a name of up to 80 characters');
+      const cleanConditions = conditions === undefined ? JSON.parse(creature.conditions) : cleanCreatureConditions(conditions);
+      if (!cleanConditions) return error('Conditions must be up to 12 names of up to 40 characters');
       const size = scale === undefined ? creature.standup_scale : Math.round(scale * 100) / 100;
-      await sql`UPDATE creatures SET hidden = ${hidden === undefined ? creature.hidden : Number(hidden)}, standup_flipped = ${flipped === undefined ? creature.standup_flipped : Number(flipped)}, standup_scale = ${size}, updated_at = unixepoch() WHERE id = ${creature.id}`;
+      const flag = (value, current) => value === undefined ? current : Number(value);
+      await sql`UPDATE creatures SET hidden = ${flag(hidden, creature.hidden)}, standup_flipped = ${flag(flipped, creature.standup_flipped)}, standup_scale = ${size}, show_health = ${flag(showHealth, creature.show_health)},
+        health = ${health ?? creature.health}, name = ${cleanName}, conditions = ${JSON.stringify(cleanConditions)}, updated_at = unixepoch() WHERE id = ${creature.id}`;
+      return json({ ok: true });
+    }
+    // Replaces one placed creature's stat snapshot; the palette entry and other creatures are unchanged.
+    if (data.action === 'creatureStats') {
+      const creature = await placedCreature(sql, data.creatureId);
+      if (!creature) return error('Creature not found', 404);
+      const input = cleanTemplate(data);
+      if (!input) return error('Check the creature fields');
+      if (gridOf(creature.location) && input.stats.footprint !== (creature.size || 1) && creature.x !== null) {
+        // A new footprint must still fit where the creature stands.
+        const moved = await positionCreature(sql, creature.location, input.stats.footprint, [creature.x, creature.y], true, (x, y, guard) => sql.query(
+          `UPDATE creatures SET stats = ?, updated_at = unixepoch() WHERE id = ? AND ${guard.sql} RETURNING id`, [JSON.stringify(input.stats), creature.id, ...guard.args]), creature.id);
+        if (moved instanceof Response) return error('The new footprint does not fit where this creature stands. Move it to open space first.', 409);
+      }
+      await sql`UPDATE creatures SET name = ${input.name}, category = ${input.category}, stats = ${JSON.stringify(input.stats)}, health = min(health, ${input.stats.health}), updated_at = unixepoch() WHERE id = ${creature.id}`;
       return json({ ok: true });
     }
     if (data.action === 'removeCreature') {

@@ -5,6 +5,8 @@ import { applyInitialSchema } from '../scripts/migrate.js';
 import { applySheetAndCrewSchema } from '../scripts/migrate-002.js';
 import { applyChatSchema } from '../scripts/migrate-004.js';
 import { applyPushSchema } from '../scripts/migrate-005.js';
+import { applyWorldSchema } from '../scripts/migrate-006.js';
+import { applyCreatureSchema } from '../scripts/migrate-017.js';
 import { GET, POST } from '../api/chat.js';
 
 const base = 'http://localhost:3000/api/chat';
@@ -18,7 +20,7 @@ test('chat persists ordered text and server dice, checks ownership, and exports 
   process.env.TURSO_DATABASE_URL = 'file::memory:';
   const sql = db();
   try {
-    await applyInitialSchema(sql); await applySheetAndCrewSchema(sql); await applyChatSchema(sql); await applyPushSchema(sql); await applyPushSchema(sql);
+    await applyInitialSchema(sql); await applySheetAndCrewSchema(sql); await applyChatSchema(sql); await applyPushSchema(sql); await applyPushSchema(sql); await applyWorldSchema(sql); await applyCreatureSchema(sql);
     const one = 'a'.repeat(64); const two = 'b'.repeat(64);
     await sql`INSERT INTO profiles (id, name, role, password_salt, password_hash) VALUES ('p1', 'Explorer', 'player', 'x', 'x'), ('p2', 'Other', 'player', 'x', 'x'), ('g1', 'Keeper', 'gm', 'x', 'x')`;
     await sql`INSERT INTO sessions (token_hash, profile_id, expires_at) VALUES (${digest(one)}, 'p1', unixepoch() + 3600), (${digest(two)}, 'p2', unixepoch() + 3600), (${digest('c'.repeat(64))}, 'g1', unixepoch() + 3600)`;
