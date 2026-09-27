@@ -116,6 +116,7 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 <link rel="preload" href="assets/fonts/marcellus-sc-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="ui-theme.css">
 <link rel="stylesheet" href="sheet.css">
+<link rel="stylesheet" href="crew.css">
 <link rel="stylesheet" href="star-chart.css">
 </head>
 <body>
@@ -317,26 +318,53 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
   </div>
   </section>
   <section id="paneCrew" class="side-pane crew-panel" role="tabpanel" aria-labelledby="panelTabCrew" hidden>
-  <div class="panel-head"><div><div class="eyebrow">Shared expedition record</div><h2>Crew Sheet</h2></div></div>
-  <p id="crewMessage" class="message" role="status"></p>
-  <div class="sheet-tabs crew-tabs" role="tablist" aria-label="Crew sections">
-    <button type="button" role="tab" id="crewTabInfo" aria-controls="crewPaneInfo" aria-selected="true" tabindex="0">Crew Info</button>
-    <button type="button" role="tab" id="crewTabManeuvers" aria-controls="crewPaneManeuvers" aria-selected="false" tabindex="-1">Maneuvers</button>
-    <button type="button" role="tab" id="crewTabBird" aria-controls="crewPaneBird" aria-selected="false" tabindex="-1">Bird</button>
-    <button type="button" role="tab" id="crewTabRover" aria-controls="crewPaneRover" aria-selected="false" tabindex="-1">Rover</button>
-    <button type="button" role="tab" id="crewTabShuttle" aria-controls="crewPaneShuttle" aria-selected="false" tabindex="-1">Shuttle</button>
+  <div class="explorer crew-sheet" id="crewSheet">
+  <div class="explorer-top">
+    <div class="xhead">
+      <button class="medallion" type="button" data-crew-image="crew" aria-label="Replace the crew emblem"><img id="crewPortrait" src="assets/ui/crew-emblem.svg" alt=""></button>
+      <div class="xhead-text"><div class="eyebrow">Explorers Guild crew</div><h2 id="crewHeading">Our crew</h2><div class="xsub" id="crewSub"></div></div>
+      <div class="cp-badge" title="Crew points"><b id="crewPointsBadge">0</b><span>Crew pts</span></div>
+    </div>
+    <div class="roster" id="crewRoster"></div>
+    <div class="birdbar" id="crewBirdBar"></div>
+    <div class="sheet-tabs explorer-tabs crew-tabs" role="tablist" aria-label="Crew sections">
+      <button type="button" role="tab" id="crewTabInfo" aria-controls="crewPaneInfo" aria-selected="true" tabindex="0">Crew</button>
+      <button type="button" role="tab" id="crewTabManeuvers" aria-controls="crewPaneManeuvers" aria-selected="false" tabindex="-1">Maneuvers</button>
+      <button type="button" role="tab" id="crewTabBird" aria-controls="crewPaneBird" aria-selected="false" tabindex="-1">Bird</button>
+      <button type="button" role="tab" id="crewTabRover" aria-controls="crewPaneRover" aria-selected="false" tabindex="-1">Rover</button>
+      <button type="button" role="tab" id="crewTabShuttle" aria-controls="crewPaneShuttle" aria-selected="false" tabindex="-1">Shuttle</button>
+    </div>
   </div>
-  <section id="crewPaneInfo" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabInfo">
-    <label>Crew name<input id="crewName" maxlength="100"></label>
-    <label>Crew points<input id="crewPoints" type="number" min="0" max="999"></label>
-    <div class="portrait-controls"><div class="rule">Crew portrait</div><img id="crewPortrait" class="image-preview" alt="Crew portrait" hidden><label>Upload portrait<input id="crewPortraitInput" type="file" accept="image/png,image/jpeg,image/webp"></label><button id="removeCrewPortrait" type="button" hidden>Remove portrait</button></div>
-    <div class="rule">Explorable roles</div><div id="crewRoleRows" class="entry-list"></div>
-  </section>
-  <section id="crewPaneManeuvers" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabManeuvers" hidden><div class="rule">Crew maneuvers</div><div id="crewManeuverRows" class="entry-list"></div><button id="addCrewManeuver" type="button">Add maneuver</button></section>
-  <section id="crewPaneBird" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabBird" hidden><div class="portrait-controls"><div class="rule">Bird portrait</div><img id="birdPortrait" class="image-preview" alt="Bird portrait" hidden><label>Upload portrait<input id="birdPortraitInput" type="file" accept="image/png,image/jpeg,image/webp"></label><button id="removeBirdPortrait" type="button" hidden>Remove portrait</button></div><div id="crewBird" class="character-grid"></div></section>
-  <section id="crewPaneRover" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabRover" hidden><div id="crewRover" class="character-grid"></div></section>
-  <section id="crewPaneShuttle" class="crew-tab-panel" role="tabpanel" aria-labelledby="crewTabShuttle" hidden><div id="crewShuttle" class="character-grid"></div></section>
-  <p class="field-hint">Changes save when you leave a field. The sheet refreshes while open.</p>
+  <div class="crew-body">
+    <section id="crewPaneInfo" class="sheet-section crew-tab-panel" role="tabpanel" aria-labelledby="crewTabInfo">
+      <label class="ink">Crew name<input id="crewName" maxlength="100" placeholder="Name your crew"></label>
+      <div class="rule">Delve formation</div>
+      <div class="formation" id="crewFormation"></div>
+      <p class="field-hint">Choose who takes each role. Each seat shows the role's key attributes and that Explorer's scores; the list puts the best fit first. Players seat their own Explorers, and the GM can seat anyone.</p>
+      <div class="rule">Crew points</div>
+      <div class="cp-row"><span class="field-hint">Set by hand to correct a mistake; every change goes in the history.</span><input id="crewPoints" type="number" min="0" max="999" aria-label="Crew points"></div>
+      <div class="debrief" id="crewDebrief"></div>
+      <div class="cp-history" id="crewHistory"></div>
+      <button id="removeCrewPortrait" class="text-button link-button" type="button" hidden>Remove the crew emblem</button>
+    </section>
+    <section id="crewPaneManeuvers" class="sheet-section crew-tab-panel" role="tabpanel" aria-labelledby="crewTabManeuvers" hidden>
+      <div class="engagement" id="crewEngagement"></div>
+      <div id="crewManeuverBoard" class="maneuver-board"></div>
+      <p class="field-hint">Learning a maneuver costs 5 CP and needs a Guild instructor, usually in Ship City or at a major waystation.</p>
+      <div class="rule">Our own maneuvers</div>
+      <div id="crewManeuverRows" class="custom-maneuvers"></div>
+      <button id="addCrewManeuver" type="button" class="small-button">Add a maneuver</button>
+    </section>
+    <section id="crewPaneBird" class="sheet-section crew-tab-panel" role="tabpanel" aria-labelledby="crewTabBird" hidden>
+      <div id="crewBird"></div>
+      <button id="removeBirdPortrait" class="text-button link-button" type="button" hidden>Remove the Bird's portrait</button>
+    </section>
+    <section id="crewPaneRover" class="sheet-section crew-tab-panel" role="tabpanel" aria-labelledby="crewTabRover" hidden><div id="crewRover"></div></section>
+    <section id="crewPaneShuttle" class="sheet-section crew-tab-panel" role="tabpanel" aria-labelledby="crewTabShuttle" hidden><div id="crewShuttle"></div></section>
+    <input id="crewImageInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+    <div class="panel-footer explorer-footer"><p id="crewMessage" class="message save-status" role="status"></p><div class="panel-actions"><button id="closeCrew" type="button">Close</button></div></div>
+  </div>
+  </div>
   </section>
   </div>
 </aside>

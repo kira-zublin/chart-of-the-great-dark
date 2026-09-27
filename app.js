@@ -17,7 +17,8 @@ let characterDirty = false;
 let saveTimer = null, saveQueue = Promise.resolve(), inFlight = 0, changeCount = 0;
 const pendingImages = {};
 setSheetHandlers({ change: sheetChanged, roll: rollFromSheet, image: chooseImage });
-const crewUI = initCrewUI(request, () => state.profile);
+// The crew sheet rolls in chat as the active character, for commanding the Bird.
+const crewUI = initCrewUI(request, () => state.profile, { activeCharacter: () => activeCharacter(), chat: () => chatUI });
 const jukeboxUI = initJukeboxUI(request, () => state.profile);
 const creatureUI = initCreatureUI(request, {
   place: id => worldUI.placeCreature(id), drag: template => worldUI.paletteDrag(template),
@@ -31,10 +32,11 @@ const sidePanel = initSidePanel({
   onChange: tab => { crewUI.setActive(tab === 'Crew'); creatureUI.setActive(tab === 'Creatures'); }
 });
 const vistaDialog = initVistaDialog(() => state.profile);
-const chatUI = initChatUI(request, () => state.profile, () => {
+function activeCharacter() {
   const id = state.selected?.id || (state.profile && localStorage.getItem(`active-character:${state.profile.id}`));
   return state.characters.find(item => item.id === id) || null;
-}, vistaDialog.receive);
+}
+const chatUI = initChatUI(request, () => state.profile, activeCharacter, vistaDialog.receive);
 const worldUI = initWorldUI(request, () => state.profile, () => {
   const id = state.selected?.id || (state.profile && localStorage.getItem(`active-character:${state.profile.id}`));
   return state.characters.find(item => item.id === id && item.kind === 'pc') || null;
@@ -65,7 +67,7 @@ function showApp(profile) {
     sidePanel.setRole();
     loadCharacters();
     // The rules reference is optional: without it the sheet simply has no descriptions.
-    request('/api/rules').then(data => setRulesLibrary(data.entries)).catch(() => setRulesLibrary([]));
+    request('/api/rules').then(data => { setRulesLibrary(data.entries); crewUI.setRulesLibrary(data.entries); }).catch(() => setRulesLibrary([]));
     chatUI.start();
     worldUI.start();
     jukeboxUI.start();
@@ -264,6 +266,7 @@ function fillCharacter(character) {
 $('createCharacter').addEventListener('click', () => editCharacter());
 $('panelCreateCharacter').addEventListener('click', () => editCharacter());
 $('cancelCharacter').addEventListener('click', () => sidePanel.close());
+$('closeCrew').addEventListener('click', () => sidePanel.close());
 $('openCrew').addEventListener('click', () => { if (state.profile) sidePanel.toggle('Crew'); });
 $('openGMTools').addEventListener('click', () => { if (state.profile?.role === 'gm') sidePanel.toggle('Mapping'); });
 $('characterForm').addEventListener('submit', async event => {

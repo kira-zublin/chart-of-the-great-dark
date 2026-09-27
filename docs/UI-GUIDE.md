@@ -11,6 +11,7 @@ Readability comes first. Decoration must never hide interaction state, and every
 | `index.html` (inline `<style>`) | Base layout and component structure for the star chart, HUD, panels, chat and dialogs. |
 | `world-ui.css` | Location views: headings, markers, grids, standups, the location card. |
 | `ui-theme.css` | The visual-language layer: typeface, surfaces, dividers, buttons, tabs, fields, reveals, scene transitions and dice cards. Loaded last. |
+| `crew.css` | The Crew sheet in the Crew tab: roster, delve formation, maneuver board, Bird tray, vehicle spec plates. Builds on the classes in `sheet.css`. |
 | `sheet.css` | The Explorer sheet in the Characters tab: header tracks, attribute wheel, talents, condition and gear cards, ink fields. |
 | `vista-dialog.js` | The Vista dialog box: which chat lines it shows, the portrait, and the letter-by-letter typing. Styles are in `ui-theme.css`. |
 | `scene-effects.js` | The ink-bloom transition between locations and drifting dust in scenes. |
@@ -64,6 +65,16 @@ The character sheet should read like a filled-in record, not a web form.
 - **Conditions** are rust everywhere: the header chips, the wheel tags and the Condition tiles.
 - **Ink fields:** free text sits on a dotted underline in italic Georgia and becomes a normal field on focus. Card titles (injuries, weapons, suits) use Marcellus SC.
 - **Chips:** weapon and suit features are steel-blue chips; tiny items are hairline chips.
+
+## Crew sheet
+
+The Crew sheet shares the Explorer sheet's header, tracks, ink fields and chips.
+
+- **Colours:** the Bird is teal (`#9cc7c6`), with Energy in teal and Health in rust. Vehicles are steel blue (`#9fb6c4`), including the Hull track. Crew points are brass.
+- **Formation:** role seats hang on hairline connectors. The link between the Scout and the Delver is dashed, because the Scout ranges ahead. The rust name in a seat is a suggestion, not a warning.
+- **Maneuvers:** a learned tile has a gold border and a faint brass wash; an unlearned tile is dim. A rust dot or face marks a maneuver used this engagement.
+- **Spec plates** use the frame corners and a cool steel wash. Installed upgrades fill slot cards; empty slots are dashed.
+- **Default images:** `assets/ui/crew-emblem.svg` and `assets/ui/bird-emblem.svg` stand in until the crew uploads a picture.
 
 ## Map markers
 

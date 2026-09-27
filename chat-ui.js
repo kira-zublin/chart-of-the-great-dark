@@ -21,7 +21,7 @@ export function rollCard(roll) {
   const attribute = roll.attribute ? roll.attribute[0].toUpperCase() + roll.attribute.slice(1) : 'Dice pool';
   const talent = roll.talent ? ` + ${roll.talent} (${roll.talentLevel})` : '';
   return {
-    title: `${roll.type === 'push' ? `Push ${roll.pushCount} · ` : ''}${attribute}${talent}`,
+    title: `${roll.type === 'push' ? `Push ${roll.pushCount} · ` : ''}${roll.purpose ? `${roll.purpose} · ` : ''}${attribute}${talent}`,
     dice: [...roll.baseDice.map(value => ({ value, gear: false })), ...roll.gearDice.map(value => ({ value, gear: true }))],
     result: roll.successes ? `${roll.successes} ${roll.successes === 1 ? 'Success' : 'Successes'}` : 'No successes',
     costs: roll.type === 'push' ? `${roll.hopeLoss} Hope loss · ${roll.gearWear} gear wear` : ''
@@ -279,6 +279,10 @@ export function initChatUI(request, profile, character, onMessages = () => {}) {
     start() { lastId = 0; first = true; const saved = localStorage.getItem(`chat-viewed:${profile().id}`); hasViewedBefore = saved !== null; lastViewedId = Math.max(0, Number(saved) || 0); $('chatContent').hidden = true; toggle.textContent = 'Show'; toggle.setAttribute('aria-expanded', 'false'); setUnread(false); list.replaceChildren(); identity(); poll(); clearInterval(timer); timer = setInterval(poll, 2000); },
     stop() { clearInterval(timer); timer = null; lastId = 0; creature = null; pushId = null; pushCount = 0; secondPush = false; $('chatPush').hidden = true; $('chatRollResult').textContent = ''; list.replaceChildren(); rollDialog.close(); exportDialog.close(); },
     refreshIdentity: identity,
+    // Rolls for the crew sheet (commanding the Bird, losing control), posted like any other roll.
+    // Each resolves to the chat message, or null with the reason shown in chat.
+    rollFor: payload => send({ gear: 0, ...payload }),
+    push: messageId => send({ type: 'push', messageId }),
     // Opens the roll window for an attribute of the selected character, from the sheet.
     rollAttribute(attribute, talent = '') {
       identity(); rollMode.value = 'skill'; $('chatAttribute').value = attribute;

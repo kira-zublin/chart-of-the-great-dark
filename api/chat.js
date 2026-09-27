@@ -64,7 +64,7 @@ export function describeRoll(roll) {
     const parts = [roll.baseDice.length ? `base [${roll.baseDice.join(', ')}] — ${roll.successes} ${roll.successes === 1 ? 'success' : 'successes'}` : null, roll.blightDice.length ? `Blight [${roll.blightDice.join(', ')}] — ${roll.blightSuccesses} ${roll.blightSuccesses === 1 ? 'success' : 'successes'}` : null];
     return `used ${roll.roll}. ${roll.name}${roll.summary ? ` (${roll.summary})` : ''}${parts.some(Boolean) ? `: ${parts.filter(Boolean).join('; ')}` : ''}`;
   }
-  const label = roll.attribute ? `${roll.attribute}${roll.talent ? ` + ${roll.talent} (${roll.talentLevel})` : ''}` : 'dice pool';
+  const label = `${roll.purpose ? `${roll.purpose}: ` : ''}${roll.attribute ? `${roll.attribute}${roll.talent ? ` + ${roll.talent} (${roll.talentLevel})` : ''}` : 'dice pool'}`;
   const modifier = roll.modifier ? ` ${roll.modifier > 0 ? '+' : ''}${roll.modifier}` : '';
   const dice = `base [${roll.baseDice.join(', ')}]${roll.gearDice.length ? `, gear [${roll.gearDice.join(', ')}]` : ''}`;
   const result = `${roll.successes} ${roll.successes === 1 ? 'success' : 'successes'}`;
@@ -87,6 +87,9 @@ export async function POST(req) {
     if (creature === false) return error('Creature unavailable', 403);
     if (character && creature) return error('Speak as a character or a creature, not both');
     let kind, message = '', roll = null, pushOf = null;
+    // An optional label says what a roll was for, such as "Command the Bird · Farsight".
+    const purpose = input.purpose === undefined || input.purpose === '' ? '' : typeof input.purpose === 'string' && input.purpose.trim().length <= 80 ? input.purpose.trim() : null;
+    if (purpose === null) return error('Roll label must be at most 80 characters');
     if (input.type === 'text') {
       if (typeof input.text !== 'string' || !input.text.trim() || input.text.length > 2000) return error('Message must be 1–2000 characters');
       kind = 'text'; message = input.text.trim();
@@ -97,7 +100,7 @@ export async function POST(req) {
       if (!Number.isInteger(base) || base < 1 || base > 30 || !Number.isInteger(modifier) || modifier < -10 || modifier > 10 || !Number.isInteger(gear) || gear < 0 || gear > 10) return error('Invalid roll options');
       const count = Math.max(1, Math.min(30, base + modifier));
       const baseDice = dice(count); const gearDice = dice(gear);
-      roll = { type: 'pool', base, modifier, gear, baseDice, gearDice, successes: successes(baseDice, gearDice) };
+      roll = { type: 'pool', base, modifier, gear, baseDice, gearDice, successes: successes(baseDice, gearDice), ...(purpose ? { purpose } : {}) };
       kind = 'roll';
     } else if (input.type === 'attack') {
       // The GM chooses the signature attack; the server rolls its base dice and any Blight dice.
@@ -120,7 +123,7 @@ export async function POST(req) {
       if (input.base !== undefined && (!Number.isInteger(input.base) || input.base < 1 || input.base > 30)) return error('Invalid base dice count');
       const count = input.base ?? suggested;
       const baseDice = dice(count); const gearDice = dice(gear);
-      roll = { type: 'skill', attribute: input.attribute, talent, talentLevel: level, base: count, modifier, gear, baseDice, gearDice, successes: successes(baseDice, gearDice) };
+      roll = { type: 'skill', attribute: input.attribute, talent, talentLevel: level, base: count, modifier, gear, baseDice, gearDice, successes: successes(baseDice, gearDice), ...(purpose ? { purpose } : {}) };
       kind = 'roll';
     } else if (input.type === 'push') {
       if (!Number.isSafeInteger(input.messageId) || input.messageId < 1) return error('Invalid roll to push');
@@ -137,7 +140,7 @@ export async function POST(req) {
       const existing = await sql`SELECT id FROM chat_messages WHERE push_of = ${previous.id} LIMIT 1`;
       if (existing.length) return error('This roll has already been pushed', 409);
       const baseDice = reroll(prior.baseDice); const gearDice = reroll(prior.gearDice);
-      roll = { type: 'push', attribute: prior.attribute || null, talent: prior.talent || '', talentLevel: prior.talentLevel || 0, base: prior.base ?? null, modifier: prior.modifier || 0, gear: prior.gear || 0, pushCount, baseDice, gearDice, successes: successes(baseDice, gearDice), hopeLoss: baseDice.filter(die => die === 1).length, gearWear: gearDice.filter(die => die === 1).length };
+      roll = { type: 'push', attribute: prior.attribute || null, talent: prior.talent || '', talentLevel: prior.talentLevel || 0, base: prior.base ?? null, modifier: prior.modifier || 0, gear: prior.gear || 0, pushCount, baseDice, gearDice, successes: successes(baseDice, gearDice), hopeLoss: baseDice.filter(die => die === 1).length, gearWear: gearDice.filter(die => die === 1).length, ...(prior.purpose ? { purpose: prior.purpose } : {}) };
       pushOf = previous.id; kind = 'roll';
       // Keep the identity attached to the roll, even if the UI selection changed.
       const source = (await sql`SELECT character_id, character_name, creature_id FROM chat_messages WHERE id = ${previous.id}`)[0];
