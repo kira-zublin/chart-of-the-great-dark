@@ -40,11 +40,12 @@ test('the rules reference imports as a whole and is readable by any signed-in pr
   await applyRulesLibrarySchema(sql); await applyRulesLibrarySchema(sql);
   assert.equal((await GET(request())).status, 401);
 
-  assert.deepEqual(await importRulesLibrary(sql, library), { talent: 1, injury: 1, trauma: 1, blight: 1, feature: 1 });
+  const none = { maneuver: 0, power: 0, control: 0, upgrade: 0 };
+  assert.deepEqual(await importRulesLibrary(sql, library), { talent: 1, injury: 1, trauma: 1, blight: 1, feature: 1, ...none });
   await assert.rejects(importRulesLibrary(sql, { entries: [{ ...library.entries[0], name: '' }] }), /entry 1/);
   await assert.rejects(importRulesLibrary(sql, { entries: [library.entries[0], library.entries[0]] }), /unique/);
   // A rerun replaces the set rather than adding to it.
-  assert.deepEqual(await importRulesLibrary(sql, { entries: library.entries.slice(0, 2) }), { talent: 1, injury: 1, trauma: 0, blight: 0, feature: 0 });
+  assert.deepEqual(await importRulesLibrary(sql, { entries: library.entries.slice(0, 2) }), { talent: 1, injury: 1, trauma: 0, blight: 0, feature: 0, ...none });
   const entries = (await (await GET(request(player))).json()).entries;
   assert.deepEqual(entries.map(entry => entry.name), ['Test bruise', 'Test Lore']);
   assert.equal(entries.find(entry => entry.kind === 'injury').data.lethal, false);

@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db } from '../lib/server.js';
-import { cleanRulesEntry } from '../lib/rules-library.js';
+import { RULE_KINDS, cleanRulesEntry } from '../lib/rules-library.js';
 
 // The rulebook's talent descriptions and injury, trauma, Blight and feature tables are copyrighted text, so
 // the extracted library is a local file in the uncommitted gamerules/ folder rather than part of the repository.
@@ -23,12 +23,12 @@ export async function importRulesLibrary(sql, library) {
     'DELETE FROM rules_entries',
     ...entries.map((entry, position) => ({ sql: 'INSERT INTO rules_entries (kind, key, name, data, position) VALUES (?, ?, ?, ?, ?)', args: [entry.kind, entry.key, entry.name, JSON.stringify(entry.data), position] }))
   ], 'write');
-  return Object.fromEntries(['talent', 'injury', 'trauma', 'blight', 'feature'].map(kind => [kind, entries.filter(entry => entry.kind === kind).length]));
+  return Object.fromEntries(RULE_KINDS.map(kind => [kind, entries.filter(entry => entry.kind === kind).length]));
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   const file = process.argv.slice(2).find(arg => !arg.startsWith('--'));
   const library = JSON.parse(await readFile(file ? resolve(file) : DEFAULT_RULES_LIBRARY, 'utf8'));
   const counts = await importRulesLibrary(db(), library);
-  console.log(`Rules library: ${counts.talent} talents, ${counts.injury} critical injuries, ${counts.trauma} mental traumas, ${counts.blight} Blight manifestations, ${counts.feature} gear features.`);
+  console.log(`Rules library: ${counts.talent} talents, ${counts.injury} critical injuries, ${counts.trauma} mental traumas, ${counts.blight} Blight manifestations, ${counts.feature} gear features, ${counts.maneuver} maneuvers, ${counts.power} Bird powers, ${counts.control} Losing Control results, ${counts.upgrade} vehicle upgrades.`);
 }

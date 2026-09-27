@@ -104,6 +104,12 @@ The Explorer sheet can show the rulebook's talent descriptions, and offer the cr
 
 Migration `scripts/migrate-018.js` adds the `rules_entries` table. It is safe to rerun, and preview builds and `npm run dev:local` apply it automatically. The rules API returns an empty reference until it runs, so merging first is harmless; run it on Production, then the import, to turn the descriptions on.
 
+### Crew sheet
+
+The Crew tab draws on the book's crew rules: a delve formation of the five roles, a board of the 20 maneuvers, the Bird with its powers and **Command the Bird**, and spec plates for the rover and shuttle with upgrade slots. Learning, installing and awarding crew points save together with the change, and every change to crew points is kept in a history on the Crew tab.
+
+Migration `scripts/migrate-019.js` adds the crew's engagement tracker and crew-point history, and lets the rules reference hold the crew's book text. It is safe to rerun. Preview builds and `npm run dev:local` apply it automatically. Back up Production and run `node --env-file=.env.production-migration.local scripts/migrate-019.js` **before merging**, then rerun `scripts/import-rules.js` so the maneuver, power, Losing Control and upgrade descriptions load. The crew API still saves changes before the migration runs, without history entries.
+
 ### Creature palette
 
 The GM's Creatures tab lists palette entries by category with search and filters. Each entry opens a stat block (Ferocity, Health, Armor, attributes, description, containment protocol, abilities, behavior pattern and signature attacks, or an adversary's attributes, talents and gear), which the GM can edit, duplicate or delete. New creature adds the GM's own entries. To place creatures, open a Vista or Explorable and drag a palette row onto it, or choose **Place** (which also works on touch screens). Creatures appear as stand-ups in Vistas and as tokens in Explorables; large creatures cover 2 × 2 or 3 × 3 squares, and characters cannot move into squares a visible creature covers. The GM drags placed creatures to move them. Clicking one opens a control bar to hide it from players, resize or flip its stand-up, duplicate it or remove it. Players see visible creatures by name and cannot move them.
