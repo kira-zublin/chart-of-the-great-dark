@@ -11,6 +11,7 @@ Readability comes first. Decoration must never hide interaction state, and every
 | `index.html` (inline `<style>`) | Base layout and component structure for the star chart, HUD, panels, chat and dialogs. |
 | `world-ui.css` | Location views: headings, markers, grids, standups, the location card. |
 | `ui-theme.css` | The visual-language layer: typeface, surfaces, dividers, buttons, tabs, fields, reveals, scene transitions and dice cards. Loaded last. |
+| `sheet.css` | The Explorer sheet in the Characters tab: header tracks, attribute wheel, talents, condition and gear cards, ink fields. |
 | `vista-dialog.js` | The Vista dialog box: which chat lines it shows, the portrait, and the letter-by-letter typing. Styles are in `ui-theme.css`. |
 | `scene-effects.js` | The ink-bloom transition between locations and drifting dust in scenes. |
 | `star-chart.js`, `star-chart.css` | The star map: the engraved chart of the Jumuah system, its book content, and the markers for star-map locations. |
@@ -52,6 +53,17 @@ Panels carry a faint rust wash in one corner and a cool steel wash in the opposi
 - **Tabs** (`role="tab"` in `.panel-tabs` and `.sheet-tabs`): text only. The active tab is brighter and has a gold line with a diamond beneath it.
 - **Close buttons:** round, with a dashed ring that turns on hover.
 - **Fields:** a faint box with a stronger bottom edge. On focus, a gold underline draws across. The keyboard focus outline stays.
+
+## Explorer sheet
+
+The character sheet should read like a filled-in record, not a web form.
+
+- **Pool colours:** Health is rust (`#d98a68`), Hope is brass (`#ddc287`) and Heart is the Blight plum (`#c28aa6`). The header tracks, the wheel's pool edges and their labels use the same colour.
+- **Tracks** are rotated squares (diamonds). Lit diamonds are filled in the pool colour with a soft glow; lost ones are dark.
+- **Attribute wheel:** an engraved SVG hexagon. Each dial is a disc with a six-segment ring filled to the attribute's value; the key attribute has a brass star outside its dial. A weakened attribute turns rust and shows its reduced value.
+- **Conditions** are rust everywhere: the header chips, the wheel tags and the Condition tiles.
+- **Ink fields:** free text sits on a dotted underline in italic Georgia and becomes a normal field on focus. Card titles (injuries, weapons, suits) use Marcellus SC.
+- **Chips:** weapon and suit features are steel-blue chips; tiny items are hairline chips.
 
 ## Map markers
 

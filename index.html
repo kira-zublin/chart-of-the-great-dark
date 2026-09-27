@@ -115,6 +115,7 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
 <link rel="stylesheet" href="world-ui.css">
 <link rel="preload" href="assets/fonts/marcellus-sc-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="ui-theme.css">
+<link rel="stylesheet" href="sheet.css">
 <link rel="stylesheet" href="star-chart.css">
 </head>
 <body>
@@ -238,61 +239,80 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
     <form id="creatureForm" class="character-form creature-form" novalidate hidden></form>
   </section>
   <section id="paneCharacters" class="side-pane" role="tabpanel" aria-labelledby="panelTabCharacters">
-  <div class="panel-head"><div><div class="eyebrow">Explorer record</div><h2 id="characterHeading">No character open</h2></div></div>
-  <div id="characterEmpty" class="character-empty"><p class="field-hint">Choose a character from the character menu, or create a new one.</p><button id="panelCreateCharacter" type="button">Create a new character</button></div>
-  <div id="characterEditor" hidden>
-  <div class="sheet-tabs" id="characterTabs" role="tablist" aria-label="Character sections">
-    <button type="button" role="tab" aria-selected="true" aria-controls="tabProfile" id="tabButtonProfile" data-tab="Profile">Profile</button>
-    <button type="button" role="tab" aria-selected="false" aria-controls="tabAbilities" id="tabButtonAbilities" data-tab="Abilities" tabindex="-1">Abilities</button>
-    <button type="button" role="tab" aria-selected="false" aria-controls="tabCondition" id="tabButtonCondition" data-tab="Condition" tabindex="-1">Condition</button>
-    <button type="button" role="tab" aria-selected="false" aria-controls="tabGear" id="tabButtonGear" data-tab="Gear" tabindex="-1">Gear</button>
+  <div id="characterEmpty" class="character-empty"><div class="panel-head"><div><div class="eyebrow">Explorer record</div><h2>No character open</h2></div></div><p class="field-hint">Choose a character from the character menu, or create a new one.</p><button id="panelCreateCharacter" type="button">Create a new character</button></div>
+  <div id="characterEditor" class="explorer" hidden>
+  <div class="explorer-top">
+    <div class="xhead">
+      <button class="medallion" type="button" data-image-slot="portrait" aria-label="Replace portrait"><img id="portraitPreview" src="assets/characters/anonymous-explorer.png" alt=""></button>
+      <div class="xhead-text"><div class="eyebrow" id="explorerCalling"></div><h2 id="characterHeading">New character</h2><div class="xsub" id="explorerPlace"></div></div>
+    </div>
+    <div class="tracks" id="vitalityTracks"></div>
+    <div class="xchips" id="conditionChips" aria-live="polite"></div>
+    <div class="sheet-tabs explorer-tabs" id="characterTabs" role="tablist" aria-label="Character sections">
+      <button type="button" role="tab" aria-selected="true" aria-controls="tabAbilities" id="tabButtonAbilities" data-tab="Abilities">Abilities</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="tabCondition" id="tabButtonCondition" data-tab="Condition" tabindex="-1">Condition</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="tabGear" id="tabButtonGear" data-tab="Gear" tabindex="-1">Gear</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="tabProfile" id="tabButtonProfile" data-tab="Profile" tabindex="-1">Profile</button>
+    </div>
   </div>
   <form id="characterForm" class="character-form" novalidate>
-    <section id="tabProfile" role="tabpanel" aria-labelledby="tabButtonProfile" class="sheet-section">
-      <label>Character name<input id="characterName" maxlength="80" required></label>
-      <label id="characterKindRow">Type<select id="characterKind"><option value="pc">Player character</option><option value="npc">NPC</option></select></label>
-      <div class="character-grid">
-        <label>Profession<input id="characterProfession" maxlength="500"></label><label>Specialty<input id="sheetSpecialty" maxlength="500"></label>
-        <label>Origin<input id="characterOrigin" maxlength="500"></label><label>Faction<input id="characterFaction" maxlength="500"></label>
-        <label>Motivation<input id="characterMotivation" maxlength="500"></label><label>Quirk<input id="sheetQuirk" maxlength="500"></label>
-      </div>
-      <label>Contacts<textarea id="sheetContacts" maxlength="1000"></textarea></label>
-      <label>Appearance<textarea id="characterAppearance" maxlength="500"></textarea></label>
-      <label>Description<textarea id="characterDescription" maxlength="4000"></textarea></label>
-      <div class="rule">Character images</div>
-      <label>Portrait (JPEG, PNG, or WebP; up to 2 MB)<input id="characterPortrait" type="file" accept="image/png,image/jpeg,image/webp"><img class="image-preview" id="portraitPreview" alt="Portrait preview" hidden></label>
-      <label>Full stand-up (JPEG, PNG, or WebP; up to 2 MB)<input id="characterStandup" type="file" accept="image/png,image/jpeg,image/webp"><img class="image-preview" id="standupPreview" alt="Stand-up preview" hidden></label>
-      <label>Delve-suit stand-up (optional; JPEG, PNG, or WebP; up to 2 MB)<input id="characterDelveSuit" type="file" accept="image/png,image/jpeg,image/webp"><img class="image-preview" id="delveSuitPreview" alt="Delve-suit stand-up preview" hidden></label>
-    </section>
-    <section id="tabAbilities" role="tabpanel" aria-labelledby="tabButtonAbilities" class="sheet-section" hidden>
-      <div class="rule">Core attributes</div><div class="stat-grid">
-        <label>Strength<input id="statStrength" type="number" min="0" max="99" value="0" required></label>
-        <label>Agility<input id="statAgility" type="number" min="0" max="99" value="0" required></label>
-        <label>Logic<input id="statLogic" type="number" min="0" max="99" value="0" required></label>
-        <label>Insight<input id="statInsight" type="number" min="0" max="99" value="0" required></label>
-        <label>Perception<input id="statPerception" type="number" min="0" max="99" value="0" required></label>
-        <label>Empathy<input id="statEmpathy" type="number" min="0" max="99" value="0" required></label>
-      </div><p id="attributeHint" class="field-hint"></p>
-      <label>Experience points<input id="sheetExperience" type="number" min="0" max="999999" value="0"></label>
-      <div class="rule">Talents</div><div id="talentRows" class="entry-list"></div><button type="button" id="addTalent">Add talent</button>
+    <section id="tabAbilities" role="tabpanel" aria-labelledby="tabButtonAbilities" class="sheet-section">
+      <div class="rule-row"><div class="rule">Attributes</div><button class="text-button link-button" id="adjustSheet" type="button" aria-pressed="false">Adjust</button></div>
+      <div class="wheel-wrap"><svg class="attribute-wheel" id="attributeWheel" viewBox="0 0 412 372" role="group" aria-label="Attributes"></svg><div class="wheel-budget" id="wheelBudget" hidden><div class="wheel-budget-num" id="wheelBudgetNum">24</div><div class="wheel-budget-label">of 24 points</div></div></div>
+      <p class="field-hint" id="wheelHint"></p>
+      <div class="rule">Talents</div>
+      <div class="xp-row"><span class="mini-label">Experience</span><div class="xp-boxes" id="xpBoxes" aria-hidden="true"></div><div class="stepper"><button type="button" id="xpDown" aria-label="Remove 1 XP">−</button><output id="xpNum" aria-live="polite">0</output><button type="button" id="xpUp" aria-label="Add 1 XP">+</button></div></div>
+      <div class="talent-list" id="talentRows"></div>
+      <div class="talent-picker"><input id="talentSearch" placeholder="Learn a talent…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="talentOptions" aria-label="Learn a talent"><div class="talent-options" id="talentOptions" role="listbox" hidden></div></div>
+      <p class="field-hint" id="talentHint"></p>
     </section>
     <section id="tabCondition" role="tabpanel" aria-labelledby="tabButtonCondition" class="sheet-section" hidden>
-      <p class="field-hint">Maximum Health = Strength + Agility; Hope = Logic + Empathy; Heart = Insight + Perception.</p>
-      <div class="stat-grid"><label>Health now<input id="sheetHealth" type="number" min="0" max="99"></label><label>Hope now<input id="sheetHope" type="number" min="0" max="99"></label><label>Heart now<input id="sheetHeart" type="number" min="0" max="99"></label></div>
-      <p id="vitalityMax" class="field-hint"></p><div class="rule">Conditions</div><div id="conditionChecks" class="condition-grid"></div>
-      <label>Critical injuries<textarea id="sheetInjuries" maxlength="2000"></textarea></label>
-      <label>Mental trauma<textarea id="sheetTrauma" maxlength="2000"></textarea></label>
-      <label>Blight manifestations<textarea id="sheetBlight" maxlength="2000"></textarea></label>
+      <div class="rule">Conditions</div>
+      <div class="condition-tiles" id="conditionTiles"></div>
+      <p class="field-hint">Each condition is −2 dice to one attribute. Resting one shift heals one condition. With all six, a new condition becomes 2 damage instead.</p>
+      <div class="rule">Critical injuries</div><div class="wound-list" id="injuryRows"></div><button type="button" class="small-button" data-add-wound="injuries">Add injury</button>
+      <div class="rule">Mental trauma</div><div class="wound-list" id="traumaRows"></div><button type="button" class="small-button" data-add-wound="trauma">Add trauma</button>
+      <div class="rule">Blight manifestations</div><div class="wound-list" id="blightRows"></div><button type="button" class="small-button" data-add-wound="blight">Add manifestation</button>
     </section>
     <section id="tabGear" role="tabpanel" aria-labelledby="tabButtonGear" class="sheet-section" hidden>
-      <div class="character-grid"><label>Supply<input id="sheetSupply" type="number" min="0" max="999999"></label><label>Rukh<input id="sheetRukh" type="number" min="0" max="999999"></label></div>
-      <label>Keepsake<input id="sheetKeepsake" maxlength="1000"></label>
-      <div class="rule">Weapons</div><div id="weaponRows" class="entry-list"></div><button type="button" data-add-entry="weapons">Add weapon</button>
-      <div class="rule">Armor &amp; suits</div><div id="armorRows" class="entry-list"></div><button type="button" data-add-entry="armor">Add armor</button>
-      <div class="rule">Equipment</div><div id="equipmentRows" class="entry-list"></div><button type="button" data-add-entry="equipment">Add item</button>
-      <div class="rule">Tiny items</div><div id="tinyItemRows" class="entry-list"></div><button type="button" data-add-entry="tinyItems">Add tiny item</button>
+      <div class="purse">
+        <div class="purse-cell"><label class="mini-label" for="sheetSupply">Supply</label><span class="purse-row"><input id="sheetSupply" type="number" min="0" max="999999" inputmode="numeric"><span class="stepper"><button type="button" data-step="sheetSupply" data-by="-1" aria-label="Spend 1 supply">−</button><button type="button" data-step="sheetSupply" data-by="1" aria-label="Add 1 supply">+</button></span></span></div>
+        <div class="purse-cell"><label class="mini-label" for="sheetRukh">Rukh</label><span class="purse-row"><input id="sheetRukh" type="number" min="0" max="999999" inputmode="numeric"><span class="stepper"><button type="button" data-step="sheetRukh" data-by="-10" aria-label="Spend 10 rukh">−</button><button type="button" data-step="sheetRukh" data-by="10" aria-label="Add 10 rukh">+</button></span></span></div>
+      </div>
+      <div class="carry"><div class="carry-label"><span>Carried</span><span id="carryText"></span></div><div class="carry-bar" id="carryBar" aria-hidden="true"></div></div>
+      <div class="rule">Weapons</div><div class="gear-list" id="weaponRows"></div><button type="button" class="small-button" data-add-entry="weapons">Add weapon</button>
+      <div class="rule">Armor &amp; suits</div><div class="gear-list" id="armorRows"></div><button type="button" class="small-button" data-add-entry="armor">Add armor or suit</button>
+      <div class="rule">Equipment</div><div class="item-list" id="equipmentRows"></div><button type="button" class="small-button" data-add-entry="equipment">Add item</button>
+      <div class="rule">Tiny items</div><div class="tiny-items" id="tinyItemRows"></div>
+      <div class="rule">Keepsake</div>
+      <div class="keepsake"><input id="sheetKeepsake" class="keepsake-name" maxlength="1000" placeholder="Name your keepsake" aria-label="Keepsake"><button type="button" class="small-button" id="keepsakeUse">Recover 1 Hope</button><span class="field-hint" id="keepsakeNote"></span></div>
     </section>
-    <div class="panel-footer"><p id="characterMessage" class="message" role="status"></p><div class="panel-actions"><button class="primary-button" type="submit" id="saveCharacter">Save character</button><button id="cancelCharacter" type="button">Close</button></div></div>
+    <section id="tabProfile" role="tabpanel" aria-labelledby="tabButtonProfile" class="sheet-section" hidden>
+      <label class="ink">Character name<input id="characterName" maxlength="80" required></label>
+      <label id="characterKindRow">Type<select id="characterKind"><option value="pc">Player character</option><option value="npc">NPC</option></select></label>
+      <div class="rule">From the book</div>
+      <div class="book-grid">
+        <div class="book-field"><label>Origin<select id="originChoice"></select></label><input id="characterOrigin" maxlength="500" placeholder="Where you grew up" aria-label="Origin, in your own words" hidden><p class="grants" id="originGrants"></p></div>
+        <div class="book-field"><label>Faction<select id="factionChoice"></select></label><input id="characterFaction" maxlength="500" placeholder="Your faction" aria-label="Faction, in your own words" hidden><p class="grants" id="factionGrants"></p></div>
+        <div class="book-field"><label>Profession<select id="professionChoice"></select></label><input id="characterProfession" maxlength="500" placeholder="Your profession" aria-label="Profession, in your own words" hidden><p class="grants" id="professionGrants"></p></div>
+        <div class="book-field"><label>Specialty<select id="specialtyChoice"></select></label><input id="sheetSpecialty" maxlength="500" placeholder="Your specialty" aria-label="Specialty, in your own words" hidden><p class="grants" id="specialtyGrants"></p></div>
+      </div>
+      <div class="rule">In your own words</div>
+      <label class="ink">Motivation<input id="characterMotivation" maxlength="500" placeholder="Why you became an Explorer"></label>
+      <label class="ink">Quirk<input id="sheetQuirk" maxlength="500" placeholder="A habit or mannerism"></label>
+      <label class="ink">Appearance<textarea id="characterAppearance" maxlength="500" rows="1" placeholder="What people notice first"></textarea></label>
+      <label class="ink">Contacts<textarea id="sheetContacts" maxlength="1000" rows="1" placeholder="People you can call on"></textarea></label>
+      <label class="ink">Description<textarea id="characterDescription" maxlength="4000" rows="2" placeholder="History, looks, anything else"></textarea></label>
+      <div class="rule">Images</div>
+      <div class="image-frames">
+        <button type="button" class="image-frame" data-image-slot="portrait"><img id="portraitFrame" alt="" hidden><span>Portrait</span></button>
+        <button type="button" class="image-frame" data-image-slot="standup"><img id="standupPreview" alt="" hidden><span>Stand-up</span></button>
+        <button type="button" class="image-frame" data-image-slot="delve_suit"><img id="delveSuitPreview" alt="" hidden><span>Delve suit</span></button>
+      </div>
+      <p class="field-hint">JPEG, PNG, or WebP, up to 2 MB. The delve-suit stand-up is optional.</p>
+      <input id="characterImageInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+    </section>
+    <div class="panel-footer explorer-footer"><p id="characterMessage" class="message save-status" role="status"></p><div class="panel-actions"><button class="primary-button" type="submit" id="saveCharacter">Create character</button><button id="cancelCharacter" type="button">Close</button></div></div>
   </form>
   </div>
   </section>
