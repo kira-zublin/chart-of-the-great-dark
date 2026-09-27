@@ -222,7 +222,17 @@ textarea{min-height:76px;resize:vertical}input:focus-visible,textarea:focus-visi
   </section>
   <section id="paneCreatures" class="side-pane" role="tabpanel" aria-labelledby="panelTabCreatures" hidden>
     <div class="panel-head"><div><div class="eyebrow">GM tools</div><h2>Creature Palette</h2></div></div>
-    <p class="field-hint">The creature palette is not available yet.</p>
+    <div id="creatureBrowse" class="creature-browse">
+      <div class="creature-toolbar">
+        <label class="area-search">Search creatures<input id="creatureSearch" type="search" autocomplete="off" placeholder="Name, ability, attack or talent"></label>
+        <button id="creatureNew" class="primary-button" type="button">New creature</button>
+      </div>
+      <div id="creatureFilters" class="creature-filters" role="group" aria-label="Show category"></div>
+      <div id="creatureList" class="creature-list"></div>
+    </div>
+    <p id="creatureMessage" class="message" role="status"></p>
+    <div id="creatureDetail" class="creature-detail" hidden></div>
+    <form id="creatureForm" class="character-form creature-form" novalidate hidden></form>
   </section>
   <section id="paneCharacters" class="side-pane" role="tabpanel" aria-labelledby="panelTabCharacters">
   <div class="panel-head"><div><div class="eyebrow">Explorer record</div><h2 id="characterHeading">No character open</h2></div></div>
