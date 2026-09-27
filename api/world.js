@@ -39,11 +39,14 @@ async function tidyInstances(sql, viewing) {
   } catch (cause) { console.error('Instance cleanup failed', cause); }
 }
 
-// A placed player character whose stand-up this profile may change: its owner, or the GM.
+// Players control only their own player characters; the GM controls every character, NPCs included.
+const controls = (profile, character) => profile.role === 'gm' || (character.kind === 'pc' && character.owner_id === profile.id);
+
+// A placed character whose stand-up this profile may change: its owner, or the GM.
 async function standupOwner(sql, profile, characterId) {
   const character = (await sql`SELECT id, owner_id, kind FROM characters WHERE id = ${characterId}`)[0];
   const position = (await sql`SELECT location_id FROM character_positions WHERE character_id = ${characterId}`)[0];
-  return character && character.kind === 'pc' && position && (profile.role === 'gm' || character.owner_id === profile.id) ? character : null;
+  return character && position && controls(profile, character) ? character : null;
 }
 
 // Squares covered by placed creatures in an Explorable. Hidden creatures do not block characters, so an unseen
@@ -142,11 +145,12 @@ export async function GET(req) {
     const locations = gm ? await sql.query('SELECT * FROM locations ORDER BY created_at, title') : await sql.query("SELECT * FROM locations WHERE access_level != 'invisible' ORDER BY created_at, title");
     const allowed = new Set(locations.map(item => item.id));
     const links = (await sql.query('SELECT * FROM location_links')).filter(link => allowed.has(link.from_id) && allowed.has(link.to_id) && (gm || locations.find(item => item.id === link.from_id)?.access_level === 'accessible'));
+    // NPCs appear to players only once the GM has placed them; the GM also sees unplaced NPCs so they can be pulled.
     const rows = await sql.query(`SELECT c.id AS character_id, c.name, c.kind, c.owner_id, c.id AS image_id, COALESCE(p.location_id, 'star-map') AS location_id, p.x, p.y, p.changed_at, COALESCE(p.standup_scale, 1) AS standup_scale, COALESCE(p.standup_flipped, 0) AS standup_flipped, COALESCE(p.delve_suit, 0) AS delve_suit,
       EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'portrait') AS has_portrait,
       EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'standup') AS has_standup,
       EXISTS (SELECT 1 FROM character_images i WHERE i.character_id = c.id AND i.slot = 'delve_suit') AS has_delve_suit
-      FROM characters c LEFT JOIN character_positions p ON p.character_id = c.id WHERE c.kind = 'pc'`);
+      FROM characters c LEFT JOIN character_positions p ON p.character_id = c.id WHERE c.kind = 'pc' OR ${gm ? '1' : 'p.character_id IS NOT NULL'}`);
     const overrides = await sql.query('SELECT * FROM room_overrides');
     const visibleRoom = (location, roomId) => {
       const grid = gridOf(location);
@@ -193,7 +197,7 @@ export async function POST(req) {
       const ids = data.action === 'pull' ? data.characterIds : [data.characterId];
       if (!Array.isArray(ids) || !ids.length || ids.length > 100 || ids.some(id => !uuid(id)) || new Set(ids).size !== ids.length) return error('Choose valid characters');
       const characters = await sql.query(`SELECT id, owner_id, kind FROM characters WHERE id IN (${ids.map(() => '?').join(',')})`, ids);
-      if (characters.length !== ids.length || characters.some(item => item.kind !== 'pc' || (data.action === 'move' && profile.role !== 'gm' && item.owner_id !== profile.id))) return error('Character unavailable', 403);
+      if (characters.length !== ids.length || characters.some(item => !controls(profile, item))) return error('Character unavailable', 403);
       let preferred = null;
       const grid = gridOf(location);
       if (grid) {
@@ -214,7 +218,7 @@ export async function POST(req) {
       if (!uuid(data.characterId) || !coord(data.x) || !coord(data.y)) return error('Invalid token position');
       const character = (await sql`SELECT id, owner_id, kind FROM characters WHERE id = ${data.characterId}`)[0];
       const position = (await sql`SELECT location_id FROM character_positions WHERE character_id = ${data.characterId}`)[0];
-      if (!character || character.kind !== 'pc' || (!position && profile.role !== 'gm') || (profile.role !== 'gm' && character.owner_id !== profile.id)) return error('Character unavailable', 403);
+      if (!character || (!position && profile.role !== 'gm') || !controls(profile, character)) return error('Character unavailable', 403);
       const location = await locate(sql, position?.location_id || 'star-map');
       if (!location || !['delve', 'diorama'].includes(location.kind)) return error('Character is not in a positional scene');
       if (location.kind === 'diorama' && (data.x > 1000 || data.y > 1000)) return error('Position outside the scene');

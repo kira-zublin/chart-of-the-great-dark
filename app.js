@@ -37,9 +37,10 @@ function activeCharacter() {
   return state.characters.find(item => item.id === id) || null;
 }
 const chatUI = initChatUI(request, () => state.profile, activeCharacter, vistaDialog.receive);
+// The GM moves a possessed NPC around the map just as a player moves their character.
 const worldUI = initWorldUI(request, () => state.profile, () => {
-  const id = state.selected?.id || (state.profile && localStorage.getItem(`active-character:${state.profile.id}`));
-  return state.characters.find(item => item.id === id && item.kind === 'pc') || null;
+  const character = activeCharacter();
+  return character && (character.kind === 'pc' || state.profile?.role === 'gm') ? character : null;
 }, vistaDialog.setScene, {
   onArea: area => creatureUI.setArea(area),
   open: id => { sidePanel.open('Creatures'); creatureUI.openPlaced(id); },
