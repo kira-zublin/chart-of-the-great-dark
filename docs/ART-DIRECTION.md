@@ -29,6 +29,14 @@ Add the relevant composition clause:
 - **Explorable:** `Strict overhead orthographic floor plan with legible walking surfaces, walls, obstacles, entrances, and room boundaries that can align with the specified grid. No perspective view or figures occupying playable squares.`
 - **Card illustration:** `Crop-friendly focal point that remains clear in a narrow, shallow panel.`
 
+## Creature portraits
+
+For the creature palette, use the individual rulebook description as the subject brief. The Ship City rule about human inhabitants governs location scenes; it does not replace the anatomy of a named creature. A Kwanë or Haubrioc remains a bird, a Sentry Hound remains a ceramic construct, and an Echo may be only a partial apparition. Do not add humanoid features or conventional fantasy armor where the description does not call for them.
+
+Compose each portrait as a square with one large, recognizable subject. Keep the defining face, body shape, or texture within the central circle so it survives the palette's circular crop. Favor a strong silhouette and one sharp point of interest over intricate surroundings. For swarms, give one specimen a readable shape and let the rest imply numbers. Use a quiet dark background with enough separation from the subject. Keep the watercolor washes, visible paper, pigment blooms, loose edges, and limited ink detail of the location art; Blight iridescence, construct luminescence, and Echo translucency may provide restrained accents. No frame, type, or interface marks inside the image.
+
+Review the result at 42, 92, and 112 pixels. The creature should still be identifiable at 42 pixels. Export palette portraits at 256×256 in a compact JPEG or WebP when transparency is unnecessary, and keep the final file well below the image API's 2 MB limit. Portraits also appear in Vista stand-up positions when no separate stand-up image exists, so avoid relying on tiny background details to convey identity.
+
 ## Avoid
 
 Do not use `cinematic photorealism`, glossy 3D game-concept rendering, chrome-clean spaceships, generic cyberpunk neon, pristine high-tech interiors, military science-fiction uniforms everywhere, or medieval-fantasy castles. Avoid Star Wars-style cantina aliens, animal-headed people, pointed ears, tentacles, extra limbs, and invented humanoid species in Ship City. Avoid visual clutter that obscures routes, room edges, player standups, or map markers. Do not invent a new skyline or place landmarks in relationships that contradict the book.

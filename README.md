@@ -108,6 +108,8 @@ Migration `scripts/migrate-017.js` adds the creature tables and the chat `creatu
 
 The rulebook's creatures and adversaries are not in the repository. Keep the extracted library at `gamerules/creature-library.json` (already ignored by Git) and load it with `node --env-file=<verified-environment-file> scripts/import-creatures.js`. Rerunning it adds only missing entries and keeps the GM's edits; add `--overwrite` to restore book entries to the book's text. `npm run dev:local` imports the file automatically when it is present.
 
+The 15 nonhuman book creatures have 256×256 portraits in `assets/creatures/` (about 15–24 KB each). After importing the rulebook entries, run `node --env-file=<verified-environment-file> scripts/import-creature-portraits.js --dry-run` to check the target, then rerun without `--dry-run` to store the images in the existing `creature_template_images` portrait slots. The importer matches filenames to `book_key`, leaves existing portraits alone, and supports `--overwrite` for a deliberate replacement. Local preview imports these portraits automatically after the rulebook library.
+
 At 50 MB per track, the Hobby plan's 1 GB of Blob storage holds about twenty large tracks, and every listener downloads a track the first time it plays (a 50 MB track for five players is 250 MB of the 10 GB monthly transfer).
 
 The browser upload helper is a committed bundle at `vendor/blob-client.js`, because the app loads browser modules without a bundler. After upgrading `@vercel/blob`, run `npm run build:vendor` and commit the result.
