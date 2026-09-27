@@ -23,6 +23,7 @@ import { applyJukeboxVolume } from './migrate-016.js';
 import { applyCreatureSchema } from './migrate-017.js';
 import { seedShipCitySlice } from './seed-ship-city-slice.js';
 import { DEFAULT_LIBRARY, importCreatureLibrary } from './import-creatures.js';
+import { importCreaturePortraits } from './import-creature-portraits.js';
 
 // Only the Blob token is taken from .env.local; the database stays in memory.
 try {
@@ -55,6 +56,8 @@ await seedShipCitySlice(sql);
 try {
   const counts = await importCreatureLibrary(sql, JSON.parse(await readFile(DEFAULT_LIBRARY, 'utf8')));
   console.log(`Creature palette: ${counts.added} rulebook entries loaded.`);
+  const portraits = await importCreaturePortraits(sql);
+  console.log(`Creature portraits: ${portraits.imported} loaded.`);
 } catch (cause) {
   if (cause.code !== 'ENOENT') throw cause;
   console.log('gamerules/creature-library.json not found; the creature palette starts empty.');
