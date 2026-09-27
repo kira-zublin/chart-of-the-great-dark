@@ -18,7 +18,7 @@ $('characterForm').addEventListener('input', () => { characterDirty = true; });
 $('characterForm').addEventListener('change', () => { characterDirty = true; });
 const crewUI = initCrewUI(request, () => state.profile);
 const jukeboxUI = initJukeboxUI(request, () => state.profile);
-const creatureUI = initCreatureUI(request);
+const creatureUI = initCreatureUI(request, { place: id => worldUI.placeCreature(id), drag: template => worldUI.paletteDrag(template) });
 const sidePanel = initSidePanel({
   isGM: () => state.profile?.role === 'gm',
   canClose: confirmDiscard,

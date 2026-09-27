@@ -3,12 +3,14 @@ import assert from 'node:assert/strict';
 import { db } from '../lib/server.js';
 import { applyInitialSchema } from '../scripts/migrate.js';
 import { applySheetAndCrewSchema } from '../scripts/migrate-002.js';
+import { applyChatSchema } from '../scripts/migrate-004.js';
 import { applyWorldSchema } from '../scripts/migrate-006.js';
 import { applyLocationAccess } from '../scripts/migrate-008.js';
 import { applyLocationCards } from '../scripts/migrate-009.js';
 import { applyStandupScale } from '../scripts/migrate-012.js';
 import { applyStandupVariants } from '../scripts/migrate-014.js';
 import { applyInstances } from '../scripts/migrate-015.js';
+import { applyCreatureSchema } from '../scripts/migrate-017.js';
 import { POST as authPost } from '../api/auth.js';
 import { POST as characterPost } from '../api/characters.js';
 import { GET as worldGet, POST as worldPost } from '../api/world.js';
@@ -27,8 +29,8 @@ test('instanced areas copy a location without its connections and are cleaned up
   process.env.REGISTRATION_INVITE_CODE = 'private invitation';
   const sql = db();
   try {
-    await applyInitialSchema(sql); await applySheetAndCrewSchema(sql); await applyWorldSchema(sql); await applyLocationAccess(sql); await applyLocationCards(sql);
-    await applyStandupScale(sql); await applyStandupVariants(sql); await applyInstances(sql); await applyInstances(sql);
+    await applyInitialSchema(sql); await applySheetAndCrewSchema(sql); await applyChatSchema(sql); await applyWorldSchema(sql); await applyLocationAccess(sql); await applyLocationCards(sql);
+    await applyStandupScale(sql); await applyStandupVariants(sql); await applyInstances(sql); await applyInstances(sql); await applyCreatureSchema(sql);
     const signup = async (name, role) => (await authPost(req('/api/auth', 'POST', { action: 'register', name, password: 'long-password-123', role, inviteCode: process.env.REGISTRATION_INVITE_CODE }))).headers.get('set-cookie').split(';')[0];
     const alice = await signup('Alice', 'player'), gm = await signup('Keeper', 'gm');
     const a = (await data(await characterPost(req('/api/characters', 'POST', { kind: 'pc', name: 'Saira', attributes: { strength: 4, agility: 4, logic: 4, insight: 4, perception: 4, empathy: 4 } }, alice)))).body.id;

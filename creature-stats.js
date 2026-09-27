@@ -108,6 +108,17 @@ export function cleanStats(input) {
   return stats;
 }
 
+// Placed creatures share their entry's name; later ones in the same location are numbered ("Sentry Hound 2").
+export const baseCreatureName = name => name.replace(/ \d+$/, '') || name;
+export function nextCreatureName(base, names) {
+  let highest = 0;
+  for (const name of names) {
+    if (name === base) highest = Math.max(highest, 1);
+    else if (name.startsWith(`${base} `) && /^\d+$/.test(name.slice(base.length + 1))) highest = Math.max(highest, Number(name.slice(base.length + 1)));
+  }
+  return highest ? `${base.slice(0, 75)} ${highest + 1}` : base;
+}
+
 // The size modifier attackers apply, as the book states it.
 export const sizeModifier = size => size === 'small' ? -2 : size === 'large' ? 2 : 0;
 
