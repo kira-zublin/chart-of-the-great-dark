@@ -1,4 +1,5 @@
 import { creatureIcon } from './creature-stats.js';
+import { attributes as attributeList, conditionName, penalty } from './explorer-rules.js';
 
 const $ = id => document.getElementById(id);
 const avatar = 'assets/characters/anonymous-explorer.png';
@@ -190,13 +191,16 @@ export function initChatUI(request, profile, character, onMessages = () => {}) {
   function suggestedBase() {
     const picked = character();
     const talent = picked?.sheet?.talents?.find(item => item.name === $('chatTalent').value);
-    return Math.max(1, Math.min(30, Number(picked?.attributes?.[$('chatAttribute').value] || 0) + Number(talent?.level || 0)));
+    const attribute = $('chatAttribute').value;
+    // A condition takes 2 dice from the attribute it weakens.
+    return Math.max(1, Math.min(30, Number(picked?.attributes?.[attribute] || 0) + Number(talent?.level || 0) - penalty(picked?.sheet?.conditions || [], attribute)));
   }
   function updateRollPreview() {
     const skill = rollMode.value === 'skill';
     $('chatSkillFields').hidden = !skill;
     const base = Number($('chatBase').value); const gear = Number($('chatGear').value);
-    $('chatRollPreview').textContent = Number.isInteger(base) && Number.isInteger(gear) ? `Roll ${base} base dice and ${gear} gear dice.` : '';
+    const weakened = skill ? attributeList.find(item => item.key === $('chatAttribute').value && penalty(character()?.sheet?.conditions || [], item.key)) : null;
+    $('chatRollPreview').textContent = Number.isInteger(base) && Number.isInteger(gear) ? `Roll ${base} base dice and ${gear} gear dice.${weakened ? ` ${conditionName(weakened.condition)}: −2 ${weakened.name}.` : ''}` : '';
   }
   rollMode.addEventListener('change', () => { if (rollMode.value === 'skill') $('chatBase').value = suggestedBase(); updateRollPreview(); });
   for (const id of ['chatAttribute', 'chatTalent']) $(id).addEventListener('change', () => { if (rollMode.value === 'skill') $('chatBase').value = suggestedBase(); updateRollPreview(); });
@@ -275,6 +279,14 @@ export function initChatUI(request, profile, character, onMessages = () => {}) {
     start() { lastId = 0; first = true; const saved = localStorage.getItem(`chat-viewed:${profile().id}`); hasViewedBefore = saved !== null; lastViewedId = Math.max(0, Number(saved) || 0); $('chatContent').hidden = true; toggle.textContent = 'Show'; toggle.setAttribute('aria-expanded', 'false'); setUnread(false); list.replaceChildren(); identity(); poll(); clearInterval(timer); timer = setInterval(poll, 2000); },
     stop() { clearInterval(timer); timer = null; lastId = 0; creature = null; pushId = null; pushCount = 0; secondPush = false; $('chatPush').hidden = true; $('chatRollResult').textContent = ''; list.replaceChildren(); rollDialog.close(); exportDialog.close(); },
     refreshIdentity: identity,
+    // Opens the roll window for an attribute of the selected character, from the sheet.
+    rollAttribute(attribute, talent = '') {
+      identity(); rollMode.value = 'skill'; $('chatAttribute').value = attribute;
+      $('chatTalent').value = [...$('chatTalent').options].some(option => option.value === talent) ? talent : '';
+      $('chatGear').value = 0; $('chatBase').value = suggestedBase();
+      pushId = null; $('chatPush').hidden = true; $('chatRollResult').textContent = ''; $('chatRollStatus').textContent = '';
+      updateRollPreview(); if (!rollDialog.open) rollDialog.showModal();
+    },
     speakAs,
     speakingAs: () => creature?.id || null,
     // Posts a placed creature's signature attack (chosen by the GM) with its dice rolled on the server.

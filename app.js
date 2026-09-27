@@ -1,4 +1,4 @@
-import { collectSheet, renderSheet, setSheetDirtyHandler, setSheetTab } from './sheet-ui.js';
+import { collectCharacter, renderCharacter, setRulesLibrary, setSheetHandlers, setSheetImage, setSheetTab } from './sheet-ui.js';
 import { initCrewUI } from './crew-ui.js';
 import { initChatUI } from './chat-ui.js';
 import { initWorldUI } from './world-ui.js';
@@ -11,11 +11,12 @@ const $ = id => document.getElementById(id);
 $('mapStage').append(document.querySelector('.hud'));
 initStarChart();
 const state = { profile: null, characters: [], selected: null, registering: false };
-const stats = ['strength', 'agility', 'logic', 'insight', 'perception', 'empathy'];
+// The sheet saves itself: each change schedules a save of the whole character shortly after.
+// characterDirty means there are changes the server doesn't have yet.
 let characterDirty = false;
-setSheetDirtyHandler(() => { characterDirty = true; });
-$('characterForm').addEventListener('input', () => { characterDirty = true; });
-$('characterForm').addEventListener('change', () => { characterDirty = true; });
+let saveTimer = null, saveQueue = Promise.resolve(), inFlight = 0, changeCount = 0;
+const pendingImages = {};
+setSheetHandlers({ change: sheetChanged, roll: rollFromSheet, image: chooseImage });
 const crewUI = initCrewUI(request, () => state.profile);
 const jukeboxUI = initJukeboxUI(request, () => state.profile);
 const creatureUI = initCreatureUI(request, {
@@ -63,6 +64,8 @@ function showApp(profile) {
     $('characterKindRow').hidden = profile.role !== 'gm';
     sidePanel.setRole();
     loadCharacters();
+    // The rules reference is optional: without it the sheet simply has no descriptions.
+    request('/api/rules').then(data => setRulesLibrary(data.entries)).catch(() => setRulesLibrary([]));
     chatUI.start();
     worldUI.start();
     jukeboxUI.start();
@@ -109,7 +112,7 @@ $('authForm').addEventListener('submit', async event => {
 $('accountButton').addEventListener('click', () => toggleMenu($('accountButton'), $('accountMenu')));
 $('characterButton').addEventListener('click', () => toggleMenu($('characterButton'), $('characterMenu')));
 $('logoutButton').addEventListener('click', async () => {
-  try { await request('/api/auth', { method: 'DELETE' }); showApp(null); }
+  try { if (saveTimer) await saveCharacter(); await request('/api/auth', { method: 'DELETE' }); showApp(null); }
   catch (cause) { alert(cause.message); }
 });
 document.addEventListener('click', event => {
@@ -169,24 +172,74 @@ async function deleteCharacter(character) {
   } catch (cause) { alert(cause.message); }
 }
 function imageUrl(id, slot) { return `/api/image?id=${encodeURIComponent(id)}&slot=${slot}&v=${Date.now()}`; }
-// Each character image slot with its file input and preview element.
-const imageSlots = { portrait: { input: 'characterPortrait', preview: 'portraitPreview' }, standup: { input: 'characterStandup', preview: 'standupPreview' }, delve_suit: { input: 'characterDelveSuit', preview: 'delveSuitPreview' } };
-function showPreview(slot, character) {
-  const img = $(imageSlots[slot].preview);
-  const has = character?.[`has_${slot}`];
-  img.hidden = !has; img.src = has ? imageUrl(character.id, slot) : '';
+const imageSlots = ['portrait', 'standup', 'delve_suit'];
+function showImages(character) {
+  for (const slot of imageSlots) setSheetImage(slot, character?.[`has_${slot}`] ? imageUrl(character.id, slot) : null);
 }
+function saveStatus(message = '', kind = '') { const status = $('characterMessage'); status.textContent = message; status.dataset.state = kind; }
 // The Characters tab shows either the editor (an existing or new character) or an empty state.
-function showEditor(on) {
-  $('characterEditor').hidden = !on; $('characterEmpty').hidden = on;
-  if (!on) $('characterHeading').textContent = 'No character open';
+function showEditor(on) { $('characterEditor').hidden = !on; $('characterEmpty').hidden = on; }
+function payloadFor(data) {
+  return { kind: state.profile.role === 'gm' ? data.kind : 'pc', name: data.name, profession: data.profession, origin: data.origin, faction: data.faction, appearance: data.appearance, motivation: data.motivation, description: data.description, attributes: data.attributes, sheet: data.sheet };
+}
+// Keeps the loaded copies of a character in step with the sheet, so chat rolls see its conditions and talents.
+function syncLocal(id, values) {
+  for (const item of new Set([state.selected, ...state.characters])) if (item?.id === id) Object.assign(item, values);
+}
+function sheetChanged() {
+  characterDirty = true; changeCount += 1;
+  if (!state.selected) return; // a new character is saved with Create character
+  saveStatus('Saving…', 'saving');
+  clearTimeout(saveTimer); saveTimer = setTimeout(saveCharacter, 800);
+}
+// Saves are queued in order; each carries the sheet as it was when the save was asked for.
+function saveCharacter() {
+  clearTimeout(saveTimer); saveTimer = null;
+  const target = state.selected; if (!target) return saveQueue;
+  const data = collectCharacter(); const version = changeCount;
+  if (!data.name) { saveStatus('Enter a character name to save your changes.', 'error'); return saveQueue; }
+  inFlight += 1;
+  saveQueue = saveQueue.then(async () => {
+    try {
+      const values = payloadFor(data); const renamed = target.name !== values.name;
+      await request('/api/characters', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: target.id, ...values }) });
+      syncLocal(target.id, values);
+      if (state.selected?.id === target.id && version === changeCount) { characterDirty = false; saveStatus('Saved', 'saved'); }
+      if (renamed) { renderList(); if (state.selected?.id === target.id) $('characterButton').textContent = values.name; worldUI.characterChanged(); }
+      chatUI.refreshIdentity();
+    } catch (cause) { if (state.selected?.id === target.id) saveStatus(`Not saved: ${cause.message}`, 'error'); }
+    finally { inFlight -= 1; }
+  });
+  return saveQueue;
 }
 function confirmDiscard() {
-  if (!characterDirty) return true;
+  if (saveTimer) { saveCharacter(); characterDirty = false; return true; }
+  if (!characterDirty || inFlight) return true;
   if (!confirm('Discard unsaved character changes?')) return false;
   characterDirty = false;
   if (state.selected) fillCharacter(state.selected); else showEditor(false);
   return true;
+}
+function rollFromSheet(attribute) {
+  if (!state.selected) { saveStatus('Create the character first to roll from the sheet.', 'error'); return; }
+  syncLocal(state.selected.id, payloadFor(collectCharacter()));
+  chatUI.rollAttribute(attribute);
+}
+async function chooseImage(slot, file) {
+  if (file.size > 2 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { saveStatus('Use a JPEG, PNG, or WebP image under 2 MB.', 'error'); return; }
+  setSheetImage(slot, URL.createObjectURL(file));
+  const target = state.selected;
+  if (!target) { pendingImages[slot] = file; return; }
+  saveStatus('Uploading image…', 'saving');
+  try {
+    await request(`/api/image?id=${encodeURIComponent(target.id)}&slot=${slot}`, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+    syncLocal(target.id, { [`has_${slot}`]: true });
+    if (state.selected?.id === target.id) saveStatus('Saved', 'saved');
+    worldUI.characterChanged(); chatUI.refreshIdentity();
+  } catch (cause) {
+    if (state.selected?.id !== target.id) return;
+    saveStatus(`Image not saved: ${cause.message}`, 'error'); showImages(target);
+  }
 }
 function editCharacter(character = null) {
   if (!confirmDiscard()) return;
@@ -198,19 +251,14 @@ function editCharacter(character = null) {
   $('characterButton').setAttribute('aria-expanded', 'false');
   showEditor(true); fillCharacter(character);
   sidePanel.open('Characters');
-  setError('characterMessage'); $('characterName').focus();
+  if (!character) $('characterName').focus();
 }
 function fillCharacter(character) {
-  $('characterHeading').textContent = character ? character.name : 'New character';
   $('characterButton').textContent = character ? character.name : 'Select character';
-  $('characterName').value = character?.name || '';
-  $('characterKind').value = character?.kind || 'pc';
-  for (const key of ['profession', 'origin', 'faction', 'appearance', 'motivation', 'description']) {
-    $(`character${key[0].toUpperCase()}${key.slice(1)}`).value = character?.[key] || '';
-  }
-  for (const stat of stats) $(`stat${stat[0].toUpperCase()}${stat.slice(1)}`).value = character?.attributes?.[stat] ?? 4;
-  renderSheet(character?.sheet, character?.attributes);
-  for (const slot of Object.keys(imageSlots)) { $(imageSlots[slot].input).value = ''; showPreview(slot, character); }
+  for (const slot of Object.keys(pendingImages)) delete pendingImages[slot];
+  renderCharacter(character); showImages(character);
+  $('saveCharacter').hidden = Boolean(character);
+  saveStatus(character ? 'Saved' : '', character ? 'saved' : '');
   characterDirty = false;
 }
 $('createCharacter').addEventListener('click', () => editCharacter());
@@ -218,36 +266,23 @@ $('panelCreateCharacter').addEventListener('click', () => editCharacter());
 $('cancelCharacter').addEventListener('click', () => sidePanel.close());
 $('openCrew').addEventListener('click', () => { if (state.profile) sidePanel.toggle('Crew'); });
 $('openGMTools').addEventListener('click', () => { if (state.profile?.role === 'gm') sidePanel.toggle('Mapping'); });
-for (const slot of Object.keys(imageSlots)) {
-  const input = $(imageSlots[slot].input);
-  input.addEventListener('change', () => {
-    const file = input.files[0]; if (!file) return;
-    if (file.size > 2 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { setError('characterMessage', 'Use a JPEG, PNG, or WebP image under 2 MB.'); input.value = ''; return; }
-    const img = $(imageSlots[slot].preview);
-    img.src = URL.createObjectURL(file); img.hidden = false;
-  });
-}
 $('characterForm').addEventListener('submit', async event => {
-  event.preventDefault(); setError('characterMessage');
-  const save = $('saveCharacter'); save.disabled = true;
-  const payload = { id: state.selected?.id, kind: state.profile.role === 'gm' ? $('characterKind').value : 'pc', name: $('characterName').value, attributes: {}, sheet: collectSheet() };
-  if (!payload.name.trim()) { setSheetTab('Profile'); setError('characterMessage', 'Enter a character name.'); save.disabled = false; return; }
-  for (const key of ['profession', 'origin', 'faction', 'appearance', 'motivation', 'description']) payload[key] = $(`character${key[0].toUpperCase()}${key.slice(1)}`).value;
-  for (const stat of stats) payload.attributes[stat] = Number($(`stat${stat[0].toUpperCase()}${stat.slice(1)}`).value);
+  event.preventDefault();
+  if (state.selected) { saveCharacter(); return; }
+  const data = collectCharacter();
+  if (!data.name) { setSheetTab('Profile'); saveStatus('Enter a character name.', 'error'); $('characterName').focus(); return; }
+  const save = $('saveCharacter'); save.disabled = true; saveStatus('Creating…', 'saving');
   try {
-    const method = state.selected ? 'PUT' : 'POST';
-    const saved = await request('/api/characters', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const id = payload.id || saved.id;
-    for (const [slot, { input }] of Object.entries(imageSlots)) {
-      const file = $(input).files[0]; if (!file) continue;
-      await request(`/api/image?id=${encodeURIComponent(id)}&slot=${slot}`, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+    const created = await request('/api/characters', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadFor(data)) });
+    for (const [slot, file] of Object.entries(pendingImages)) {
+      await request(`/api/image?id=${encodeURIComponent(created.id)}&slot=${slot}`, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
     }
     await loadCharacters();
-    const character = state.characters.find(item => item.id === id);
+    const character = state.characters.find(item => item.id === created.id);
     characterDirty = false;
     if (character) editCharacter(character);
-    setError('characterMessage', 'Character saved.');
-  } catch (cause) { setError('characterMessage', cause.message); }
+    saveStatus('Character created.', 'saved');
+  } catch (cause) { saveStatus(cause.message, 'error'); }
   finally { save.disabled = false; }
 });
 
