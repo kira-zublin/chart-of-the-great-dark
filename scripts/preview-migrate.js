@@ -14,6 +14,7 @@ import { applyJukeboxVolume } from './migrate-016.js';
 import { applyCreatureSchema } from './migrate-017.js';
 import { applyRulesLibrarySchema } from './migrate-018.js';
 import { applyCrewSheetSchema } from './migrate-019.js';
+import { applyChatWindowSchema } from './migrate-020.js';
 
 if (process.env.VERCEL_ENV === 'preview') {
   await applyChatSchema();
@@ -32,7 +33,8 @@ if (process.env.VERCEL_ENV === 'preview') {
   await applyCreatureSchema();
   await applyRulesLibrarySchema();
   await applyCrewSheetSchema();
-  console.log('Preview chat, world, jukebox, and creature, and rules reference schemas applied.');
+  await applyChatWindowSchema();
+  console.log('Preview chat, chat window, world, jukebox, creature, and rules reference schemas applied.');
 } else {
   console.log('Preview migration skipped outside Vercel Preview.');
 }

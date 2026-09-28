@@ -86,6 +86,12 @@ Instances clean themselves up. Each map refresh marks an instance active while a
 
 Migration `scripts/migrate-015.js` adds the `is_instance`, `instance_of`, and `instance_active_at` columns to `locations`. It is safe to rerun. Preview builds and `npm run dev:local` apply it automatically. Back up Production and run `node --env-file=.env.production-migration.local scripts/migrate-015.js` **before merging**; until then, creating locations fails.
 
+## Chat window
+
+The chat window shows only recent messages, but every message stays stored for **Download Log**. Each time an open chat checks for messages (every two seconds while its tab is visible), the server notes that someone is around, writing at most once a minute. The first check after four hours with no one around starts the window fresh for everyone. The GM's **Clear Window** button does the same on demand, for example at the start of a session. Once the window has started fresh, a note at its top points to Download Log for older messages. Players' browsers that are open when the window moves clear their list on the next check.
+
+Migration `scripts/migrate-020.js` adds the one-row `chat_window` table and is safe to rerun. Existing history stays in the window until the first quiet spell. Preview builds and `npm run dev:local` apply it automatically. Chat keeps working before the migration runs, showing the whole history as before, so merging first is harmless; back up Production and run `node --env-file=.env.production-migration.local scripts/migrate-020.js` to turn the fresh window on. Clear Window reports an error until then.
+
 ## Vista dialog
 
 In a Vista, chat lines appear in a visual-novel dialog box at the top of the scene, with the speaker's portrait and the text typing out letter by letter. It shows text lines from characters standing in that Vista and from the GM: a GM line with no character selected appears as italic narration, and a GM speaking as an NPC shows that NPC. Dice rolls and out-of-character lines (starting with `//`, `((`, or `ooc:`) stay in the chat log only. Lines that arrive together queue up; clicking the box finishes the current line or skips to the next. On entering a Vista the latest line appears in full. The × hides the box, leaving a **Show dialog** button; each browser remembers the choice. No migration is needed: chat messages now also report whether the GM sent them (`from_gm`).

@@ -92,6 +92,8 @@ export function initChatUI(request, profile, character, onMessages = () => {}) {
   let creature = null;
   let lastViewedId = 0; let hasViewedBefore = false;
   let pushId = null; let pushCount = 0; let secondPush = false;
+  // Messages up to this id are hidden from the window (null until the first poll).
+  let clearedAfter = null;
   const list = $('chatMessages');
   const message = $('chatMessage');
   const toggle = $('chatToggle');
@@ -131,6 +133,13 @@ export function initChatUI(request, profile, character, onMessages = () => {}) {
       } else parent.append(document.createTextNode(part));
     }
   }
+  // Once the window has started fresh, a note says where the older messages went.
+  function earlierNote() {
+    if (!clearedAfter || list.querySelector('.chat-window-note')) return;
+    const note = document.createElement('p'); note.className = 'chat-window-note';
+    note.textContent = 'Earlier messages are saved. Use Download Log to read them.';
+    list.prepend(note);
+  }
   function render(item) {
     if (list.querySelector(`[data-id="${item.id}"]`)) return;
     const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
@@ -154,6 +163,9 @@ export function initChatUI(request, profile, character, onMessages = () => {}) {
     loading = true;
     try {
       const data = await request(`/api/chat${lastId ? `?after=${lastId}` : ''}`);
+      // The window moved on (the GM cleared it, or it started fresh after a quiet spell): drop what it showed.
+      if (clearedAfter !== null && data.clearedAfter !== clearedAfter) list.replaceChildren();
+      clearedAfter = data.clearedAfter || 0; lastId = Math.max(lastId, clearedAfter); earlierNote();
       for (const item of data.messages) render(item);
       onMessages(data.messages, first);
       const historyReset = first && lastId < lastViewedId;
@@ -209,6 +221,13 @@ export function initChatUI(request, profile, character, onMessages = () => {}) {
   $('chatRollClose').addEventListener('click', () => rollDialog.close());
   $('chatExportOpen').addEventListener('click', () => exportDialog.showModal());
   $('chatExportClose').addEventListener('click', () => exportDialog.close());
+  $('chatClearWindow').addEventListener('click', async () => {
+    if (!confirm('Clear the chat window for everyone? The messages stay available in Download Log.')) return;
+    try {
+      await request('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clearWindow' }) });
+      poll();
+    } catch (cause) { $('chatStatus').textContent = cause.message; }
+  });
   $('chatRollForm').addEventListener('submit', async event => {
     event.preventDefault();
     const button = $('chatRollSubmit'); button.disabled = true; $('chatRollStatus').textContent = '';
@@ -276,8 +295,8 @@ export function initChatUI(request, profile, character, onMessages = () => {}) {
   });
   resize.addEventListener('keydown', event => { if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); setHeight(dock.getBoundingClientRect().height + (event.key === 'ArrowUp' ? 24 : -24)); } });
   return {
-    start() { lastId = 0; first = true; const saved = localStorage.getItem(`chat-viewed:${profile().id}`); hasViewedBefore = saved !== null; lastViewedId = Math.max(0, Number(saved) || 0); $('chatContent').hidden = true; toggle.textContent = 'Show'; toggle.setAttribute('aria-expanded', 'false'); setUnread(false); list.replaceChildren(); identity(); poll(); clearInterval(timer); timer = setInterval(poll, 2000); },
-    stop() { clearInterval(timer); timer = null; lastId = 0; creature = null; pushId = null; pushCount = 0; secondPush = false; $('chatPush').hidden = true; $('chatRollResult').textContent = ''; list.replaceChildren(); rollDialog.close(); exportDialog.close(); },
+    start() { lastId = 0; first = true; clearedAfter = null; $('chatClearWindow').hidden = profile()?.role !== 'gm'; const saved = localStorage.getItem(`chat-viewed:${profile().id}`); hasViewedBefore = saved !== null; lastViewedId = Math.max(0, Number(saved) || 0); $('chatContent').hidden = true; toggle.textContent = 'Show'; toggle.setAttribute('aria-expanded', 'false'); setUnread(false); list.replaceChildren(); identity(); poll(); clearInterval(timer); timer = setInterval(poll, 2000); },
+    stop() { clearInterval(timer); timer = null; lastId = 0; clearedAfter = null; creature = null; pushId = null; pushCount = 0; secondPush = false; $('chatPush').hidden = true; $('chatRollResult').textContent = ''; list.replaceChildren(); rollDialog.close(); exportDialog.close(); },
     refreshIdentity: identity,
     // Rolls for the crew sheet (commanding the Bird, losing control), posted like any other roll.
     // Each resolves to the chat message, or null with the reason shown in chat.
