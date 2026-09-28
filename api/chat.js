@@ -24,6 +24,23 @@ async function selectedCharacter(sql, profile, id) {
   return character;
 }
 
+// The chat window shows only messages after a marker; Download Log still reads every stored message.
+// Each read counts as someone having chat open (recorded at most once a minute). The first read after
+// four quiet hours moves the marker to the latest message in the same statement, so the window starts fresh.
+const QUIET_SECONDS = 4 * 60 * 60;
+const ACTIVITY_SECONDS = 60;
+async function chatWindow(sql) {
+  try {
+    await sql`UPDATE chat_window SET cleared_after_id = CASE WHEN active_at < unixepoch() - ${QUIET_SECONDS} THEN (SELECT COALESCE(MAX(id), 0) FROM chat_messages) ELSE cleared_after_id END,
+      active_at = unixepoch() WHERE id = 1 AND active_at < unixepoch() - ${ACTIVITY_SECONDS}`;
+    return Number((await sql`SELECT cleared_after_id FROM chat_window WHERE id = 1`)[0]?.cleared_after_id || 0);
+  } catch (cause) {
+    // Before migration 020 the whole history stays in the window.
+    if (/no such table/i.test(cause.message)) return 0;
+    throw cause;
+  }
+}
+
 // The GM may speak and attack as any placed creature.
 async function selectedCreature(sql, profile, id) {
   if (id == null || id === '') return null;
@@ -51,10 +68,11 @@ export async function GET(req) {
     }
     const after = params.get('after');
     if (after && !/^\d+$/.test(after)) return error('Invalid chat cursor');
+    const clearedAfter = await chatWindow(sql);
     const rows = after
-      ? await sql.query(`${select} WHERE m.id > ? ORDER BY m.id LIMIT 100`, [Number(after)])
-      : await sql.query(`SELECT * FROM (${select} ORDER BY m.id DESC LIMIT 100) ORDER BY id`);
-    return json({ messages: rows.map(present) });
+      ? await sql.query(`${select} WHERE m.id > ? ORDER BY m.id LIMIT 100`, [Math.max(Number(after), clearedAfter)])
+      : await sql.query(`SELECT * FROM (${select} WHERE m.id > ? ORDER BY m.id DESC LIMIT 100) ORDER BY id`, [clearedAfter]);
+    return json({ messages: rows.map(present), clearedAfter });
   });
 }
 
@@ -81,6 +99,13 @@ export async function POST(req) {
     const sql = db(); const profile = await currentProfile(req, sql);
     if (!profile) return error('Sign in to send chat', 401);
     const input = await body(req);
+    // The GM can start the window fresh at any time; the messages stay stored for Download Log.
+    if (input.action === 'clearWindow') {
+      if (profile.role !== 'gm') return error('Only the GM can clear the chat window', 403);
+      const rows = await sql`UPDATE chat_window SET cleared_after_id = (SELECT COALESCE(MAX(id), 0) FROM chat_messages) WHERE id = 1 RETURNING cleared_after_id`;
+      if (!rows.length) return error('The chat window is not set up yet', 409);
+      return json({ clearedAfter: Number(rows[0].cleared_after_id) });
+    }
     const character = await selectedCharacter(sql, profile, input.characterId);
     if (character === false) return error('Character unavailable', 403);
     const creature = await selectedCreature(sql, profile, input.creatureId);

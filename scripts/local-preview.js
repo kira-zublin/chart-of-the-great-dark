@@ -23,6 +23,7 @@ import { applyJukeboxVolume } from './migrate-016.js';
 import { applyCreatureSchema } from './migrate-017.js';
 import { applyRulesLibrarySchema } from './migrate-018.js';
 import { applyCrewSheetSchema } from './migrate-019.js';
+import { applyChatWindowSchema } from './migrate-020.js';
 import { seedShipCitySlice } from './seed-ship-city-slice.js';
 import { DEFAULT_LIBRARY, importCreatureLibrary } from './import-creatures.js';
 import { importCreaturePortraits } from './import-creature-portraits.js';
@@ -56,6 +57,7 @@ await applyJukeboxVolume(sql);
 await applyCreatureSchema(sql);
 await applyRulesLibrarySchema(sql);
 await applyCrewSheetSchema(sql);
+await applyChatWindowSchema(sql);
 await seedShipCitySlice(sql);
 // The rulebook creatures load only when the local, uncommitted library file is present.
 try {
